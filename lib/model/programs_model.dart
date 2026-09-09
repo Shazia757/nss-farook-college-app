@@ -4,6 +4,8 @@ class Program {
   String? description;
   DateTime? date;
   int? duration;
+  int? limit;
+  int? enrollmentCount;
   String? createdBy;
 
   Program({
@@ -12,27 +14,50 @@ class Program {
     this.description,
     this.date,
     this.duration,
+    this.limit,
+    this.enrollmentCount,
     this.createdBy,
   });
 
   factory Program.fromJson(Map<String, dynamic> json) {
     return Program(
-      id: json['id'] as int?,
-      name: json['name'] as String?,
-      description: json['description'] as String?,
-      date: DateTime.tryParse(json['date']),
-      duration: json['duration'] as int?,
-      createdBy: json['created_by'] as String?,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id']?.toString() ?? ''),
+
+      enrollmentCount: json['enrollment_count'] is int
+          ? json['enrollment_count'] as int
+          : int.tryParse(json['enrollment_count']?.toString() ?? ''),
+
+      name: json['name']?.toString(),
+
+      description: json['description']?.toString(),
+
+      date: json['date'] != null
+          ? DateTime.tryParse(json['date'].toString())
+          : null,
+
+      limit: json['limit'] is int
+          ? json['limit'] as int
+          : int.tryParse(json['limit']?.toString() ?? ''),
+
+      duration: json['duration'] is int
+          ? json['duration'] as int
+          : int.tryParse(json['duration']?.toString() ?? ''),
+
+      createdBy: json['created_by']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'enrollment_count': enrollmentCount,
       'name': name,
       'description': description,
-      'date': date.toString(),
-      'duration': duration.toString(),
+      'date': date?.toIso8601String(),
+      'limit': limit,
+      'duration': duration,
       'created_by': createdBy,
     };
   }
@@ -44,14 +69,28 @@ class ProgramResponse {
   List<Program>? programs;
 
   ProgramResponse({this.status, this.message, this.programs});
-  factory ProgramResponse.fromJson(Map<String, dynamic> json) {
-    return ProgramResponse(
-      status: json['status'] as bool?,
-      message: json['message'] as String?,
-      programs: (json['programs'] as List<dynamic>?)
-          ?.map((e) => Program.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
+
+  factory ProgramResponse.fromJson(dynamic json) {
+    if (json is List) {
+      return ProgramResponse(
+        status: true,
+        programs: json
+            .map((e) => Program.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+    } else if (json is Map<String, dynamic>) {
+      final progData = json['programs'] ?? json['data'] ?? json['results'];
+      return ProgramResponse(
+        status: json['status'] as bool? ?? true,
+        message: json['message'] as String?,
+        programs: progData is List
+            ? progData
+                  .map((e) => Program.fromJson(e as Map<String, dynamic>))
+                  .toList()
+            : [],
+      );
+    }
+    return ProgramResponse(status: false, programs: []);
   }
 
   Map<String, dynamic> toJson() {
@@ -70,14 +109,27 @@ class ProgramNameResponse {
 
   ProgramNameResponse({this.status, this.message, this.programs});
 
-  factory ProgramNameResponse.fromJson(Map<String, dynamic> json) {
-    return ProgramNameResponse(
-      status: json['status'] as bool?,
-      message: json['message'] as String?,
-      programs: (json['programs'] as List<dynamic>?)
-          ?.map((e) => Program.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
+  factory ProgramNameResponse.fromJson(dynamic json) {
+    if (json is List) {
+      return ProgramNameResponse(
+        status: true,
+        programs: json
+            .map((e) => Program.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+    } else if (json is Map<String, dynamic>) {
+      final progData = json['programs'] ?? json['data'] ?? json['results'];
+      return ProgramNameResponse(
+        status: json['status'] as bool? ?? true,
+        message: json['message'] as String?,
+        programs: progData is List
+            ? progData
+                  .map((e) => Program.fromJson(e as Map<String, dynamic>))
+                  .toList()
+            : [],
+      );
+    }
+    return ProgramNameResponse(status: false, programs: []);
   }
 
   Map<String, dynamic> toJson() {

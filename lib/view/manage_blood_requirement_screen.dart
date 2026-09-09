@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/controller/blood_requirement_controller.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
+import 'package:nss_new/model/blood_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/add_blood_requirement_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
@@ -37,15 +38,8 @@ class _ManageBloodRequirementScreenState
     });
   }
 
-  String _getMockBloodGroup(String name) {
-    final groups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
-    return groups[name.length % groups.length];
-  }
-
   Future<void> _makeCall(String? phoneNumber) async {
-    final number = phoneNumber?.isNotEmpty == true
-        ? phoneNumber!
-        : '+919876543210';
+    final number = phoneNumber?.isNotEmpty == true ? phoneNumber! : '+919876543210';
     final Uri launchUri = Uri(scheme: 'tel', path: number);
     try {
       if (await canLaunchUrl(launchUri)) {
@@ -76,17 +70,9 @@ class _ManageBloodRequirementScreenState
     ColorScheme cs,
     TextTheme tt,
   ) {
-    final hasAddress = vol.address != null && vol.address!.isNotEmpty;
-    final hasBlood = vol.bloodGroup != null && vol.bloodGroup!.isNotEmpty;
-    final hasPhone = vol.phoneNumber != null && vol.phoneNumber!.isNotEmpty;
-
-    final displayBlood = hasBlood
-        ? vol.bloodGroup!
-        : _getMockBloodGroup(vol.name ?? '');
-    final displayAddress = hasAddress
-        ? vol.address!
-        : 'Farook College Campus, Calicut';
-    final displayPhone = hasPhone ? vol.phoneNumber! : '+919876543210';
+    final displayBlood = vol.bloodGroup?.isNotEmpty == true ? vol.bloodGroup! : 'O+';
+    final displayAddress = vol.address?.isNotEmpty == true ? vol.address! : 'Farook College Campus, Calicut';
+    final displayPhone = vol.phoneNumber?.isNotEmpty == true ? vol.phoneNumber! : '+919876543210';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -137,8 +123,7 @@ class _ManageBloodRequirementScreenState
                           if (vol.department != null) ...[
                             const SizedBox(height: 2),
                             Text(
-                              '${vol.department?.category ?? ''} ${vol.department?.name ?? ''}'
-                                  .trim(),
+                              '${vol.department?.category ?? ''} ${vol.department?.name ?? ''}'.trim(),
                               style: tt.bodySmall?.copyWith(
                                 color: cs.onSurface.withOpacity(0.6),
                               ),
@@ -199,21 +184,19 @@ class _ManageBloodRequirementScreenState
 
   Widget _buildRequirementCard(
     BuildContext context,
-    BloodRequirement req,
+    BloodDonationRequest req,
     ColorScheme cs,
     TextTheme tt,
   ) {
     Color urgencyBg = Colors.grey.shade100;
     Color urgencyText = Colors.grey.shade800;
-    if (req.urgencyLevel.toLowerCase().contains('urgent')) {
+    final urgencyStr = (req.urgency ?? 'normal').toLowerCase();
+    if (urgencyStr.contains('critical') || urgencyStr.contains('urgent')) {
       urgencyBg = Colors.red.shade50;
       urgencyText = Colors.red.shade700;
-    } else if (req.urgencyLevel.toLowerCase().contains('high')) {
+    } else if (urgencyStr.contains('high')) {
       urgencyBg = Colors.orange.shade50;
       urgencyText = Colors.orange.shade700;
-    } else if (req.urgencyLevel.toLowerCase().contains('medium')) {
-      urgencyBg = Colors.blue.shade50;
-      urgencyText = Colors.blue.shade700;
     }
 
     return Container(
@@ -244,7 +227,7 @@ class _ManageBloodRequirementScreenState
                       radius: 20,
                       backgroundColor: cs.primary.withOpacity(0.1),
                       child: Text(
-                        req.bloodGroup,
+                        req.bloodGroup ?? 'O+',
                         style: tt.titleMedium?.copyWith(
                           color: cs.primary,
                           fontWeight: FontWeight.bold,
@@ -257,7 +240,7 @@ class _ManageBloodRequirementScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            req.patientName,
+                            req.patientName ?? 'Patient',
                             style: tt.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: cs.onSurface,
@@ -274,7 +257,7 @@ class _ManageBloodRequirementScreenState
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  req.hospitalName,
+                                  req.hospital ?? '',
                                   style: tt.bodySmall?.copyWith(
                                     color: cs.onSurface.withOpacity(0.6),
                                   ),
@@ -301,7 +284,7 @@ class _ManageBloodRequirementScreenState
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  req.urgencyLevel,
+                  (req.urgency ?? 'normal').toUpperCase(),
                   style: tt.labelSmall?.copyWith(
                     color: urgencyText,
                     fontWeight: FontWeight.bold,
@@ -327,30 +310,32 @@ class _ManageBloodRequirementScreenState
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          req.contactNumber,
+                          req.contactNumber ?? '',
                           style: tt.bodySmall?.copyWith(
                             color: cs.onSurface.withOpacity(0.7),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 14,
-                          color: cs.onSurface.withOpacity(0.5),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          req.dateTime,
-                          style: tt.bodySmall?.copyWith(
-                            color: cs.onSurface.withOpacity(0.7),
+                    if (req.neededBefore != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 14,
+                            color: cs.onSurface.withOpacity(0.5),
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 6),
+                          Text(
+                            req.neededBefore!,
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -364,21 +349,19 @@ class _ManageBloodRequirementScreenState
                     ),
                     tooltip: 'Share Requirement',
                     onPressed: () {
-                      final shareMessage =
-                          '''
+                      final shareMessage = '''
 🚨 *URGENT BLOOD REQUIREMENT* 🚨
 
 🩸 *Blood Group Needed:* ${req.bloodGroup}
 👤 *Patient Name:* ${req.patientName}
-🏥 *Hospital:* ${req.hospitalName}
+🏥 *Hospital:* ${req.hospital}
 📞 *Contact Number:* ${req.contactNumber}
-⏰ *Needed By:* ${req.dateTime}
-⚡ *Urgency Level:* ${req.urgencyLevel}
+⏰ *Needed By:* ${req.neededBefore ?? 'ASAP'}
+⚡ *Urgency Level:* ${req.urgency}
 
-${req.description.isNotEmpty ? '📝 *Details:* ${req.description}\n' : ''}
+${req.notes?.isNotEmpty == true ? '📝 *Details:* ${req.notes}\n' : ''}
 Please share this message to help find a donor as soon as possible. Thank you!
-'''
-                              .trim();
+'''.trim();
                       Share.share(shareMessage);
                     },
                   ),
@@ -392,20 +375,21 @@ Please share this message to help find a donor as soon as possible. Thank you!
                       Get.to(() => AddBloodRequirementScreen(requirement: req));
                     },
                   ),
-                  IconButton(
-                    icon: Icon(Icons.delete_outline, color: cs.error, size: 20),
-                    onPressed: () {
-                      _showDeleteConfirmation(context, req);
-                    },
-                  ),
+                  if (req.id != null)
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: cs.error, size: 20),
+                      onPressed: () {
+                        _showDeleteConfirmation(context, req);
+                      },
+                    ),
                 ],
               ),
             ],
           ),
-          if (req.description.isNotEmpty) ...[
+          if (req.notes?.isNotEmpty == true) ...[
             const SizedBox(height: 8),
             Text(
-              req.description,
+              req.notes!,
               style: tt.bodyMedium?.copyWith(
                 color: cs.onSurface.withOpacity(0.6),
                 fontStyle: FontStyle.italic,
@@ -419,7 +403,7 @@ Please share this message to help find a donor as soon as possible. Thank you!
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, BloodRequirement req) {
+  void _showDeleteConfirmation(BuildContext context, BloodDonationRequest req) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -434,15 +418,8 @@ Please share this message to help find a donor as soon as possible. Thank you!
           ),
           TextButton(
             onPressed: () {
-              controller.deleteRequirement(req.id);
+              if (req.id != null) controller.deleteRequirement(req.id!);
               Navigator.of(ctx).pop();
-              Get.snackbar(
-                'Deleted',
-                'Requirement deleted successfully',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.red.withOpacity(0.9),
-                colorText: Colors.white,
-              );
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -610,15 +587,6 @@ Please share this message to help find a donor as soon as possible. Thank you!
                                 ? cs.primary
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
-                            boxShadow: _activeTab == 0
-                                ? [
-                                    BoxShadow(
-                                      color: cs.primary.withOpacity(0.2),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
                           ),
                           alignment: Alignment.center,
                           child: Text(
@@ -642,15 +610,6 @@ Please share this message to help find a donor as soon as possible. Thank you!
                                 ? cs.primary
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
-                            boxShadow: _activeTab == 1
-                                ? [
-                                    BoxShadow(
-                                      color: cs.primary.withOpacity(0.2),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : [],
                           ),
                           alignment: Alignment.center,
                           child: Text(
@@ -704,10 +663,15 @@ Please share this message to help find a donor as soon as possible. Thank you!
         const SizedBox(height: 12),
         Expanded(
           child: Obx(() {
+            if (controller.isLoading.value) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
             final query = _searchQuery.toLowerCase().trim();
             final filteredList = controller.requirements.where((req) {
-              return req.patientName.toLowerCase().contains(query) ||
-                  req.hospitalName.toLowerCase().contains(query);
+              final pName = (req.patientName ?? '').toLowerCase();
+              final hName = (req.hospital ?? '').toLowerCase();
+              return pName.contains(query) || hName.contains(query);
             }).toList();
 
             if (filteredList.isEmpty) {
@@ -753,19 +717,20 @@ Please share this message to help find a donor as soon as possible. Thank you!
                 color: cs.primary,
               ),
             ),
-         IconButton(
-  icon: Icon(Icons.sort_rounded, color: cs.primary),
-  onPressed: () {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SortVolunteerBottomSheet(),
-    );
-  },
-),  ],
+            IconButton(
+              icon: Icon(Icons.sort_rounded, color: cs.primary),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  builder: (_) => const SortVolunteerBottomSheet(),
+                );
+              },
+            ),
+          ],
         ),
 
         const SizedBox(height: 12),
@@ -775,7 +740,7 @@ Please share this message to help find a donor as soon as possible. Thank you!
               return const Center(child: CircularProgressIndicator());
             }
 
-            final list = volunteerListController.searchList;
+            final list = volunteerListController.usersList;
 
             if (list.isEmpty) {
               return Center(
@@ -818,71 +783,39 @@ class SortVolunteerBottomSheet extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Sort Volunteers",
+              "Filter & Sort Volunteers",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 20),
-
             const Text(
               "Blood Group",
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-
             Wrap(
               spacing: 8,
-              children: [
-                "A+",
-                "A-",
-                "B+",
-                "B-",
-                "AB+",
-                "AB-",
-                "O+",
-                "O-",
-              ].map((group) {
+              children: controller.bloodGroups.map((group) {
                 return ChoiceChip(
                   label: Text(group),
                   selected: controller.selectedBloodGroup.value == group,
                   onSelected: (_) {
-                    controller.sortByBloodGroup(group);
+                    controller.filterByBloodGroup(group);
                     Get.back();
                   },
                 );
               }).toList(),
             ),
-
             const SizedBox(height: 24),
-
-            const Text(
-              "Location",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-
-            ...controller.locations.map(
-              (location) => ListTile(
-                leading: const Icon(Icons.location_on_outlined),
-                title: Text(location),
-                onTap: () {
-                  controller.sortByLocation(location);
-                  Get.back();
-                },
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () {
-                  controller.clearSort();
+                  controller.clearFilters();
                   Get.back();
                 },
-                child: const Text("Clear Sort"),
+                child: const Text("Clear Filters"),
               ),
             ),
           ],

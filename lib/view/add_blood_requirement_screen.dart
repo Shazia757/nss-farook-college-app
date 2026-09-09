@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/controller/blood_requirement_controller.dart';
+import 'package:nss_new/model/blood_model.dart';
 
 class AddBloodRequirementScreen extends StatefulWidget {
-  final BloodRequirement? requirement;
+  final BloodDonationRequest? requirement;
 
   const AddBloodRequirementScreen({super.key, this.requirement});
 
@@ -21,8 +22,10 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
   late TextEditingController _patientNameController;
   late TextEditingController _bloodGroupController;
   late TextEditingController _hospitalNameController;
+  late TextEditingController _contactPersonController;
   late TextEditingController _contactNumberController;
   late TextEditingController _dateTimeController;
+  late TextEditingController _unitsController;
   late TextEditingController _urgencyLevelController;
   late TextEditingController _descriptionController;
 
@@ -30,23 +33,15 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
   void initState() {
     super.initState();
     final req = widget.requirement;
-    _patientNameController = TextEditingController(
-      text: req?.patientName ?? '',
-    );
+    _patientNameController = TextEditingController(text: req?.patientName ?? '');
     _bloodGroupController = TextEditingController(text: req?.bloodGroup ?? '');
-    _hospitalNameController = TextEditingController(
-      text: req?.hospitalName ?? '',
-    );
-    _contactNumberController = TextEditingController(
-      text: req?.contactNumber ?? '',
-    );
-    _dateTimeController = TextEditingController(text: req?.dateTime ?? '');
-    _urgencyLevelController = TextEditingController(
-      text: req?.urgencyLevel ?? '',
-    );
-    _descriptionController = TextEditingController(
-      text: req?.description ?? '',
-    );
+    _hospitalNameController = TextEditingController(text: req?.hospital ?? '');
+    _contactPersonController = TextEditingController(text: req?.contactPerson ?? '');
+    _contactNumberController = TextEditingController(text: req?.contactNumber ?? '');
+    _dateTimeController = TextEditingController(text: req?.neededBefore ?? '');
+    _unitsController = TextEditingController(text: (req?.unitsRequired ?? 1).toString());
+    _urgencyLevelController = TextEditingController(text: req?.urgency ?? 'normal');
+    _descriptionController = TextEditingController(text: req?.notes ?? '');
   }
 
   @override
@@ -54,8 +49,10 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
     _patientNameController.dispose();
     _bloodGroupController.dispose();
     _hospitalNameController.dispose();
+    _contactPersonController.dispose();
     _contactNumberController.dispose();
     _dateTimeController.dispose();
+    _unitsController.dispose();
     _urgencyLevelController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -71,55 +68,40 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
     if (date == null) return;
 
     if (!mounted) return;
-    final TimeOfDay? time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (time == null) return;
-
     final formattedDate =
         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    final formattedTime =
-        "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}";
     setState(() {
-      _dateTimeController.text = "$formattedDate $formattedTime";
+      _dateTimeController.text = formattedDate;
     });
   }
 
-  void _saveRequirement() {
+  void _saveRequirement() async {
     if (_formKey.currentState!.validate()) {
       final req = widget.requirement;
-      final newReq = BloodRequirement(
-        id: req?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        patientName: _patientNameController.text.trim(),
-        bloodGroup: _bloodGroupController.text.trim(),
-        hospitalName: _hospitalNameController.text.trim(),
-        contactNumber: _contactNumberController.text.trim(),
-        dateTime: _dateTimeController.text.trim(),
-        urgencyLevel: _urgencyLevelController.text.trim(),
-        description: _descriptionController.text.trim(),
-      );
+      final map = <String, dynamic>{
+        'patient_name': _patientNameController.text.trim(),
+        'blood_group': _bloodGroupController.text.trim().toUpperCase(),
+        'hospital': _hospitalNameController.text.trim(),
+        'contact_person': _contactPersonController.text.trim().isNotEmpty
+            ? _contactPersonController.text.trim()
+            : _patientNameController.text.trim(),
+        'contact_number': _contactNumberController.text.trim(),
+        'required_date': _dateTimeController.text.trim(),
+        'units_required': int.tryParse(_unitsController.text) ?? 1,
+        'urgency': _urgencyLevelController.text.trim().toLowerCase(),
+        'notes': _descriptionController.text.trim(),
+      };
 
+      bool success = false;
       if (req == null) {
-        controller.addRequirement(newReq);
-        Get.back();
-        Get.snackbar(
-          'Success',
-          'Blood requirement added successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withOpacity(0.9),
-          colorText: Colors.white,
-        );
+        success = await controller.addRequirement(map);
       } else {
-        controller.updateRequirement(req.id, newReq);
+        map['id'] = req.id;
+        success = await controller.updateRequirement(map);
+      }
+
+      if (success) {
         Get.back();
-        Get.snackbar(
-          'Success',
-          'Blood requirement updated successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green.withOpacity(0.9),
-          colorText: Colors.white,
-        );
       }
     }
   }
@@ -149,28 +131,25 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                   children: [
                     GestureDetector(
                       onTap: () => Get.back(),
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.arrow_back,
-                                size: 18,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_back,
+                              size: 18,
+                              color: cs.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Back to requirements list',
+                              style: tt.bodyMedium?.copyWith(
                                 color: cs.primary,
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Back to requirements list',
-                                style: tt.bodyMedium?.copyWith(
-                                  color: cs.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -198,7 +177,7 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                           Text(
                             isEditMode
                                 ? 'Update emergency blood requisition'
-                                : 'Create a new emergency blood requisiton',
+                                : 'Create a new emergency blood requisition',
                             style: tt.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: cs.primary,
@@ -225,11 +204,11 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                ? "Please enter patient name"
-                                : null,
+                                    ? "Please enter patient name"
+                                    : null,
                           ),
 
-                          CustomWidgets().buildLabel(context, "Blood group"),
+                          CustomWidgets().buildLabel(context, "Blood Group"),
                           TextFormField(
                             controller: _bloodGroupController,
                             style: TextStyle(color: cs.onSurface),
@@ -239,8 +218,19 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                ? "Please enter blood group"
-                                : null,
+                                    ? "Please enter blood group"
+                                    : null,
+                          ),
+
+                          CustomWidgets().buildLabel(context, "Units Required"),
+                          TextFormField(
+                            controller: _unitsController,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(color: cs.onSurface),
+                            decoration: CustomWidgets().buildInputDecoration(
+                              context,
+                              "Number of units (e.g. 1, 2)",
+                            ),
                           ),
 
                           CustomWidgets().buildLabel(context, "Hospital Name"),
@@ -253,11 +243,21 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                ? "Please enter hospital name"
-                                : null,
+                                    ? "Please enter hospital name"
+                                    : null,
                           ),
 
-                          CustomWidgets().buildLabel(context, "Contact number"),
+                          CustomWidgets().buildLabel(context, "Contact Person"),
+                          TextFormField(
+                            controller: _contactPersonController,
+                            style: TextStyle(color: cs.onSurface),
+                            decoration: CustomWidgets().buildInputDecoration(
+                              context,
+                              "Contact person name",
+                            ),
+                          ),
+
+                          CustomWidgets().buildLabel(context, "Contact Number"),
                           TextFormField(
                             controller: _contactNumberController,
                             keyboardType: TextInputType.phone,
@@ -268,13 +268,13 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                ? "Please enter contact number"
-                                : null,
+                                    ? "Please enter contact number"
+                                    : null,
                           ),
 
                           CustomWidgets().buildLabel(
                             context,
-                            "Requirement Date & Time",
+                            "Required Date",
                           ),
                           TextFormField(
                             controller: _dateTimeController,
@@ -283,7 +283,7 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             style: TextStyle(color: cs.onSurface),
                             decoration: CustomWidgets().buildInputDecoration(
                               context,
-                              "Tap to select date & time",
+                              "Tap to select date",
                               suffixIcon: Icon(
                                 Icons.calendar_today,
                                 color: cs.primary,
@@ -291,25 +291,27 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                ? "Please select date & time"
-                                : null,
+                                    ? "Please select date"
+                                    : null,
                           ),
 
-                          CustomWidgets().buildLabel(context, "Urgency level"),
-                          TextFormField(
-                            controller: _urgencyLevelController,
-                            style: TextStyle(color: cs.onSurface),
-                            decoration: CustomWidgets().buildInputDecoration(
-                              context,
-                              "e.g., Urgent, High, Medium, Low",
-                            ),
-                            validator: (val) =>
-                                val == null || val.trim().isEmpty
-                                ? "Please enter urgency level"
-                                : null,
+                          CustomWidgets().buildLabel(context, "Urgency Level"),
+                          DropdownButtonFormField<String>(
+                            value: ['normal', 'urgent', 'critical'].contains(_urgencyLevelController.text.toLowerCase())
+                                ? _urgencyLevelController.text.toLowerCase()
+                                : 'normal',
+                            decoration: CustomWidgets().buildInputDecoration(context, "Select urgency"),
+                            items: const [
+                              DropdownMenuItem(value: 'normal', child: Text('Normal')),
+                              DropdownMenuItem(value: 'urgent', child: Text('Urgent')),
+                              DropdownMenuItem(value: 'critical', child: Text('Critical')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) _urgencyLevelController.text = val;
+                            },
                           ),
 
-                          CustomWidgets().buildLabel(context, "Description"),
+                          CustomWidgets().buildLabel(context, "Notes / Description"),
                           TextFormField(
                             controller: _descriptionController,
                             maxLines: 3,
@@ -318,10 +320,6 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                               context,
                               "Provide additional details",
                             ),
-                            validator: (val) =>
-                                val == null || val.trim().isEmpty
-                                ? "Please enter description"
-                                : null,
                           ),
 
                           const SizedBox(height: 32),
@@ -345,8 +343,8 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _saveRequirement,
+                                child: Obx(() => ElevatedButton(
+                                  onPressed: controller.isLoading.value ? null : _saveRequirement,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: cs.primary,
                                     foregroundColor: Colors.white,
@@ -358,8 +356,14 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                                     ),
                                     elevation: 0,
                                   ),
-                                  child: const Text('save requirement'),
-                                ),
+                                  child: controller.isLoading.value
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                        )
+                                      : Text(isEditMode ? 'Update Requirement' : 'Save Requirement'),
+                                )),
                               ),
                             ],
                           ),

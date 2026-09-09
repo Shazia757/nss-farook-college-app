@@ -21,8 +21,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
   String? _selectedYear;
   DateTime? _selectedDOB;
 
-  final List<String> _years = ['1st Year', '2nd Year', '3rd Year'];
-
+  final List<String> _years = ['2023', '2024', '2025', '2026'];
   final List<String> _castes = [
     'General',
     'OBC',
@@ -31,8 +30,17 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     'ST',
     'Others',
   ];
-
-  final List<String> _genders = ['Male', 'Female', 'Other'];
+  final List<String> _genders = ['M', 'F', 'O'];
+  final List<String> _bloodGroups = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-',
+  ];
 
   @override
   void initState() {
@@ -57,7 +65,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
   }
 
   String _formatDOB(DateTime date) {
-    return DateFormat.yMMMd().format(date);
+    return DateFormat('yyyy-MM-dd').format(date);
   }
 
   Future<void> _selectDOB(BuildContext context) async {
@@ -66,24 +74,12 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
       initialDate: _selectedDOB ?? DateTime(2005, 1, 1),
       firstDate: DateTime(1980),
       lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-              onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null && picked != _selectedDOB) {
       setState(() {
         _selectedDOB = picked;
         c.dob = picked;
-        c.dobController.text = DateFormat.yMMMd().format(picked);
+        c.dobController.text = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
   }
@@ -124,37 +120,28 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back to Volunteer List Row
                     GestureDetector(
                       onTap: () => Get.back(),
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.arrow_back,
-                                size: 18,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.arrow_back, size: 18, color: cs.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Back to volunteer list',
+                              style: tt.bodyMedium?.copyWith(
                                 color: cs.primary,
+                                fontWeight: FontWeight.w600,
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Back to volunteer list',
-                                style: tt.bodyMedium?.copyWith(
-                                  color: cs.primary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    // Solid Form Card containing Header, Title, Fields, and Save/Cancel
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -175,7 +162,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Title & Subtitle
                           Text(
                             isEditMode ? 'Edit Volunteer' : 'Add Volunteer',
                             style: tt.headlineSmall?.copyWith(
@@ -194,7 +180,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           ),
                           const SizedBox(height: 24),
 
-                          // Full Name
                           CustomWidgets().buildLabel(context, "Full Name"),
                           TextFormField(
                             controller: c.nameController,
@@ -205,7 +190,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             ),
                           ),
 
-                          // Admission Number
                           CustomWidgets().buildLabel(
                             context,
                             "Admission Number",
@@ -224,7 +208,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             ),
                           ),
 
-                          // Email Address
                           CustomWidgets().buildLabel(context, "Email Address"),
                           TextFormField(
                             controller: c.emailController,
@@ -236,7 +219,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             ),
                           ),
 
-                          // Phone Number
                           CustomWidgets().buildLabel(context, "Phone Number"),
                           TextFormField(
                             controller: c.phoneController,
@@ -248,7 +230,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             ),
                           ),
 
-                          // Program of Study
                           CustomWidgets().buildLabel(
                             context,
                             "Program of Study",
@@ -267,13 +248,12 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             label: "Department",
                           ),
 
-                          // Year of Study
-                          CustomWidgets().buildLabel(context, "Year of Study"),
+                          CustomWidgets().buildLabel(context, "Batch Year"),
                           DropdownButtonFormField<String>(
                             value: _selectedYear,
                             decoration: CustomWidgets().buildInputDecoration(
                               context,
-                              'Select Year',
+                              'Select Batch Year',
                             ),
                             items: _buildDropdownItems(_years, _selectedYear),
                             style: TextStyle(color: cs.onSurface, fontSize: 15),
@@ -287,7 +267,31 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             },
                           ),
 
-                          // Date of Birth
+                          CustomWidgets().buildLabel(context, "Blood Group"),
+                          Obx(
+                            () => DropdownButtonFormField<String>(
+                              value: c.selectedBloodGroup.value,
+                              decoration: CustomWidgets().buildInputDecoration(
+                                context,
+                                'Select Blood Group',
+                              ),
+                              items: _buildDropdownItems(
+                                _bloodGroups,
+                                c.selectedBloodGroup.value,
+                              ),
+                              style: TextStyle(
+                                color: cs.onSurface,
+                                fontSize: 15,
+                              ),
+                              dropdownColor: cs.onPrimary,
+                              borderRadius: BorderRadius.circular(12),
+                              onChanged: (val) {
+                                c.selectedBloodGroup.value = val;
+                                c.bloodGroup.value = val ?? '';
+                              },
+                            ),
+                          ),
+
                           CustomWidgets().buildLabel(context, "Date of Birth"),
                           InkWell(
                             onTap: () => _selectDOB(context),
@@ -328,7 +332,32 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             ),
                           ),
 
-                          // Caste
+                          CustomWidgets().buildLabel(context, "Gender"),
+                          Obx(
+                            () => DropdownButtonFormField<String>(
+                              value: c.selectedGender.value,
+                              decoration: CustomWidgets().buildInputDecoration(
+                                context,
+                                'Select Gender',
+                              ),
+                              items: _buildDropdownItems(
+                                _genders,
+                                c.selectedGender.value,
+                              ),
+                              style: TextStyle(
+                                color: cs.onSurface,
+                                fontSize: 15,
+                              ),
+                              dropdownColor: cs.onPrimary,
+                              borderRadius: BorderRadius.circular(12),
+                              onChanged: (val) {
+                                setState(() {
+                                  c.selectedGender.value = val;
+                                  c.genderController.text = val ?? '';
+                                });
+                              },
+                            ),
+                          ),
                           CustomWidgets().buildLabel(context, "Caste"),
                           Obx(
                             () => DropdownButtonFormField<String>(
@@ -356,33 +385,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             ),
                           ),
 
-                          // Gender
-                          CustomWidgets().buildLabel(context, "Gender"),
-                          Obx(
-                            () => DropdownButtonFormField<String>(
-                              value: c.selectedGender.value,
-                              decoration: CustomWidgets().buildInputDecoration(
-                                context,
-                                'Select Gender',
-                              ),
-                              items: _buildDropdownItems(
-                                _genders,
-                                c.selectedGender.value,
-                              ),
-                              style: TextStyle(
-                                color: cs.onSurface,
-                                fontSize: 15,
-                              ),
-                              dropdownColor: cs.onPrimary,
-                              borderRadius: BorderRadius.circular(12),
-                              onChanged: (val) {
-                                setState(() {
-                                  c.selectedGender.value = val;
-                                  c.genderController.text = val ?? '';
-                                });
-                              },
-                            ),
-                          ),
                           if ((isEditMode) &&
                               (LocalStorage().readUser().role == 'po'))
                             Row(
@@ -407,7 +409,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
 
                           const SizedBox(height: 32),
 
-                          // Cancel & Save Buttons Row
                           Row(
                             children: [
                               Expanded(
@@ -436,60 +437,57 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                                 child: ElevatedButton(
                                   onPressed: () {
                                     if (c.onSubmitVolValidation()) {
-                                      (isEditMode)
-                                          ? CustomWidgets().showConfirmationDialog(
-                                              title: "Update Volunteer",
-                                              message:
-                                                  "Are you sure you want to update the details?",
-                                              onConfirm: () =>
-                                                  c.updateVolunteer(),
-                                              data: Obx(
-                                                () =>
-                                                    c
-                                                        .isUpdateButtonLoading
-                                                        .value
-                                                    ? const SizedBox(
-                                                        width: 18,
-                                                        height: 18,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                              strokeWidth: 2,
-                                                            ),
-                                                      )
-                                                    : const Text(
-                                                        "Confirm",
-                                                        style: TextStyle(
+                                      if (isEditMode) {
+                                        CustomWidgets().showConfirmationDialog(
+                                          title: "Update Volunteer",
+                                          message:
+                                              "Are you sure you want to update the volunteer details?",
+                                          onConfirm: () => c.updateVolunteer(),
+                                          data: Obx(
+                                            () => c.isUpdateButtonLoading.value
+                                                ? const SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
                                                           color: Colors.red,
                                                         ),
-                                                      ),
-                                              ),
-                                            )
-                                          : CustomWidgets().showConfirmationDialog(
-                                              title: "Add Volunteer",
-                                              message:
-                                                  "Are you sure you want to add new volunteer?",
-                                              onConfirm: () => c.addVolunteer(),
-                                              data: Obx(
-                                                () =>
-                                                    c
-                                                        .isUpdateButtonLoading
-                                                        .value
-                                                    ? const SizedBox(
-                                                        width: 18,
-                                                        height: 18,
-                                                        child:
-                                                            CircularProgressIndicator(
-                                                              strokeWidth: 2,
-                                                            ),
-                                                      )
-                                                    : const Text(
-                                                        "Confirm",
-                                                        style: TextStyle(
+                                                  )
+                                                : const Text(
+                                                    "Confirm",
+                                                    style: TextStyle(
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                          ),
+                                        );
+                                      } else {
+                                        CustomWidgets().showConfirmationDialog(
+                                          title: "Add Volunteer",
+                                          message:
+                                              "Are you sure you want to add this volunteer?",
+                                          onConfirm: () => c.addVolunteer(),
+                                          data: Obx(
+                                            () => c.isUpdateButtonLoading.value
+                                                ? const SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
                                                           color: Colors.red,
                                                         ),
-                                                      ),
-                                              ),
-                                            );
+                                                  )
+                                                : const Text(
+                                                    "Confirm",
+                                                    style: TextStyle(
+                                                      color: Colors.red,
+                                                    ),
+                                                  ),
+                                          ),
+                                        );
+                                      }
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(

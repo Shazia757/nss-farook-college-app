@@ -8,6 +8,7 @@ class Issues {
   String? subject;
   String? description;
   Volunteer? createdBy;
+  String? createdByName;
   String? updatedBy;
   bool? isOpen;
 
@@ -15,6 +16,7 @@ class Issues {
     this.to,
     this.createdDate,
     this.createdBy,
+    this.createdByName,
     this.subject,
     this.description,
     this.updatedBy,
@@ -24,18 +26,26 @@ class Issues {
   });
 
   factory Issues.fromJson(Map<String, dynamic> data) {
+    Volunteer? vol;
+    String? volName;
+    if (data['created_by'] is Map<String, dynamic>) {
+      vol = Volunteer.fromJson(data['created_by']);
+      volName = vol.name;
+    } else if (data['created_by'] != null) {
+      volName = data['created_by'].toString();
+    }
+
     return Issues(
-      to: data['assigned_to'],
-      createdDate: DateTime.tryParse(data['created_at'] ?? ''),
-      updatedDate: DateTime.tryParse(data['updated_at'] ?? ''),
-      subject: data['subject'],
-      description: data['description'],
-      createdBy: data['created_by'] != null
-          ? Volunteer.fromJson(data['created_by'])
-          : null,
-      id: data['id'],
-      updatedBy: data['updated_by'],
-      isOpen: data['is_open'] as bool?,
+      to: data['assigned_to']?.toString(),
+      createdDate: data['created_at'] != null ? DateTime.tryParse(data['created_at'].toString()) : null,
+      updatedDate: data['updated_at'] != null ? DateTime.tryParse(data['updated_at'].toString()) : null,
+      subject: data['subject']?.toString(),
+      description: data['description']?.toString(),
+      createdBy: vol,
+      createdByName: volName,
+      id: data['id'] is int ? data['id'] as int : int.tryParse(data['id']?.toString() ?? ''),
+      updatedBy: data['updated_by']?.toString(),
+      isOpen: data['is_open'] is bool ? data['is_open'] as bool : true,
     );
   }
 
@@ -48,7 +58,7 @@ class Issues {
       'description': description,
       'id': id,
       'updated_by': updatedBy,
-      'created_by': createdBy?.toJson(),
+      'created_by': createdBy?.toJson() ?? createdByName,
       'is_open': isOpen,
     };
   }
@@ -67,17 +77,27 @@ class IssueResponse {
     this.closedIssues,
   });
 
-  factory IssueResponse.fromJson(Map<String, dynamic> json) {
-    return IssueResponse(
-      status: json['status'] as bool?,
-      message: json['message'] as String?,
-      openIssues: (json['open_issues'] as List<dynamic>?)
-          ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      closedIssues: (json['closed_issues'] as List<dynamic>?)
-          ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
+  factory IssueResponse.fromJson(dynamic json) {
+    if (json is List) {
+      final list = json.map((e) => Issues.fromJson(e as Map<String, dynamic>)).toList();
+      return IssueResponse(
+        status: true,
+        openIssues: list.where((i) => i.isOpen == true).toList(),
+        closedIssues: list.where((i) => i.isOpen == false).toList(),
+      );
+    } else if (json is Map<String, dynamic>) {
+      return IssueResponse(
+        status: json['status'] as bool? ?? true,
+        message: json['message'] as String?,
+        openIssues: (json['open_issues'] as List<dynamic>?)
+            ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
+            .toList() ?? [],
+        closedIssues: (json['closed_issues'] as List<dynamic>?)
+            ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
+            .toList() ?? [],
+      );
+    }
+    return IssueResponse(status: false, openIssues: [], closedIssues: []);
   }
 
   Map<String, dynamic> toJson() {
@@ -87,10 +107,5 @@ class IssueResponse {
       'open_issues': openIssues?.map((e) => e.toJson()).toList(),
       'closed_issues': closedIssues?.map((e) => e.toJson()).toList(),
     };
-  }
-
-  @override
-  String toString() {
-    return '$openIssues';
   }
 }

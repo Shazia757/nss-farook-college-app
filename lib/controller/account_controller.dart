@@ -32,8 +32,8 @@ class AccountController extends GetxController {
   @override
   onInit() {
     if (kDebugMode) {
-      userNameController.text = '2780';
-      passwordController.text = 'pass123';
+      userNameController.text = '2781';
+      passwordController.text = '27812006';
     }
 
     super.onInit();
@@ -185,7 +185,6 @@ class AccountController extends GetxController {
   }
 
   void logout() {
-    log('Logging out');
     isLoading.value = true;
     api.logout().then((value) {
       isLoading.value = false;

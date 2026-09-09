@@ -668,7 +668,7 @@ class ReportedIssuesScreen extends StatelessWidget {
             children: [
               _buildDialogDetailRow(
                 'Status',
-                issue.updatedBy != null ? 'Resolved' : 'Pending',
+                issue.isOpen ?? true ? 'Pending' : 'Resolved',
                 isStatus: true,
               ),
               const SizedBox(height: 8),
@@ -688,7 +688,7 @@ class ReportedIssuesScreen extends StatelessWidget {
                 'Reported To',
                 issue.to == 'sec' ? 'Secretary' : 'Program Officer',
               ),
-              if (issue.updatedBy != null) ...[
+              if (issue.updatedBy != null && issue.isOpen == false) ...[
                 const SizedBox(height: 4),
                 _buildDialogDetailRow('Resolved On', resDateStr),
               ],

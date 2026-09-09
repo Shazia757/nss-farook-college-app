@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/issues_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
-import 'package:nss_new/common_pages/custom_decorations.dart';
 
 class IssuesController extends GetxController with GetTickerProviderStateMixin {
+  final Api _api = Api();
+
   final TextEditingController subjectController = TextEditingController();
   final TextEditingController desController = TextEditingController();
   final TextEditingController toController = TextEditingController();
@@ -31,13 +33,12 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
 
   void filterByRole(String assignedTo) {
     reportedTo.value = assignedTo;
-
     _openFilteredTo();
     _closedFilteredTo();
   }
 
   void _openFilteredTo() {
-    if (reportedTo.value == "all") {
+    if (reportedTo.value == "all" || reportedTo.value == "both") {
       modifiedOpenedList.assignAll(openedList);
     } else {
       modifiedOpenedList.assignAll(
@@ -47,7 +48,7 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void _closedFilteredTo() {
-    if (reportedTo.value == "all") {
+    if (reportedTo.value == "all" || reportedTo.value == "both") {
       modifiedClosedList.assignAll(closedList);
     } else {
       modifiedClosedList.assignAll(
@@ -70,23 +71,19 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void _sortOpenedList() {
-    (sortByOldest.isTrue)
-        ? modifiedOpenedList.sort(
-            (a, b) => a.createdDate!.compareTo(b.createdDate!),
-          )
-        : modifiedOpenedList.sort(
-            (a, b) => b.createdDate!.compareTo(a.createdDate!),
-          );
+    if (sortByOldest.isTrue) {
+      modifiedOpenedList.sort((a, b) => (a.createdDate ?? DateTime.now()).compareTo(b.createdDate ?? DateTime.now()));
+    } else {
+      modifiedOpenedList.sort((a, b) => (b.createdDate ?? DateTime.now()).compareTo(a.createdDate ?? DateTime.now()));
+    }
   }
 
   void _sortClosedList() {
-    (sortByOldest.isTrue)
-        ? modifiedClosedList.sort(
-            (a, b) => a.createdDate!.compareTo(b.createdDate!),
-          )
-        : modifiedClosedList.sort(
-            (a, b) => b.createdDate!.compareTo(a.createdDate!),
-          );
+    if (sortByOldest.isTrue) {
+      modifiedClosedList.sort((a, b) => (a.createdDate ?? DateTime.now()).compareTo(b.createdDate ?? DateTime.now()));
+    } else {
+      modifiedClosedList.sort((a, b) => (b.createdDate ?? DateTime.now()).compareTo(a.createdDate ?? DateTime.now()));
+    }
   }
 
   @override
@@ -94,58 +91,51 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
     tabController = TabController(length: 2, vsync: this);
     adminTabController = TabController(length: 2, vsync: this);
     getAdmins();
-    (LocalStorage().readUser().role != 'vol')
-        ? getAdminIssues()
-        : getVolIssues(LocalStorage().readUser().admissionNo ?? '');
-
+    fetchIssues();
     super.onInit();
   }
 
-  getAdmins() {
-    Api().getAdmins().then((value) => adminList.assignAll(value?.data ?? []));
+  void fetchIssues() {
+    final user = LocalStorage().readUser();
+    if (user.role != 'vol') {
+      getAdminIssues();
+    } else {
+      getVolIssues(user.admissionNo ?? '');
+    }
   }
 
-  getAdminIssues() {
-    isLoading.value = true;
-    Api().getAdminIssues().then((value) {
-      openedList = value?.openIssues ?? [];
-      closedList = value?.closedIssues ?? [];
-      modifiedOpenedList.assignAll(openedList);
-      modifiedClosedList.assignAll(closedList);
-      modifiedOpenedList.sort(
-        (a, b) => b.createdDate!.compareTo(a.createdDate!),
-      );
-      modifiedClosedList.sort(
-        (a, b) => b.createdDate!.compareTo(a.createdDate!),
-      );
-
-      isLoading.value = false;
-    });
+  void getAdmins() {
+    _api.getAdmins().then((value) => adminList.assignAll(value?.data ?? []));
   }
 
-  void getVolIssues(String admissionNo) {
+  Future<void> getAdminIssues() async {
     isLoading.value = true;
+    final value = await _api.getAdminIssues();
+    openedList = value?.openIssues ?? [];
+    closedList = value?.closedIssues ?? [];
+    modifiedOpenedList.assignAll(openedList);
+    modifiedClosedList.assignAll(closedList);
+    _sortOpenedList();
+    _sortClosedList();
+    isLoading.value = false;
+  }
 
-    Api().getVolIssues(admissionNo).then((value) {
-      openedList = value?.openIssues ?? [];
-      closedList = value?.closedIssues ?? [];
-      modifiedOpenedList.assignAll(openedList);
-
-      modifiedClosedList.assignAll(closedList);
-      modifiedOpenedList.sort(
-        (a, b) => b.createdDate!.compareTo(a.createdDate!),
-      );
-      modifiedClosedList.sort(
-        (a, b) => b.createdDate!.compareTo(a.createdDate!),
-      );
-
-      isLoading.value = false;
-    });
+  Future<void> getVolIssues(String admissionNo) async {
+    isLoading.value = true;
+    final value = await _api.getVolIssues(admissionNo);
+    openedList = value?.openIssues ?? [];
+    closedList = value?.closedIssues ?? [];
+    modifiedOpenedList.assignAll(openedList);
+    modifiedClosedList.assignAll(closedList);
+    _sortOpenedList();
+    _sortClosedList();
+    isLoading.value = false;
   }
 
   void reportIssue() {
+    if (!onSubmitIssueValidation()) return;
     isReportLoading.value = true;
-    Api()
+    _api
         .addIssue({
           'subject': subjectController.text,
           'description': desController.text,
@@ -157,43 +147,56 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
           if (value?.status ?? false) {
             subjectController.clear();
             desController.clear();
-
             CustomWidgets.showSnackBar(
               "Success",
               value?.message ?? "Issue reported successfully",
             );
+            fetchIssues();
           } else {
             CustomWidgets.showSnackBar(
               "Error",
               value?.message ?? 'Failed to report issue.',
             );
           }
-        })
-        .then((value) => onInit());
+        });
   }
 
   void resolveIssue(int? id) {
-    isLoading.value = true;
-    Api()
+    if (id == null) return;
+    isResolveLoading.value = true;
+    _api
         .resolveIssue({'id': id})
         .then((value) {
-          isLoading.value = false;
-          Get.back();
+          isResolveLoading.value = false;
           if (value?.status ?? false) {
             Get.back();
-
             CustomWidgets.showSnackBar(
               "Success",
               value?.message ?? "Issue resolved successfully.",
             );
+            fetchIssues();
           } else {
             CustomWidgets.showSnackBar(
               'Error',
               value?.message ?? 'Failed to resolve issue.',
             );
           }
-        })
-        .then((value) => onInit());
+        });
+  }
+
+  void deleteIssue(int? id) {
+    if (id == null) return;
+    isLoading.value = true;
+    _api.deleteIssue(id).then((value) {
+      isLoading.value = false;
+      if (value?.status ?? false) {
+        Get.back();
+        CustomWidgets.showSnackBar("Success", value?.message ?? "Issue deleted successfully.");
+        fetchIssues();
+      } else {
+        CustomWidgets.showSnackBar("Error", value?.message ?? "Failed to delete issue.");
+      }
+    });
   }
 
   bool onSubmitIssueValidation() {
@@ -201,7 +204,6 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
       CustomWidgets.showSnackBar('Invalid', 'Please enter subject');
       return false;
     }
-
     if (desController.text.isEmpty) {
       CustomWidgets.showSnackBar('Invalid', 'Please add description');
       return false;

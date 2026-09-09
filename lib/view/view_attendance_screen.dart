@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/common_pages/navbar.dart';
 import 'package:nss_new/controller/attendance_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/user_model.dart';
+import 'package:nss_new/model/attendance_model.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/view/home_screen.dart';
 
 class AttendanceScreen extends StatefulWidget {
@@ -261,8 +264,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                               final dateStr = record.date != null
                                   ? DateFormat.yMMMd().format(record.date!)
                                   : 'N/A';
+                              final admissionNo = widget.volunteer != null
+                                  ? widget.volunteer!.admissionNo ?? ''
+                                  : LocalStorage().readUser().admissionNo ?? '';
                               return _buildHistoryCard(
                                 context: context,
+                                record: record,
                                 title: record.name ?? '',
                                 markedBy: record.markedBy != null
                                     ? 'Marked by: ${record.markedBy}'
@@ -271,6 +278,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                                 hours: record.hours?.toString() ?? '0',
                                 cs: cs,
                                 tt: tt,
+                                admissionNo: admissionNo,
                               );
                             },
                           ),
@@ -379,14 +387,17 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   Widget _buildHistoryCard({
     required BuildContext context,
+    required Attendance record,
     required String title,
     required String markedBy,
     required String date,
     required String hours,
     required ColorScheme cs,
     required TextTheme tt,
+    required String admissionNo,
   }) {
     final role = LocalStorage().readUser().role;
+    final isStaffOrSec = role == 'sec' || role == 'po' || role != 'vol';
     final parts = date.split(' ');
     String month = 'NSS';
     String day = '--';
@@ -401,101 +412,384 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       day = parts[1].replaceAll(',', '');
     }
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: cs.onPrimary,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onLongPress: isStaffOrSec
+            ? () {
+                _showAttendanceOptionsBottomSheet(context, record, admissionNo);
+              }
+            : null,
+        onTap: isStaffOrSec
+            ? () {
+                _showAttendanceOptionsBottomSheet(context, record, admissionNo);
+              }
+            : null,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outline.withOpacity(0.6)),
-      ),
-      child: Row(
-        children: [
-          // Date block on Left
-          Container(
-            width: 54,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  day,
-                  style: tt.titleLarge?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
-                    height: 1.1,
-                  ),
-                ),
-                Text(
-                  month,
-                  style: tt.labelSmall?.copyWith(
-                    color: cs.primary.withOpacity(0.8),
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
-            ),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: cs.onPrimary,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: cs.outline.withOpacity(0.6)),
           ),
-          const SizedBox(width: 14),
-
-          // Title and Location on Right
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurface,
-                  ),
+          child: Row(
+            children: [
+              // Date block on Left
+              Container(
+                width: 54,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: cs.primary.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 4),
-                Row(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.badge_outlined,
-                      size: 14,
-                      color: cs.onSurface.withOpacity(0.5),
+                    Text(
+                      day,
+                      style: tt.titleLarge?.copyWith(
+                        color: cs.primary,
+                        fontWeight: FontWeight.bold,
+                        height: 1.1,
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        markedBy,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodySmall?.copyWith(
-                          color: cs.onSurface.withOpacity(0.6),
-                        ),
+                    Text(
+                      month,
+                      style: tt.labelSmall?.copyWith(
+                        color: cs.primary.withOpacity(0.8),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (role != 'vol')
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: cs.secondary.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                '+$hours hrs',
-                style: tt.labelMedium?.copyWith(
-                  color: cs.secondary,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 14),
+
+              // Title and Location on Right
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.badge_outlined,
+                          size: 14,
+                          color: cs.onSurface.withOpacity(0.5),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            markedBy,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurface.withOpacity(0.6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 8),
+              if (role != 'vol') ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.secondary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '+$hours hrs',
+                    style: tt.labelMedium?.copyWith(
+                      color: cs.secondary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.more_vert,
+                  size: 18,
+                  color: cs.onSurface.withOpacity(0.4),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAttendanceOptionsBottomSheet(
+    BuildContext context,
+    Attendance record,
+    String admissionNo,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: cs.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: cs.onSurface.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              Text(
+                record.name ?? 'Attendance Record',
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Current Hours: ${record.hours ?? 0} hrs • ${record.markedBy != null ? "Marked by ${record.markedBy}" : "Recorded"}',
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurface.withOpacity(0.6),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.edit_outlined, color: cs.primary),
+                ),
+                title: const Text(
+                  'Update Attendance Hours',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text(
+                  'Modify the recorded hours for this program',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showUpdateHoursDialog(context, record, admissionNo);
+                },
+              ),
+              const Divider(height: 16),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.delete_outline, color: Colors.red),
+                ),
+                title: const Text(
+                  'Delete Attendance',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Remove this attendance entry permanently',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmationDialog(context, record, admissionNo);
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showUpdateHoursDialog(
+    BuildContext context,
+    Attendance record,
+    String admissionNo,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    final hoursTextController = TextEditingController(
+      text: (record.hours ?? 0).toString(),
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Update Attendance"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Program: ${record.name ?? 'N/A'}",
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: hoursTextController,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: "Hours",
+                hintText: "Enter updated duration in hours",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                prefixIcon: const Icon(Icons.hourglass_bottom_outlined),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Cancel",
+              style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newHours = int.tryParse(hoursTextController.text.trim());
+              if (newHours == null || newHours < 0) {
+                CustomWidgets.showSnackBar(
+                  'Invalid Input',
+                  'Please enter a valid number of hours',
+                );
+                return;
+              }
+              if (record.id == null) {
+                CustomWidgets.showSnackBar(
+                  'Error',
+                  'Invalid attendance record ID',
+                );
+                return;
+              }
+              controller.updateAttendanceRecord(
+                record.id!,
+                newHours,
+                admissionNo,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: cs.primary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Obx(
+              () => controller.isLoading.value
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text("Update", style: TextStyle(color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(
+    BuildContext context,
+    Attendance record,
+    String admissionNo,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Delete Attendance"),
+        content: Text(
+          "Are you sure you want to delete attendance for \"${record.name ?? 'this program'}\"?",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              "Cancel",
+              style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (record.id == null) {
+                CustomWidgets.showSnackBar(
+                  'Error',
+                  'Invalid attendance record ID',
+                );
+                return;
+              }
+              controller.deleteAttendance(
+                record.id!,
+                volunteerAdmn: admissionNo,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Obx(
+              () => controller.isDeleteButtonLoading.value
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text("Delete", style: TextStyle(color: Colors.white)),
+            ),
+          ),
         ],
       ),
     );

@@ -5,6 +5,7 @@ import 'package:nss_new/common_pages/no_connection_page.dart';
 import 'package:nss_new/common_pages/splash_screen.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/view/authentication/token_expired_screen.dart';
+import 'package:nss_new/config/urls.dart';
 
 bool checkValidations(String response) {
   if (response.contains('Invalid token')) {
@@ -26,12 +27,16 @@ checkConnectivity() async {
   }
 }
 
-Future<Map<String, String>?> getHeader() async {
+Future<Map<String, String>> getHeader() async {
+  String token = await LocalStorage().readToken() ?? '';
+  if (token.isNotEmpty && !token.startsWith('Bearer ') && !token.startsWith('JWT ')) {
+    token = 'Bearer $token';
+  }
   return {
-    "Content-type": "application/json",
+    "Content-Type": "application/json",
     "OS": Platform.operatingSystem,
-    "App-version": "0.0.1",
-    "Authorization": await LocalStorage().readToken() ?? '',
+    "App-Version": Details.appVersion,
+    "Authorization": token,
   };
 }
 

@@ -12,6 +12,7 @@ import 'package:nss_new/controller/blood_requirement_controller.dart';
 import 'package:nss_new/controller/home_controller.dart';
 import 'package:nss_new/controller/attendance_controller.dart';
 import 'package:nss_new/model/programs_model.dart';
+import 'package:nss_new/model/blood_model.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -822,7 +823,7 @@ Widget _programCard(
 Widget _bloodRequirementCard(
   BuildContext context,
   ColorScheme cs,
-  BloodRequirement req,
+  BloodDonationRequest req,
 ) {
   return Container(
     width: 280,
@@ -842,7 +843,7 @@ Widget _bloodRequirementCard(
               radius: 18,
               backgroundColor: cs.primary.withOpacity(0.1),
               child: Text(
-                req.bloodGroup,
+                req.bloodGroup ?? '',
                 style: TextStyle(
                   color: cs.primary,
                   fontWeight: FontWeight.bold,
@@ -853,7 +854,7 @@ Widget _bloodRequirementCard(
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                req.patientName,
+                req.patientName ?? '',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(
@@ -875,7 +876,7 @@ Widget _bloodRequirementCard(
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                req.hospitalName,
+                req.hospital ?? '',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium,
@@ -892,7 +893,7 @@ Widget _bloodRequirementCard(
               color: cs.onSurface.withOpacity(0.6),
             ),
             const SizedBox(width: 8),
-            Text(req.dateTime, style: Theme.of(context).textTheme.bodySmall),
+            Text(req.neededBefore ?? '', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
       ],

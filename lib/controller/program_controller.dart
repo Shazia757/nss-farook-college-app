@@ -2,24 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/api.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/enrollment_model.dart';
-import 'package:nss_new/model/volunteer_model.dart';
-import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/model/programs_model.dart';
+import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/students_enrollment_screen.dart';
 
 class ProgramListController extends GetxController {
+  final Api _api = Api();
+
   RxList<Program> programsList = <Program>[].obs;
   RxList<Program> searchList = <Program>[].obs;
   RxBool isLoading = false.obs;
-
   RxBool isButtonLoading = false.obs;
+
   TextEditingController searchController = TextEditingController();
   TextEditingController durationController = TextEditingController();
-  RxString date = 'oldest'.obs;
-  RxList<ProgramEnrollmentDetails> enrollmentList =
-      <ProgramEnrollmentDetails>[].obs;
+  RxString date = 'newest'.obs;
+  RxString selectedStatusFilter = ''.obs; // 'upcoming', 'past', or ''
+
+  RxList<ProgramEnrollmentDetails> enrollmentList = <ProgramEnrollmentDetails>[].obs;
   RxList<Volunteer> selectedVolList = <Volunteer>[].obs;
 
   DateTime programDate = DateTime.now();
@@ -40,76 +43,120 @@ class ProgramListController extends GetxController {
     }
   }
 
-  void getPrograms() async {
+  void getPrograms({String? status}) async {
     isLoading.value = true;
-    Api().allPrograms().then((value) {
+    if (status != null) selectedStatusFilter.value = status;
+
+    _api.allPrograms(search: searchController.text, status: selectedStatusFilter.value).then((value) {
       programsList.assignAll(value?.programs ?? []);
-      searchList.assignAll(programsList);
-      searchList.sort((a, b) => b.date!.compareTo(a.date!));
+      _applySearchAndSort();
       isLoading.value = false;
     });
   }
 
-  void addAttendance(Program? program) async {
+  void getUpcomingPrograms() async {
     isLoading.value = true;
-    bool response = true;
-    for (Volunteer e in selectedVolList) {
-      final value = await Api().addAttendance({
-        'date': programDate.toString(),
-        'hours': durationController.text,
-        'program_name': program?.name,
-        'volunteer': e.admissionNo,
-      });
-      if (!(value?.status ?? true)) response = false;
-    }
-    isLoading.value = false;
-    if (response) {
-      Get.back();
-      Get.back();
-      CustomWidgets.showSnackBar('Success', 'Attendance added successfully');
-    } else {
-      CustomWidgets.showSnackBar('Error', 'Some attendance not added');
-    }
-  }
-
-  void getEnrolledStudents(Program? program, RxBool loading) async {
-    loading.value = true;
-    Api().getEnrolledStudents(program?.id).then((value) {
-      if ((value?.enrollmentList ?? []).isEmpty) {
-        Get.snackbar('Error', 'No volunteers enrolled');
-      } else {
-        enrollmentList.assignAll(value?.enrollmentList?.toList() ?? []);
-        selectAllVolunteers();
-        durationController.text = "${program?.duration}";
-        programDate = program?.date ?? DateTime.now();
-        showProgramDate.value = DateFormat.yMMMd().format(programDate);
-
-        Get.to(() => StudentsEnrollmentScreen(data: program));
-      }
-      loading.value = false;
+    selectedStatusFilter.value = 'upcoming';
+    _api.getUpcomingPrograms().then((value) {
+      programsList.assignAll(value?.programs ?? []);
+      _applySearchAndSort();
+      isLoading.value = false;
     });
   }
 
-  void onSearchTextChanged(String searchText) async {
-    if (searchText.isEmpty) {
-      searchController.clear();
-      searchList.assignAll(programsList);
-      searchList.sort((a, b) => b.date!.compareTo(a.date!));
-    } else {
-      final filtered = programsList.where((program) {
-        final name = program.name?.toLowerCase() ?? '';
-        return name.contains(searchText.toLowerCase());
-      }).toList();
-
-      searchList.assignAll(filtered);
-      searchList.sort((a, b) => b.date!.compareTo(a.date!));
+  void enrollInProgram(int programId, {String? volunteerAdmissionNo}) async {
+    isButtonLoading.value = true;
+    final map = <String, dynamic>{'program': programId};
+    if (volunteerAdmissionNo != null && volunteerAdmissionNo.isNotEmpty) {
+      map['volunteer'] = volunteerAdmissionNo;
     }
+    _api.enrollToProgram(map).then((res) {
+      isButtonLoading.value = false;
+      if (res?.status ?? false) {
+        CustomWidgets.showSnackBar('Success', res?.message ?? 'Enrolled successfully');
+        getPrograms();
+      } else {
+        CustomWidgets.showSnackBar('Error', res?.message ?? 'Failed to enroll');
+      }
+    });
+  }
+
+  void cancelEnrollment(int programId, {String? volunteerAdmissionNo}) async {
+    isButtonLoading.value = true;
+    _api.cancelEnrollment(programId, volunteer: volunteerAdmissionNo).then((res) {
+      isButtonLoading.value = false;
+      if (res?.status ?? false) {
+        CustomWidgets.showSnackBar('Success', res?.message ?? 'Enrollment cancelled');
+        getPrograms();
+      } else {
+        CustomWidgets.showSnackBar('Error', res?.message ?? 'Failed to cancel enrollment');
+      }
+    });
+  }
+
+  void addAttendance(Program? program) async {
+    if (program?.id == null) return;
+    isLoading.value = true;
+    int hours = int.tryParse(durationController.text) ?? program?.duration ?? 0;
+
+    List<Map<String, dynamic>> attendances = selectedVolList.map((v) => {
+      'volunteer': v.admissionNo,
+      'hours': hours,
+    }).toList();
+
+    _api.bulkAddAttendance(program!.id!, attendances).then((val) {
+      isLoading.value = false;
+      if (val?.status ?? false) {
+        Get.back();
+        Get.back();
+        CustomWidgets.showSnackBar('Success', 'Attendance recorded successfully');
+      } else {
+        CustomWidgets.showSnackBar('Error', val?.message ?? 'Failed to record attendance');
+      }
+    });
+  }
+
+  void getEnrolledStudents(Program? program, RxBool loading) async {
+    if (program?.id == null) return;
+    loading.value = true;
+    _api.getEnrolledStudents(program?.id).then((value) {
+      enrollmentList.assignAll(value?.enrollmentList?.toList() ?? []);
+      selectAllVolunteers();
+      durationController.text = "${program?.duration ?? 0}";
+      programDate = program?.date ?? DateTime.now();
+      showProgramDate.value = DateFormat.yMMMd().format(programDate);
+
+      loading.value = false;
+      Get.to(() => StudentsEnrollmentScreen(data: program));
+    });
+  }
+
+  void onSearchTextChanged(String searchText) {
+    _applySearchAndSort();
+  }
+
+  void _applySearchAndSort() {
+    final query = searchController.text.toLowerCase();
+    List<Program> filtered = [];
+
+    if (query.isEmpty) {
+      filtered = List.from(programsList);
+    } else {
+      filtered = programsList.where((p) => (p.name?.toLowerCase() ?? '').contains(query)).toList();
+    }
+
+    if (date.value == 'oldest') {
+      filtered.sort((a, b) => (a.date ?? DateTime.now()).compareTo(b.date ?? DateTime.now()));
+    } else {
+      filtered.sort((a, b) => (b.date ?? DateTime.now()).compareTo(a.date ?? DateTime.now()));
+    }
+
+    searchList.assignAll(filtered);
   }
 
   void sortByDate() {
-    (date.value == 'oldest')
-        ? searchList.sort((a, b) => a.date!.compareTo(b.date!))
-        : searchList.sort((a, b) => b.date!.compareTo(a.date!));
+    date.value = (date.value == 'oldest') ? 'newest' : 'oldest';
+    _applySearchAndSort();
   }
 }
 
@@ -118,18 +165,21 @@ class AddProgramController extends GetxController {
   TextEditingController dateController = TextEditingController();
   TextEditingController descController = TextEditingController();
   TextEditingController durationController = TextEditingController();
+  TextEditingController limitController = TextEditingController();
+
   var isUpdateButtonLoading = false.obs;
   var isDeleteButtonLoading = false.obs;
   DateTime? date;
 
-  addProgram() {
+  void addProgram() {
     isUpdateButtonLoading.value = true;
     Api()
         .addProgram(
           Program(
             name: nameController.text,
             date: date,
-            duration: int.tryParse(durationController.text),
+            duration: int.tryParse(durationController.text) ?? 0,
+            limit: int.tryParse(limitController.text) ?? 0,
             description: descController.text,
           ),
         )
@@ -151,15 +201,15 @@ class AddProgramController extends GetxController {
         });
   }
 
-  updateProgram(int id) {
+  void updateProgram(int id) {
     isUpdateButtonLoading.value = true;
     Api()
         .updateProgram({
+          'id': id,
           'name': nameController.text,
-          'date': date.toString(),
+          'date': date?.toIso8601String() ?? dateController.text,
           'duration': durationController.text,
-          'updated_by': LocalStorage().readUser().admissionNo,
-          'id': id.toString(),
+          'limit': int.tryParse(limitController.text) ?? 0,
           'description': descController.text,
         })
         .then((value) {
@@ -182,13 +232,10 @@ class AddProgramController extends GetxController {
 
   Future<void> deleteProgram(int id) async {
     isDeleteButtonLoading.value = true;
-
     try {
       final value = await Api().deleteProgram(id);
-
       if (value?.status == true) {
-        Get.back(); // Close only the confirmation dialog
-
+        Get.back();
         CustomWidgets.showSnackBar(
           "Success",
           value?.message ?? "Program deleted successfully.",
@@ -219,10 +266,6 @@ class AddProgramController extends GetxController {
       CustomWidgets.showSnackBar('Invalid', 'Please enter duration');
       return false;
     }
-    if (descController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please add description');
-      return false;
-    }
     return true;
   }
 
@@ -230,12 +273,9 @@ class AddProgramController extends GetxController {
     nameController.text = program.name ?? '';
     descController.text = program.description ?? '';
     date = program.date;
-    dateController.text = (program.date) != null
-        ? DateFormat.yMMMd().format(program.date!)
-        : '';
-    durationController.text = (program.duration) != null
-        ? (program.duration ?? 0).toString()
-        : '';
+    dateController.text = (program.date != null) ? DateFormat.yMMMd().format(program.date!) : '';
+    durationController.text = (program.duration != null) ? program.duration.toString() : '';
+    limitController.text = (program.limit != null) ? program.limit.toString() : '0';
   }
 
   void clearTextFields() {
@@ -243,5 +283,6 @@ class AddProgramController extends GetxController {
     durationController.clear();
     descController.clear();
     dateController.clear();
+    limitController.clear();
   }
 }

@@ -2,22 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/api.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/common_pages/navbar.dart';
+import 'package:nss_new/controller/account_controller.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/user_model.dart';
+import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/add_volunteer_screen.dart';
-import 'package:nss_new/view/authentication/login_screen.dart';
 import 'package:nss_new/view/authentication/change_password_screen.dart';
 import 'package:nss_new/view/authentication/delete_account_screen.dart';
+import 'package:nss_new/view/authentication/login_screen.dart';
 import 'package:nss_new/view/view_attendance_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   final Users? volunteer;
-  final Rxn<Users> rxVolunteer = Rxn<Users>();
 
-  ProfileScreen({super.key, this.volunteer}) {
-    rxVolunteer.value = volunteer ?? LocalStorage().readUser();
+  const ProfileScreen({super.key, this.volunteer});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final Rxn<Users> rxVolunteer = Rxn<Users>();
+  final Rxn<VolunteerHoursSummary> hoursSummary = Rxn<VolunteerHoursSummary>();
+  final Api _api = Api();
+
+  @override
+  void initState() {
+    super.initState();
+    rxVolunteer.value = widget.volunteer ?? LocalStorage().readUser();
+    fetchHours();
+  }
+
+  void fetchHours() async {
+    final admn = rxVolunteer.value?.admissionNo;
+    if (admn != null && admn.isNotEmpty) {
+      final summary = await _api.getVolunteerHoursSummary(admissionNumber: admn);
+      if (summary != null) {
+        hoursSummary.value = summary;
+      }
+    }
   }
 
   @override
@@ -25,8 +51,7 @@ class ProfileScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final role = LocalStorage().readUser().role;
-
-    final isOwnProfile = volunteer == null;
+    final isOwnProfile = widget.volunteer == null;
 
     return Scaffold(
       extendBody: true,
@@ -55,6 +80,7 @@ class ProfileScreen extends StatelessWidget {
         child: Obx(() {
           final displayVol = rxVolunteer.value;
           final name = displayVol?.name;
+          final summary = hoursSummary.value;
 
           return Center(
             child: ConstrainedBox(
@@ -90,68 +116,32 @@ class ProfileScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Positioned(
-                          bottom: -20,
-                          left: -20,
-                          child: Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.07),
-                            ),
-                          ),
-                        ),
-
                         Padding(
                           padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                           child: Column(
                             children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.35),
-                                    width: 3,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.18),
-                                      blurRadius: 16,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: CircleAvatar(
-                                  radius: 42,
-                                  backgroundColor: Colors.white.withOpacity(.2),
-                                  child: Text(
-                                    (name != null && name.isNotEmpty)
-                                        ? name.substring(0, 1).toUpperCase()
-                                        : "S",
-                                    style: tt.headlineLarge?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                              CircleAvatar(
+                                radius: 42,
+                                backgroundColor: Colors.white.withOpacity(.2),
+                                child: Text(
+                                  (name != null && name.isNotEmpty)
+                                      ? name.substring(0, 1).toUpperCase()
+                                      : "S",
+                                  style: tt.headlineLarge?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-
                               const SizedBox(height: 16),
-
                               Text(
                                 displayVol?.name ?? "NSS User",
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall!
-                                    .copyWith(
-                                      color: Colors.white,
-                                      letterSpacing: -0.3,
-                                    ),
+                                style: tt.headlineSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-
                               const SizedBox(height: 4),
-
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
@@ -167,149 +157,119 @@ class ProfileScreen extends StatelessWidget {
                                       : displayVol?.role == 'po'
                                       ? "Program Officer"
                                       : "Volunteer",
-                                  style: Theme.of(context).textTheme.titleSmall!
-                                      .copyWith(
-                                        color: Colors.white.withOpacity(0.9),
-                                        letterSpacing: 0.3,
-                                      ),
+                                  style: tt.titleSmall?.copyWith(
+                                    color: Colors.white.withOpacity(0.9),
+                                  ),
                                 ),
                               ),
-
                               const SizedBox(height: 24),
-
-                              Row(
-                                children: [
-                                  if (isOwnProfile)
-                                    Expanded(
-                                      child: FilledButton.icon(
-                                        onPressed: () => Get.to(
-                                          () => ChangePasswordScreen(
-                                            userId:
-                                                displayVol?.admissionNo ?? '',
-                                            isChangepassword: true,
-                                          ),
-                                        ),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: Colors.white
-                                              .withOpacity(0.18),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 14,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                          ),
-                                        ),
-                                        icon: const Icon(
-                                          Icons.lock_reset_rounded,
-                                        ),
-                                        label: const Text("Change Password"),
+                              if (isOwnProfile)
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    onPressed: () => Get.to(
+                                      () => ChangePasswordScreen(
+                                        userId: displayVol?.admissionNo ?? '',
+                                        isChangepassword: true,
                                       ),
                                     ),
-                                  if (!isOwnProfile && displayVol != null) ...[
-                                    Expanded(
-                                      child: Column(
-                                        children: [
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: FilledButton.icon(
-                                              onPressed: () => Get.to(
-                                                () => ChangePasswordScreen(
-                                                  userId:
-                                                      displayVol.admissionNo ??
-                                                      '',
-                                                  isChangepassword: false,
-                                                ),
-                                              ),
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor: Colors.white
-                                                    .withOpacity(0.18),
-                                                foregroundColor: Colors.white,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 14,
-                                                    ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(14),
-                                                ),
-                                              ),
-                                              icon: const Icon(
-                                                Icons.lock_reset_rounded,
-                                              ),
-                                              label: const Text(
-                                                "Reset Password",
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: FilledButton.icon(
-                                              onPressed: () {
-                                                Get.to(
-                                                  () => AddVolunteerScreen(
-                                                    volunteer: displayVol,
-                                                  ),
-                                                )?.then((_) {
-                                                  if (displayVol.admissionNo !=
-                                                      null) {
-                                                    Api()
-                                                        .volunteerDetails(
-                                                          displayVol
-                                                              .admissionNo!,
-                                                        )
-                                                        .then((val) {
-                                                          if (val?.volunteerDetails !=
-                                                              null) {
-                                                            rxVolunteer
-                                                                .value = val!
-                                                                .volunteerDetails;
-                                                          }
-                                                        });
-                                                  }
-                                                  if (Get.isRegistered<
-                                                    VolunteerListController
-                                                  >()) {
-                                                    Get.find<
-                                                          VolunteerListController
-                                                        >()
-                                                        .getData();
-                                                  }
-                                                });
-                                              },
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor: Colors.white,
-                                                foregroundColor: cs.primary,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 14,
-                                                    ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(14),
-                                                ),
-                                              ),
-                                              icon: const Icon(
-                                                Icons.edit_rounded,
-                                              ),
-                                              label: const Text("Edit Profile"),
-                                            ),
-                                          ),
-                                        ],
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.white.withOpacity(0.18),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
                                     ),
-                                  ],
-                                ],
-                              ),
+                                    icon: const Icon(Icons.lock_reset_rounded),
+                                    label: const Text("Change Password"),
+                                  ),
+                                ),
+                              if (!isOwnProfile && displayVol != null) ...[
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    onPressed: () => Get.to(
+                                      () => AddVolunteerScreen(volunteer: displayVol),
+                                    )?.then((_) => fetchHours()),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: cs.primary,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.edit_rounded),
+                                    label: const Text("Edit Profile"),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 20),
+
+                  /// ── 240 HOURS TARGET PROGRESS CARD ───────────────────
+                  if (displayVol?.role != 'po')
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cs.onPrimary,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: cs.outline.withOpacity(0.4)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "240 Hours Goal Progress",
+                                style: tt.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.primary,
+                                ),
+                              ),
+                              Text(
+                                "${summary?.totalHours ?? 0} / ${summary?.targetHours ?? 240} hrs",
+                                style: tt.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: LinearProgressIndicator(
+                              value: ((summary?.totalHours ?? 0) / (summary?.targetHours ?? 240)).clamp(0.0, 1.0),
+                              minHeight: 12,
+                              backgroundColor: cs.primary.withOpacity(0.12),
+                              color: cs.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "${(summary?.progressPercentage ?? 0).toStringAsFixed(1)}% of total target completed",
+                            style: tt.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
+                          ),
+                        ],
+                      ),
+                    ),
 
                   const SizedBox(height: 20),
 
@@ -325,7 +285,6 @@ class ProfileScreen extends StatelessWidget {
                           icon: Icons.wc_rounded,
                         ),
                         const _Divider(),
-
                         _InfoRow(
                           label: "Date of Birth",
                           value: displayVol?.dob != null
@@ -334,14 +293,12 @@ class ProfileScreen extends StatelessWidget {
                           icon: Icons.cake_outlined,
                         ),
                         const _Divider(),
-
                         _InfoRow(
                           label: "Caste",
                           value: displayVol?.caste ?? "N/A",
                           icon: Icons.groups_outlined,
                         ),
                         const _Divider(),
-
                         _InfoRow(
                           label: "Blood Group",
                           value: displayVol?.bloodGroup ?? "N/A",
@@ -368,14 +325,12 @@ class ProfileScreen extends StatelessWidget {
                             icon: Icons.menu_book_outlined,
                           ),
                           const _Divider(),
-
                           _InfoRow(
-                            label: "Year of Study",
+                            label: "Batch",
                             value: displayVol?.year ?? "N/A",
                             icon: Icons.calendar_today_outlined,
                           ),
                           const _Divider(),
-
                           _InfoRow(
                             label: "Admission No.",
                             value: displayVol?.admissionNo ?? "N/A",
@@ -399,7 +354,6 @@ class ProfileScreen extends StatelessWidget {
                           icon: Icons.mail_outline_rounded,
                         ),
                         const _Divider(),
-
                         _InfoRow(
                           label: "Phone Number",
                           value: displayVol?.phoneNo ?? "N/A",
@@ -409,7 +363,6 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // ================= ATTENDANCE HISTORY FOR SEC/PO =================
                   if (displayVol != null && displayVol.role == 'vol') ...[
                     const SizedBox(height: 20),
                     _SectionCard(
@@ -419,9 +372,7 @@ class ProfileScreen extends StatelessWidget {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            Get.to(
-                              () => AttendanceScreen(volunteer: displayVol),
-                            );
+                            Get.to(() => AttendanceScreen(volunteer: displayVol));
                           },
                           icon: const Icon(Icons.analytics_outlined),
                           label: const Text("View Attendance History"),
@@ -441,7 +392,6 @@ class ProfileScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  /// ── DANGER ZONE (LOGOUT & DELETION) ──────────────────────────────
                   if (isOwnProfile) _DangerZoneCard(cs: cs),
 
                   const SizedBox(height: 100),
@@ -533,7 +483,6 @@ class _InfoRow extends StatelessWidget {
         children: [
           Icon(icon, size: 18, color: cs.primary.withOpacity(0.7)),
           const SizedBox(width: 12),
-
           Expanded(
             flex: 2,
             child: Text(
@@ -543,9 +492,7 @@ class _InfoRow extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(width: 16),
-
           Expanded(
             flex: 3,
             child: Text(
@@ -572,6 +519,7 @@ class _DangerZoneCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final role = LocalStorage().readUser().role;
+     AccountController c = Get.put(AccountController());
 
     return Column(
       children: [
@@ -606,10 +554,18 @@ class _DangerZoneCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               TextButton(
-                onPressed: () {
-                  LocalStorage().clearAll();
-                  Get.offAll(() => const LoginScreen());
-                },
+              
+                    onPressed: () => CustomWidgets().showConfirmationDialog(
+                      title: 'Logout',
+                      message: 'Are you sure you want to logout?',
+                      onConfirm: () => c.logout(),
+                      data: Obx(
+                        () => (c.isLoading.value)
+                            ? CircularProgressIndicator()
+                            : Text("Confirm",
+                                style: TextStyle(color: Colors.red)),
+                      )),
+               
                 style: TextButton.styleFrom(
                   foregroundColor: cs.error,
                   backgroundColor: cs.error.withOpacity(0.1),

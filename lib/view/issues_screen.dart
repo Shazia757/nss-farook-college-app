@@ -420,7 +420,7 @@ class _IssuesScreenState extends State<IssuesScreen> {
                         reportedTo: issue.to == 'sec'
                             ? 'Secretary'
                             : 'Program Officer',
-                        status: (issue.isOpen == true) ? 'Pending' : 'Resolved',
+                        isOpen: issue.isOpen ?? false,
                         cs: cs,
                         tt: tt,
                       );
@@ -467,15 +467,14 @@ class _IssuesScreenState extends State<IssuesScreen> {
     required String description,
     required String date,
     required String reportedTo,
-    required String status,
+    required bool isOpen,
     required ColorScheme cs,
     required TextTheme tt,
   }) {
-    final isResolved = status.toLowerCase() == 'resolved';
-    final statusColor = isResolved
-        ? Colors.green.shade700
-        : Colors.orange.shade700;
-    final statusBg = isResolved ? Colors.green.shade50 : Colors.orange.shade50;
+    final status = isOpen ? 'Open' : 'Closed';
+    final statusColor = isOpen ? Colors.orange.shade700 : Colors.green.shade700;
+
+    final statusBg = isOpen ? Colors.orange.shade50 : Colors.green.shade50;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

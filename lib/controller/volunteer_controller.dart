@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/api.dart';
-import 'package:nss_new/model/department_model.dart';
-import 'package:nss_new/model/volunteer_model.dart';
-import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
+import 'package:nss_new/model/department_model.dart';
+import 'package:nss_new/model/user_model.dart';
+import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/add_volunteer_screen.dart';
 import 'package:nss_new/view/profile_screen.dart';
 
@@ -22,6 +21,8 @@ class VolunteerController extends GetxController {
   TextEditingController yearController = TextEditingController();
   TextEditingController casteController = TextEditingController();
   TextEditingController genderController = TextEditingController();
+  TextEditingController addressController = TextEditingController();
+
   var isUpdateButtonLoading = false.obs;
   var isDeleteButtonLoading = false.obs;
   DateTime? dob;
@@ -29,9 +30,11 @@ class VolunteerController extends GetxController {
   RxString role = 'vol'.obs;
   RxString caste = ''.obs;
   RxString gender = ''.obs;
+  RxString bloodGroup = ''.obs;
   RxList<Department> departmentList = <Department>[].obs;
   RxnString selectedCaste = RxnString();
   RxnString selectedGender = RxnString();
+  RxnString selectedBloodGroup = RxnString();
 
   int? departmentID;
 
@@ -55,17 +58,19 @@ class VolunteerController extends GetxController {
           'name': nameController.text,
           'email': emailController.text,
           'phone_number': phoneController.text,
-          'date_of_birth': dob.toString(),
+          'date_of_birth': dob != null
+              ? DateFormat('yyyy-MM-dd').format(dob!)
+              : dobController.text,
           'department': departmentID,
-          'roll_number': '1',
-          'role': role.value,
-          'year': yearController.text,
+          'batch': yearController.text,
           'caste': casteController.text,
-          'gender': genderController.text,
+          'gender': selectedGender.value ?? genderController.text,
+          'blood_group': selectedBloodGroup.value ?? bloodGroup.value,
+          'address': addressController.text,
+          'role': role.value,
         })
         .then((value) {
           isUpdateButtonLoading.value = false;
-          Get.back();
           if (value?.status ?? false) {
             Get.back();
             CustomWidgets.showSnackBar(
@@ -89,17 +94,19 @@ class VolunteerController extends GetxController {
           'name': nameController.text,
           'email': emailController.text,
           'phone_number': phoneController.text,
-          'date_of_birth': dob.toString(),
+          'date_of_birth': dob != null
+              ? DateFormat('yyyy-MM-dd').format(dob!)
+              : dobController.text,
           'department': departmentID,
-          'roll_number': rollNoController.text,
-          'role': role.value,
-          'year': yearController.text,
+          'batch': yearController.text,
           'caste': casteController.text,
-          'gender': genderController.text,
+          'gender': selectedGender.value ?? genderController.text,
+          'blood_group': selectedBloodGroup.value ?? bloodGroup.value,
+          'address': addressController.text,
+          'role': role.value,
         })
         .then((response) {
           isUpdateButtonLoading.value = false;
-          Get.back();
           if (response?.status == true) {
             Get.back();
             CustomWidgets.showSnackBar(
@@ -115,11 +122,10 @@ class VolunteerController extends GetxController {
         });
   }
 
-  void deleteVolunteer() async {
+  Future<void> deleteVolunteer(String admnNo) async {
     isDeleteButtonLoading.value = true;
-    api.deleteVolunteer(admissionNoController.text).then((response) {
+    api.deleteVolunteer(admnNo).then((response) {
       isDeleteButtonLoading.value = false;
-
       if (response?.status ?? false) {
         Get.back();
         Get.back();
@@ -143,10 +149,10 @@ class VolunteerController extends GetxController {
     departmentID = user.department?.id;
     departmentController.text =
         "${user.department?.category ?? ''} ${user.department?.name ?? ''}";
-    rollNoController.text = user.rollNo?.toString() ?? "";
+
     admissionNoController.text = user.admissionNo ?? "";
     dobController.text = (user.dob != null)
-        ? DateFormat.yMMMd().format(user.dob!)
+        ? DateFormat('yyyy-MM-dd').format(user.dob!)
         : "";
     dob = user.dob;
     role.value = user.role ?? 'vol';
@@ -155,6 +161,7 @@ class VolunteerController extends GetxController {
     genderController.text = user.gender ?? "";
     selectedCaste.value = user.caste;
     selectedGender.value = user.gender;
+    selectedBloodGroup.value = user.bloodGroup;
   }
 
   void clearTextFields() {
@@ -168,8 +175,10 @@ class VolunteerController extends GetxController {
     yearController.clear();
     casteController.clear();
     genderController.clear();
+    addressController.clear();
     selectedCaste.value = null;
     selectedGender.value = null;
+    selectedBloodGroup.value = null;
     role.value = 'vol';
   }
 
@@ -186,31 +195,8 @@ class VolunteerController extends GetxController {
       CustomWidgets.showSnackBar('Invalid', 'Please enter phone number');
       return false;
     }
-    if (casteController.text.isEmpty &&
-        (selectedCaste.value == null || selectedCaste.value!.isEmpty)) {
-      CustomWidgets.showSnackBar('Invalid', 'Please select caste');
-      return false;
-    }
-    if (genderController.text.isEmpty &&
-        (selectedGender.value == null || selectedGender.value!.isEmpty)) {
-      CustomWidgets.showSnackBar('Invalid', 'Please select gender');
-      return false;
-    }
-    if ((departmentID ?? "").toString().isEmpty ||
-        departmentController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please add department');
-      return false;
-    }
     if (admissionNoController.text.isEmpty) {
       CustomWidgets.showSnackBar('Invalid', 'Please add admission number');
-      return false;
-    }
-    if (dobController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please add date of birth');
-      return false;
-    }
-    if (yearController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please add year of study');
       return false;
     }
     return true;
@@ -219,16 +205,22 @@ class VolunteerController extends GetxController {
 
 class VolunteerListController extends GetxController {
   TextEditingController searchController = TextEditingController();
+  final Api _api = Api();
 
   RxBool isLoading = true.obs;
-  RxList<Volunteer> usersList = <Volunteer>[].obs;
-  RxList<Volunteer> searchList = <Volunteer>[].obs;
-  RxList<String> departmentList = <String>[].obs;
+  RxBool isPassiveLoading = false.obs;
+  RxBool isShowingPassive = false.obs;
 
-  String _currentQuery = '';
-  RxString sortBy = ''.obs;
+  RxList<Volunteer> usersList = <Volunteer>[].obs;
+  RxList<Volunteer> passiveUsersList = <Volunteer>[].obs;
+  RxList<BatchSummary> batchSummaries = <BatchSummary>[].obs;
+  Rxn<VolunteerHoursSummary> volunteerHoursSummary =
+      Rxn<VolunteerHoursSummary>();
+
+  RxString selectedBatch = ''.obs;
+  RxnInt selectedDepartmentId = RxnInt();
   RxString selectedBloodGroup = ''.obs;
-  RxString selectedLocation = ''.obs;
+  RxString searchQuery = ''.obs;
 
   List<String> get bloodGroups => [
     'A+',
@@ -241,116 +233,145 @@ class VolunteerListController extends GetxController {
     'O-',
   ];
 
-  List<String> get locations {
-    return usersList
-        .map((e) => e.address ?? '')
-        .where((e) => e.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-  }
-
   @override
   void onInit() {
     getData();
+    fetchBatches();
     super.onInit();
   }
 
   void getData() {
     isLoading.value = true;
-    Api().getVolunteers().then((value) {
-      final data = value?.data
-          ?.where((element) => element.role != 'po')
-          .toList();
-      usersList.assignAll(data ?? []);
-      _applyFilterAndSort();
-      isLoading.value = false;
+    _api
+        .getVolunteers(
+          batch: selectedBatch.value,
+          department: selectedDepartmentId.value,
+          bloodGroup: selectedBloodGroup.value,
+          search: searchQuery.value,
+        )
+        .then((value) {
+          usersList.assignAll(value?.data ?? []);
+          isLoading.value = false;
+        });
+  }
+
+  void getPassiveData() {
+    isPassiveLoading.value = true;
+    _api
+        .getPassiveVolunteers(
+          batch: selectedBatch.value,
+          department: selectedDepartmentId.value,
+          search: searchQuery.value,
+        )
+        .then((value) {
+          passiveUsersList.assignAll(value?.data ?? []);
+          isPassiveLoading.value = false;
+        });
+  }
+
+  void fetchBatches() {
+    _api.getBatches().then((list) {
+      if (list != null) {
+        batchSummaries.assignAll(list);
+      }
     });
   }
 
-  void updateVolunteer(String? admissionNo) {
-    Api().volunteerDetails(admissionNo!).then((value) {
-      if (value?.volunteerDetails != null) {
-        Get.to(
-          () => AddVolunteerScreen(volunteer: value!.volunteerDetails),
-        )?.then((value) => getData());
+  void togglePassiveView(bool showPassive) {
+    isShowingPassive.value = showPassive;
+    if (showPassive) {
+      getPassiveData();
+    } else {
+      getData();
+    }
+  }
+
+  void setBatchStatus(String batch, bool isActive) {
+    isLoading.value = true;
+    _api.setBatchStatus(batch, isActive).then((res) {
+      isLoading.value = false;
+      if (res?.status ?? false) {
+        CustomWidgets.showSnackBar(
+          'Success',
+          res?.message ?? 'Batch status updated',
+        );
+        getData();
+        getPassiveData();
+        fetchBatches();
+      } else {
+        CustomWidgets.showSnackBar(
+          'Error',
+          res?.message ?? 'Failed to update batch status',
+        );
       }
     });
   }
 
   void onSearchTextChanged(String value) {
-    _currentQuery = value;
-    _applyFilterAndSort();
-  }
-
-  void setSortOption(String option) {
-    if (sortBy.value == option) {
-      sortBy.value = '';
+    searchQuery.value = value;
+    if (isShowingPassive.value) {
+      getPassiveData();
     } else {
-      sortBy.value = option;
+      getData();
     }
-    _applyFilterAndSort();
   }
 
-  String getMockBloodGroup(String name) {
-    final groups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
-    return groups[name.length % groups.length];
+  void filterByBloodGroup(String group) {
+    selectedBloodGroup.value = selectedBloodGroup.value == group ? '' : group;
+    getData();
   }
 
-  void _applyFilterAndSort() {
-    List<Volunteer> filtered = [];
-    if (_currentQuery.isEmpty) {
-      filtered = List.from(usersList);
+  void filterByBatch(String batch) {
+    selectedBatch.value = selectedBatch.value == batch ? '' : batch;
+    if (isShowingPassive.value) {
+      getPassiveData();
     } else {
-      final query = _currentQuery.toLowerCase();
-      filtered = usersList.where((volunteer) {
-        final name = volunteer.name?.toLowerCase() ?? '';
-        final admnNo = volunteer.admissionNo?.toLowerCase() ?? '';
-        final bloodGroup = volunteer.bloodGroup?.toLowerCase() ?? '';
-        final address = volunteer.address?.toLowerCase() ?? '';
-
-        return name.contains(query) ||
-            admnNo.contains(query) ||
-            bloodGroup.contains(query) ||
-            address.contains(query);
-      }).toList();
+      getData();
     }
+  }
 
-    if (sortBy.value == 'bloodGroup') {
-      filtered.sort((a, b) {
-        final bgA = a.bloodGroup ?? '';
-        final bgB = b.bloodGroup ?? '';
-        return bgA.compareTo(bgB);
-      });
-    } else if (sortBy.value == 'location') {
-      filtered.sort((a, b) {
-        final addrA = a.address ?? '';
-        final addrB = b.address ?? '';
-        return addrA.compareTo(addrB);
-      });
+  void filterByDepartment(int? deptId) {
+    selectedDepartmentId.value = selectedDepartmentId.value == deptId
+        ? null
+        : deptId;
+    if (isShowingPassive.value) {
+      getPassiveData();
+    } else {
+      getData();
     }
+  }
 
-    if (selectedBloodGroup.value.isNotEmpty) {
-      filtered = filtered.where((v) {
-        return getMockBloodGroup(v.name ?? '') == selectedBloodGroup.value;
-      }).toList();
+  void clearFilters() {
+    selectedBatch.value = '';
+    selectedDepartmentId.value = null;
+    selectedBloodGroup.value = '';
+    searchQuery.value = '';
+    searchController.clear();
+    if (isShowingPassive.value) {
+      getPassiveData();
+    } else {
+      getData();
     }
+  }
 
-    if (selectedLocation.value.isNotEmpty) {
-      filtered = filtered.where((v) {
-        return v.address == selectedLocation.value;
-      }).toList();
-    }
-
-    searchList.assignAll(filtered);
+  void updateVolunteer(String? admissionNo) {
+    if (admissionNo == null || admissionNo.isEmpty) return;
+    _api.volunteerDetails(admissionNo).then((value) {
+      if (value?.volunteerDetails != null) {
+        Get.to(
+          () => AddVolunteerScreen(volunteer: value!.volunteerDetails),
+        )?.then((_) => getData());
+      }
+    });
   }
 
   void viewVolunteerProfile(String? admissionNo) {
+    if (admissionNo == null || admissionNo.isEmpty) return;
     Get.dialog(
       const Center(child: CircularProgressIndicator()),
       barrierDismissible: false,
     );
-    Api().volunteerDetails(admissionNo!).then((value) {
+    _api.volunteerDetails(admissionNo).then((value) {
       Get.back();
       if (value?.volunteerDetails != null) {
         Get.to(
@@ -362,22 +383,12 @@ class VolunteerListController extends GetxController {
     });
   }
 
-  void sortByBloodGroup(String group) {
-    selectedBloodGroup.value = group;
-    selectedLocation.value = '';
-    _applyFilterAndSort();
-  }
-
-  void sortByLocation(String location) {
-    selectedLocation.value = location;
-    selectedBloodGroup.value = '';
-    _applyFilterAndSort();
-  }
-
-  void clearSort() {
-    selectedBloodGroup.value = '';
-    selectedLocation.value = '';
-    sortBy.value = '';
-    _applyFilterAndSort();
+  Future<void> fetchHoursSummary(String admissionNo) async {
+    final summary = await _api.getVolunteerHoursSummary(
+      admissionNumber: admissionNo,
+    );
+    if (summary != null) {
+      volunteerHoursSummary.value = summary;
+    }
   }
 }

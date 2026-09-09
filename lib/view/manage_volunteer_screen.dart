@@ -15,6 +15,9 @@ class ManageVolunteerScreen extends StatefulWidget {
 class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
   final TextEditingController _searchController = TextEditingController();
   final VolunteerListController controller = Get.put(VolunteerListController());
+  final VolunteerController volunteerController = Get.put(
+    VolunteerController(),
+  );
 
   @override
   void dispose() {
@@ -31,9 +34,13 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
       backgroundColor: cs.surface,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Get.to(
-            () => const AddVolunteerScreen(),
-          )?.then((_) => controller.getData());
+          Get.to(() => const AddVolunteerScreen())?.then((_) {
+            if (controller.isShowingPassive.value) {
+              controller.getPassiveData();
+            } else {
+              controller.getData();
+            }
+          });
         },
         backgroundColor: cs.primary,
         child: const Icon(Icons.person_add_alt, color: Colors.white),
@@ -90,9 +97,7 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                             color: cs.onSurface.withOpacity(0.6),
                             size: 20,
                           ),
-                          suffixIcon:
-                              controller.searchController.text.isNotEmpty ||
-                                  _searchController.text.isNotEmpty
+                          suffixIcon: _searchController.text.isNotEmpty
                               ? IconButton(
                                   icon: Icon(
                                     Icons.clear,
@@ -105,7 +110,6 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                                   },
                                 )
                               : const SizedBox.shrink(),
-
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
                             vertical: 12,
@@ -121,10 +125,7 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
 
             // Header Section
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -135,19 +136,69 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                       color: cs.primary,
                     ),
                   ),
+
                   const SizedBox(height: 4),
+
                   Text(
                     'Manage, track and oversee volunteer records.',
                     style: tt.bodyMedium?.copyWith(
                       color: cs.onSurface.withOpacity(0.6),
                     ),
                   ),
-                  const SizedBox(height: 12),
+
+                  const SizedBox(height: 16),
+
                   Obx(() {
-                    final totalVolunteers = controller.usersList.length;
+                    final isPassive = controller.isShowingPassive.value;
+
+                    return Container(
+                      height: 44,
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: cs.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _VolunteerToggleButton(
+                              label: 'Active',
+                              icon: Icons.check_circle_outline_rounded,
+                              selected: !isPassive,
+                              onTap: () {
+                                controller.togglePassiveView(false);
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: _VolunteerToggleButton(
+                              label: 'Passive',
+                              icon: Icons.pause_circle_outline_rounded,
+                              selected: isPassive,
+                              onTap: () {
+                                controller.togglePassiveView(true);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 12),
+
+                  Obx(() {
+                    final isPassive = controller.isShowingPassive.value;
+
+                    final count = isPassive
+                        ? controller.passiveUsersList.length
+                        : controller.usersList.length;
+
                     return StatCard(
-                      title: "Total Volunteers",
-                      value: totalVolunteers.toString(),
+                      title: isPassive
+                          ? 'Passive Volunteers'
+                          : 'Active Volunteers',
+                      value: count.toString(),
                       icon: Icons.people_outline_rounded,
                       backgroundColor: cs.onPrimary,
                       textColor: cs.onSurface,
@@ -156,15 +207,21 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                 ],
               ),
             ),
-
-            // Volunteers List
             Expanded(
               child: Obx(() {
-                if (controller.isLoading.value) {
+                final isCurrentLoading = controller.isShowingPassive.value
+                    ? controller.isPassiveLoading.value
+                    : controller.isLoading.value;
+
+                if (isCurrentLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (controller.searchList.isEmpty) {
+                final currentList = controller.isShowingPassive.value
+                    ? controller.passiveUsersList
+                    : controller.usersList;
+
+                if (currentList.isEmpty) {
                   return Center(
                     child: Text(
                       'No volunteers found',
@@ -177,7 +234,11 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    controller.getData();
+                    if (controller.isShowingPassive.value) {
+                      controller.getPassiveData();
+                    } else {
+                      controller.getData();
+                    }
                   },
                   child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(
@@ -187,11 +248,11 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                       horizontal: 16,
                       vertical: 12,
                     ),
-                    itemCount: controller.searchList.length,
+                    itemCount: currentList.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final v = controller.searchList[index];
+                      final v = currentList[index];
                       return Container(
                         decoration: BoxDecoration(
                           color: cs.onPrimary,
@@ -232,15 +293,64 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            "Admission No: ${v.admissionNo ?? ''}\n${v.department?.category ?? ''} ${v.department?.name ?? ''}",
+                            "Admission No: ${v.admissionNo ?? ''}\n${v.department?.category ?? ''} ${v.department?.name ?? ''}"
+                                .trim(),
                             style: tt.bodySmall?.copyWith(
                               color: cs.onSurface.withOpacity(0.6),
                             ),
                           ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            size: 16,
-                            color: cs.onSurface.withOpacity(0.4),
+                          trailing: PopupMenuButton<String>(
+                            icon: Icon(
+                              Icons.more_vert_rounded,
+                              color: cs.onSurface.withOpacity(0.6),
+                            ),
+                            onSelected: (value) {
+                              if (value == 'delete') {
+                                CustomWidgets().showConfirmationDialog(
+                                  title: "Delete Volunteer",
+                                  message:
+                                      "Are you sure you want to delete this volunteer?",
+                                  onConfirm: () async {
+                                    await volunteerController.deleteVolunteer(
+                                      v.admissionNo ?? '',
+                                    );
+                                    controller.getData();
+                                  },
+                                  data: Obx(
+                                    () =>
+                                        volunteerController
+                                            .isDeleteButtonLoading
+                                            .value
+                                        ? const SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Text(
+                                            "Confirm",
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                  ),
+                                );
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text('Delete volunteer'),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -248,6 +358,55 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                   ),
                 );
               }),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VolunteerToggleButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _VolunteerToggleButton({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        decoration: BoxDecoration(
+          color: selected ? cs.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+              ),
             ),
           ],
         ),

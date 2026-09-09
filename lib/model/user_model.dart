@@ -13,7 +13,6 @@ class Users {
   String? caste;
   String? gender;
   String? bloodGroup;
-  String? rollNo;
   String? createdBy;
   String? updatedBy;
   String? year;
@@ -28,7 +27,7 @@ class Users {
     this.updatedDate,
     this.department,
     this.role,
-    this.rollNo,
+    this.bloodGroup,
     this.createdBy,
     this.updatedBy,
     this.year,
@@ -57,7 +56,8 @@ class Users {
           ? Department.fromJson(json?['department'])
           : null,
       role: json?['role'] as String?,
-      rollNo: json?['roll_number'] as String?,
+      bloodGroup: json?['blood_group'] as String?,
+
       createdBy: json?['created_by'] as String?,
       updatedBy: json?['updated_by'] as String?,
       year: json?['batch'] as String?,
@@ -69,7 +69,7 @@ class Users {
   Map<String, dynamic> toJson() {
     return {
       'admission_number': admissionNo,
-      'roll_number': rollNo,
+      'blood_group': bloodGroup,
       'role': role,
       'phone_number': phoneNo,
       'name': name,
