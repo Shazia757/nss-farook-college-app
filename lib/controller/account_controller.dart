@@ -32,8 +32,8 @@ class AccountController extends GetxController {
   @override
   onInit() {
     if (kDebugMode) {
-      userNameController.text = '2769';
-      passwordController.text = '1111';
+      userNameController.text = '2780';
+      passwordController.text = 'pass123';
     }
 
     super.onInit();

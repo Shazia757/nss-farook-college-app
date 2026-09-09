@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/common_pages/navbar.dart';
-import 'package:nss_new/controller/account_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/view/add_program_screen.dart';
 import 'package:nss_new/view/manage_attendance_screen.dart';
@@ -498,14 +497,19 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      notification.title,
-                      style: tt.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        notification.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       notification.time,
                       style: tt.labelMedium?.copyWith(
@@ -590,7 +594,6 @@ class HomeScreen extends StatelessWidget {
 
     return Obx(() {
       final totalP = attendanceController.totalPrograms.value;
-      final totalH = attendanceController.totalHours.value;
       final isL = attendanceController.isAttendanceLoading.value;
 
       return Container(

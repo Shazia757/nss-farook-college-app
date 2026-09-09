@@ -1,8 +1,8 @@
 class Urls {
   static String base =
       // 'http://54.39.105.221:12800/api';
-      'https://nss.noorabiyad.com/api';
-  // 'https://nssapi.bvocfarookcollege.com/api'
+      // 'https://nss.noorabiyad.com/api';
+      'https://nssapi.bvocfarookcollege.com/api';
   static String login = '$base/login/';
   static String changePassword = '$base/change_password/';
   static String resetPassword = '$base/reset_password/';

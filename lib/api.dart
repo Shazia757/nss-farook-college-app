@@ -374,9 +374,10 @@ class Api {
   Future<AttendanceResponse?> getAttendance(String admissionNo) async {
     try {
       final response = await http
-          .post(
-            Uri.parse(Urls.getAttendance),
-            body: jsonEncode({'admission_number': admissionNo}),
+          .get(
+            Uri.parse(
+              Urls.getAttendance,
+            ).replace(queryParameters: {'admission_number': admissionNo}),
             headers: await getHeader(),
           )
           .timeout(Duration(seconds: 60));

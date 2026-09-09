@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/view/authentication/login_screen.dart';
-
 import '../../database/local_storage.dart';
 
 class TokenExpiredScreen extends StatelessWidget {

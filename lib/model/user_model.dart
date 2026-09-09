@@ -60,7 +60,7 @@ class Users {
       rollNo: json?['roll_number'] as String?,
       createdBy: json?['created_by'] as String?,
       updatedBy: json?['updated_by'] as String?,
-      year: json?['year'] as String?,
+      year: json?['batch'] as String?,
       caste: json?['caste'] as String?,
       gender: json?['gender'] as String?,
     );
@@ -80,7 +80,7 @@ class Users {
       'updated_by': updatedBy,
       'created_date': createdDate?.toString(),
       'updated_date': updatedDate?.toString(),
-      'year': year,
+      'batch': year,
       'caste': caste,
       'gender': gender,
     };

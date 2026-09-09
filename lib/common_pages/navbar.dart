@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nss_new/controller/account_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/view/reported_issues_screen.dart';
 import 'package:nss_new/view/view_attendance_screen.dart';

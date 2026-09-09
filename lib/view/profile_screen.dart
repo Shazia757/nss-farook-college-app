@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/navbar.dart';
@@ -219,7 +218,7 @@ class ProfileScreen extends StatelessWidget {
                                               onPressed: () => Get.to(
                                                 () => ChangePasswordScreen(
                                                   userId:
-                                                      displayVol?.admissionNo ??
+                                                      displayVol.admissionNo ??
                                                       '',
                                                   isChangepassword: false,
                                                 ),
@@ -530,10 +529,13 @@ class _InfoRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: cs.primary.withOpacity(0.7)),
           const SizedBox(width: 12),
+
           Expanded(
+            flex: 2,
             child: Text(
               label,
               style: textTheme.bodySmall?.copyWith(
@@ -541,10 +543,19 @@ class _InfoRow extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            value,
-            style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-            overflow: TextOverflow.ellipsis,
+
+          const SizedBox(width: 16),
+
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              softWrap: true,
+              style: textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),

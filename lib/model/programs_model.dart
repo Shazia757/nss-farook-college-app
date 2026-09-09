@@ -43,11 +43,7 @@ class ProgramResponse {
   String? message;
   List<Program>? programs;
 
-  ProgramResponse({
-    this.status,
-    this.message,
-    this.programs,
-  });
+  ProgramResponse({this.status, this.message, this.programs});
   factory ProgramResponse.fromJson(Map<String, dynamic> json) {
     return ProgramResponse(
       status: json['status'] as bool?,
@@ -70,20 +66,16 @@ class ProgramResponse {
 class ProgramNameResponse {
   bool? status;
   String? message;
-  List<String>? programs;
+  List<Program>? programs;
 
-  ProgramNameResponse({
-    this.status,
-    this.message,
-    this.programs,
-  });
+  ProgramNameResponse({this.status, this.message, this.programs});
 
   factory ProgramNameResponse.fromJson(Map<String, dynamic> json) {
     return ProgramNameResponse(
       status: json['status'] as bool?,
       message: json['message'] as String?,
       programs: (json['programs'] as List<dynamic>?)
-          ?.map((e) => e.toString())
+          ?.map((e) => Program.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -92,7 +84,7 @@ class ProgramNameResponse {
     return {
       'status': status,
       'message': message,
-      'programs': programs,
+      'programs': programs?.map((e) => e.toJson()).toList(),
     };
   }
 }

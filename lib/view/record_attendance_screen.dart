@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/controller/attendance_controller.dart';
+import 'package:nss_new/model/programs_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 
@@ -15,7 +16,8 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
   final AttendanceController controller = Get.find<AttendanceController>();
 
   String _searchQuery = '';
-  String? _selectedProgram;
+  int? _selectedProgramId;
+  Program? _selectedProgram;
   DateTime? _selectedDate = DateTime.now();
   final TextEditingController _hoursController = TextEditingController();
 
@@ -87,7 +89,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
       );
       return;
     }
-    if (_selectedProgram == null) {
+    if (_selectedProgramId == null) {
       Get.snackbar(
         'Required Field Missing',
         'Please select a program.',
@@ -130,8 +132,11 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
       return;
     }
 
-    controller.programName = _selectedProgram ?? '';
-    controller.programNameController.text = _selectedProgram ?? '';
+    final selectedProgram = controller.programsList.firstWhere(
+      (program) => program.id == _selectedProgramId,
+    );
+    
+controller.programId = _selectedProgramId!;
     controller.date = _selectedDate;
     controller.dateController.text = _selectedDate != null
         ? _formatDate(_selectedDate!)
@@ -451,8 +456,9 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _selectedProgram,
+                DropdownButtonFormField<int>(
+                  value: _selectedProgramId,
+                  isExpanded: true,
                   hint: const Text('Choose NSS Program'),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(
@@ -470,15 +476,20 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                   ),
                   items: controller.programsList
                       .map(
-                        (prog) => DropdownMenuItem<String>(
-                          value: prog,
-                          child: Text(prog),
+                        (prog) => DropdownMenuItem<int>(
+                          value: prog.id,
+                          child: Text(
+                            prog.name ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       )
                       .toList(),
                   onChanged: (val) {
                     setState(() {
-                      _selectedProgram = val;
+                      _selectedProgramId = val;
+                      
                     });
                   },
                 ),
