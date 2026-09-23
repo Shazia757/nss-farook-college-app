@@ -33,7 +33,9 @@ class BloodDonationRequest {
 
   factory BloodDonationRequest.fromJson(Map<String, dynamic> json) {
     return BloodDonationRequest(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? ''),
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id']?.toString() ?? ''),
       patientName: json['patient_name'] ?? json['patientName'] ?? '',
       bloodGroup: json['blood_group'] ?? json['bloodGroup'] ?? '',
       unitsRequired: json['units_required'] is int
@@ -44,11 +46,20 @@ class BloodDonationRequest {
       contactNumber: json['contact_number'] ?? json['contactNumber'] ?? '',
       urgency: json['urgency'] ?? json['urgencyLevel'] ?? 'normal',
       status: json['status'] ?? 'open',
-      neededBefore: json['needed_before'] ?? json['required_date'] ?? json['dateTime'],
+      neededBefore:
+          json['needed_before'] ?? json['required_date'] ?? json['dateTime'],
       notes: json['notes'] ?? json['description'] ?? '',
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']) : null,
-      createdBy: json['created_by']?.toString(),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'])
+          : null,
+      createdBy: json['created_by'] is Map
+          ? (json['created_by']['name'] ??
+                    json['created_by']['admission_number'])
+                ?.toString()
+          : json['created_by']?.toString(),
     );
   }
 
@@ -98,16 +109,24 @@ class BloodDonationRecord {
 
   factory BloodDonationRecord.fromJson(Map<String, dynamic> json) {
     return BloodDonationRecord(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? ''),
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id']?.toString() ?? ''),
       donationDate: json['donation_date']?.toString(),
       bloodGroup: json['blood_group']?.toString(),
-      units: json['units'] is int ? json['units'] : int.tryParse(json['units']?.toString() ?? '1'),
+      units: json['units'] is int
+          ? json['units']
+          : int.tryParse(json['units']?.toString() ?? '1'),
       hospital: json['hospital']?.toString(),
       recipientName: json['recipient_name']?.toString(),
       notes: json['notes']?.toString(),
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'])
+          : null,
       volunteer: json['volunteer']?.toString(),
-      request: json['request'] is int ? json['request'] : int.tryParse(json['request']?.toString() ?? ''),
+      request: json['request'] is int
+          ? json['request']
+          : int.tryParse(json['request']?.toString() ?? ''),
       verifiedBy: json['verified_by']?.toString(),
     );
   }
@@ -150,11 +169,13 @@ class EligibleDonor {
 
   factory EligibleDonor.fromJson(Map<String, dynamic> json) {
     return EligibleDonor(
-      admissionNo: json['admission_number']?.toString() ?? json['volunteer']?.toString(),
+      admissionNo:
+          json['admission_number']?.toString() ?? json['volunteer']?.toString(),
       name: json['name']?.toString(),
       bloodGroup: json['blood_group']?.toString(),
       phone: json['phone_number']?.toString() ?? json['phone']?.toString(),
-      department: json['department_name']?.toString() ?? json['department']?.toString(),
+      department:
+          json['department_name']?.toString() ?? json['department']?.toString(),
       lastDonationDate: json['last_donation_date']?.toString(),
       daysSinceLastDonation: json['days_since_last_donation'] is int
           ? json['days_since_last_donation']

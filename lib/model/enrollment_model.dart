@@ -26,11 +26,17 @@ class ProgramEnrollmentDetails {
     }
 
     return ProgramEnrollmentDetails(
-      id: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id']?.toString() ?? ''),
       volunteer: vol,
       volunteerAdmissionNo: admnNo,
-      date: json['enrollment_date'] != null ? DateTime.tryParse(json['enrollment_date'].toString()) : null,
-      program: json['program'] is int ? json['program'] as int : int.tryParse(json['program']?.toString() ?? ''),
+      date: json['enrollment_date'] != null
+          ? DateTime.tryParse(json['enrollment_date'].toString())
+          : null,
+      program: json['program'] is int
+          ? json['program'] as int
+          : int.tryParse(json['program']?.toString() ?? ''),
     );
   }
 
@@ -49,25 +55,36 @@ class EnrollmentResponse {
   String? message;
   List<ProgramEnrollmentDetails>? enrollmentList;
 
-  EnrollmentResponse({
-    this.status,
-    this.message,
-    this.enrollmentList,
-  });
+  EnrollmentResponse({this.status, this.message, this.enrollmentList});
 
   factory EnrollmentResponse.fromJson(dynamic json) {
     if (json is List) {
       return EnrollmentResponse(
         status: true,
-        enrollmentList: json.map((e) => ProgramEnrollmentDetails.fromJson(e as Map<String, dynamic>)).toList(),
+        enrollmentList: json
+            .map(
+              (e) =>
+                  ProgramEnrollmentDetails.fromJson(e as Map<String, dynamic>),
+            )
+            .toList(),
       );
     } else if (json is Map<String, dynamic>) {
-      final listData = json['enrollment_list'] ?? json['enrollments'] ?? json['data'] ?? json['results'];
+      final listData =
+          json['enrollment_list'] ??
+          json['enrollments'] ??
+          json['data'] ??
+          json['results'];
       return EnrollmentResponse(
         status: json['status'] as bool? ?? true,
         message: json['message'] as String?,
         enrollmentList: listData is List
-            ? listData.map((e) => ProgramEnrollmentDetails.fromJson(e as Map<String, dynamic>)).toList()
+            ? listData
+                  .map(
+                    (e) => ProgramEnrollmentDetails.fromJson(
+                      e as Map<String, dynamic>,
+                    ),
+                  )
+                  .toList()
             : [],
       );
     }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:nss_new/database/local_storage.dart';
-import 'package:nss_new/view/reported_issues_screen.dart';
-import 'package:nss_new/view/view_attendance_screen.dart';
+import 'package:nss_new/view/issues/reported_issues_screen.dart';
+import 'package:nss_new/view/attendance/view_attendance_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
-import 'package:nss_new/view/issues_screen.dart';
+import 'package:nss_new/view/issues/issues_screen.dart';
 import 'package:nss_new/view/profile_screen.dart';
-import 'package:nss_new/view/programs_screen.dart';
+import 'package:nss_new/view/program/programs_screen.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final int currentIndex;

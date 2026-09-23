@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/view/authentication/login_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
@@ -15,61 +16,64 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
-    Future.delayed(Duration(seconds: 3)).then(
-      (value) {
-        Api().checkVersion().then(
-          (value) {
-            if (value?.message == 'Up to date.') {
-              ((LocalStorage().readUser().admissionNo == null) ||
-                      (LocalStorage().readUser().admissionNo == ''))
-                  ? Get.offAll(() => LoginScreen())
-                  : Get.offAll(
-                      () => HomeScreen(),
-                    );
-            } else {
-              if (value?.status ?? false) {
-                Get.to(() => AppUpdateScreen(status: true));
-              } else {
-                Get.offAll(() => AppUpdateScreen(status: false));
-              }
-            }
-          },
-        );
-      },
-    );
     super.initState();
+    _checkAndNavigate();
+  }
+
+  Future<void> _checkAndNavigate() async {
+    await Future.delayed(const Duration(milliseconds: 1500));
+    try {
+      final res = await Api().checkVersion();
+      if (res != null &&
+          res.status == false &&
+          (res.message?.contains('updation required') == true ||
+              res.message?.contains('Unsupported') == true)) {
+        Get.offAll(() => const AppUpdateScreen(status: false));
+        return;
+      }
+    } catch (_) {
+      // If version check fails due to offline/timeout, proceed gracefully
+    }
+
+    if (LocalStorage.isLoggedIn) {
+      Get.offAll(() => const HomeScreen());
+    } else {
+      Get.offAll(() => const LoginScreen());
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            SizedBox(),
-            Column(
-              children: [
-                CircleAvatar(
-                  minRadius: 50,
-                  child: Image.asset("assets/logos/logo.png", height: 150),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 75,
+                      child: Image.asset("assets/logos/logo.png", height: 150),
+                    ),
+                    const SizedBox(height: 25),
+                    Text(
+                      "NSS Farook College",
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-                SizedBox(height: 25),
-                Text(
-                  "NSS Farook College",
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-              ],
+              ),
             ),
-            // CustomWidgets().footer()
+
+            CustomWidgets().footer(),
           ],
         ),
       ),
     );
   }
-
-
 }
 
 class AppUpdateScreen extends StatelessWidget {
@@ -85,20 +89,19 @@ class AppUpdateScreen extends StatelessWidget {
         leading: SizedBox(),
         actions: [
           TextButton(
-              onPressed: () {
-                ((LocalStorage().readUser().admissionNo == null) ||
-                        (LocalStorage().readUser().admissionNo == ''))
-                    ? Get.offAll(() => LoginScreen())
-                    : Get.offAll(
-                        () => HomeScreen(),
-                      );
-              },
-              child: (status)
-                  ? const Text(
-                      "Skip",
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
-                    )
-                  : SizedBox()),
+            onPressed: () {
+              ((LocalStorage().readUser().admissionNo == null) ||
+                      (LocalStorage().readUser().admissionNo == ''))
+                  ? Get.offAll(() => LoginScreen())
+                  : Get.offAll(() => HomeScreen());
+            },
+            child: (status)
+                ? const Text(
+                    "Skip",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  )
+                : SizedBox(),
+          ),
         ],
       ),
       body: SafeArea(
@@ -108,11 +111,7 @@ class AppUpdateScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Illustration or Icon
-              Icon(
-                Icons.system_update,
-                size: 100,
-                color: Colors.blueAccent,
-              ),
+              Icon(Icons.system_update, size: 100, color: Colors.blueAccent),
               const SizedBox(height: 30),
 
               // Title
@@ -140,10 +139,7 @@ class AppUpdateScreen extends StatelessWidget {
               // Subtitle / description
               const Text(
                 "A new version of the app is available. Update now to enjoy the latest features and improvements.",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.black54),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
@@ -165,9 +161,10 @@ class AppUpdateScreen extends StatelessWidget {
                   child: const Text(
                     "Update Now",
                     style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold),
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

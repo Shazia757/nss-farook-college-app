@@ -1,0 +1,1 @@
+{"user":{"admission_number":"2781","blood_group":null,"role":"vol","phone_number":null,"name":"Volunteer 2781","email":"vol2781@example.com","department":null,"date_of_birth":null,"created_by":null,"updated_by":null,"created_date":null,"updated_date":null,"batch":null,"caste":null,"gender":null},"token":"test-token","role":"vol","isLoggedIn":true}

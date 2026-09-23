@@ -284,6 +284,7 @@ class CustomWidgets {
     Color backgroundColor = Colors.black87,
     Color textColor = Colors.white,
   }) {
+    if (Get.context == null && Get.testMode) return;
     Get.showSnackbar(
       GetSnackBar(
         titleText: Text(

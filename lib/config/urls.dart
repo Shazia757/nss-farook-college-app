@@ -74,4 +74,3 @@ class Details {
   static String contactNo2 = '+919497343998';
   static String contactEmail = 'nss@farookcollege.ac.in';
 }
-

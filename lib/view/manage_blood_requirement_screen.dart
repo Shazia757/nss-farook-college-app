@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/controller/blood_requirement_controller.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
+import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/blood_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/add_blood_requirement_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
+import 'package:nss_new/view/blood_requirement_details_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,13 +23,25 @@ class _ManageBloodRequirementScreenState
     extends State<ManageBloodRequirementScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  final BloodRequirementController controller = Get.put(
-    BloodRequirementController(),
-  );
-  final VolunteerListController volunteerListController = Get.put(
-    VolunteerListController(),
-  );
+  late final BloodRequirementController controller;
+  late final VolunteerListController volunteerListController;
   int _activeTab = 0; // 0 for Requirements, 1 for Volunteers
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.isRegistered<BloodRequirementController>()
+        ? Get.find<BloodRequirementController>()
+        : Get.put(BloodRequirementController());
+    volunteerListController = Get.isRegistered<VolunteerListController>()
+        ? Get.find<VolunteerListController>()
+        : Get.put(VolunteerListController());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      controller.fetchBloodRequests();
+    });
+  }
 
   void _switchTab(int tabIndex) {
     setState(() {
@@ -39,18 +53,41 @@ class _ManageBloodRequirementScreenState
   }
 
   Future<void> _makeCall(String? phoneNumber) async {
-    final number = phoneNumber?.isNotEmpty == true ? phoneNumber! : '+919876543210';
-    final Uri launchUri = Uri(scheme: 'tel', path: number);
+    if (phoneNumber == null || phoneNumber.trim().isEmpty) {
+      Get.snackbar(
+        'Unavailable',
+        'No contact number provided.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.shade800,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (cleanPhone.length < 5) {
+      Get.snackbar(
+        'Invalid Number',
+        'The provided contact number is invalid ($phoneNumber).',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.shade800,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    final Uri launchUri = Uri(scheme: 'tel', path: cleanPhone);
     try {
       if (await canLaunchUrl(launchUri)) {
-        await launchUrl(launchUri);
+        await launchUrl(launchUri, mode: LaunchMode.externalApplication);
       } else {
         Get.snackbar(
-          'Error',
-          'Could not launch dialer',
+          'Dialer Unavailable',
+          'Could not launch dialer. Please check if your device has a phone call app installed.',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.red.withOpacity(0.9),
+          backgroundColor: Colors.red.shade800,
           colorText: Colors.white,
+          duration: const Duration(seconds: 4),
         );
       }
     } catch (e) {
@@ -58,7 +95,7 @@ class _ManageBloodRequirementScreenState
         'Error',
         'Failed to initiate call: $e',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.9),
+        backgroundColor: Colors.red.shade800,
         colorText: Colors.white,
       );
     }
@@ -70,9 +107,15 @@ class _ManageBloodRequirementScreenState
     ColorScheme cs,
     TextTheme tt,
   ) {
-    final displayBlood = vol.bloodGroup?.isNotEmpty == true ? vol.bloodGroup! : 'O+';
-    final displayAddress = vol.address?.isNotEmpty == true ? vol.address! : 'Farook College Campus, Calicut';
-    final displayPhone = vol.phoneNumber?.isNotEmpty == true ? vol.phoneNumber! : '+919876543210';
+    final displayBlood = vol.bloodGroup?.isNotEmpty == true
+        ? vol.bloodGroup!
+        : 'N/A';
+    final displayAddress = vol.address?.isNotEmpty == true
+        ? vol.address!
+        : 'Not specified';
+    final displayPhone = vol.phoneNumber?.isNotEmpty == true
+        ? vol.phoneNumber!
+        : 'Not available';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -123,7 +166,8 @@ class _ManageBloodRequirementScreenState
                           if (vol.department != null) ...[
                             const SizedBox(height: 2),
                             Text(
-                              '${vol.department?.category ?? ''} ${vol.department?.name ?? ''}'.trim(),
+                              '${vol.department?.category ?? ''} ${vol.department?.name ?? ''}'
+                                  .trim(),
                               style: tt.bodySmall?.copyWith(
                                 color: cs.onSurface.withOpacity(0.6),
                               ),
@@ -199,206 +243,299 @@ class _ManageBloodRequirementScreenState
       urgencyText = Colors.orange.shade700;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.onPrimary,
+    final hasValidPhone =
+        req.contactNumber != null &&
+        req.contactNumber!.replaceAll(RegExp(r'[^0-9+]'), '').length >= 5;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => BloodRequirementDetailsSheet.show(
+          context,
+          req,
+          onDelete: () => _showDeleteConfirmation(context, req),
+        ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: cs.outline.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: cs.onPrimary,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outline.withOpacity(0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: cs.primary.withOpacity(0.1),
-                      child: Text(
-                        req.bloodGroup ?? 'O+',
-                        style: tt.titleMedium?.copyWith(
-                          color: cs.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            req.patientName ?? 'Patient',
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.red.shade50,
+                          child: Text(
+                            req.bloodGroup?.isNotEmpty == true
+                                ? req.bloodGroup!
+                                : '🩸',
                             style: tt.titleMedium?.copyWith(
+                              color: Colors.red.shade800,
                               fontWeight: FontWeight.bold,
-                              color: cs.onSurface,
                             ),
                           ),
-                          const SizedBox(height: 2),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                req.patientName?.isNotEmpty == true
+                                    ? req.patientName!
+                                    : 'Patient in need',
+                                style: tt.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.local_hospital_outlined,
+                                    size: 14,
+                                    color: cs.onSurface.withOpacity(0.5),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      req.hospital?.isNotEmpty == true
+                                          ? req.hospital!
+                                          : 'Hospital not specified',
+                                      style: tt.bodySmall?.copyWith(
+                                        color: cs.onSurface.withOpacity(0.6),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: urgencyBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      (req.urgency ?? 'normal').toUpperCase(),
+                      style: tt.labelSmall?.copyWith(
+                        color: urgencyText,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.phone_outlined,
+                              size: 14,
+                              color: cs.onSurface.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              req.contactNumber?.isNotEmpty == true
+                                  ? req.contactNumber!
+                                  : 'Contact not provided',
+                              style: tt.bodySmall?.copyWith(
+                                color: cs.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                            if (hasValidPhone) ...[
+                              const SizedBox(width: 6),
+                              InkWell(
+                                onTap: () => _makeCall(req.contactNumber),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.phone,
+                                    size: 12,
+                                    color: Colors.green.shade800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.water_drop_outlined,
+                              size: 14,
+                              color: cs.onSurface.withOpacity(0.5),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${req.unitsRequired ?? 1} Unit${(req.unitsRequired ?? 1) > 1 ? 's' : ''} needed',
+                              style: tt.bodySmall?.copyWith(
+                                color: cs.onSurface.withOpacity(0.7),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (req.neededBefore != null &&
+                            req.neededBefore!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
                           Row(
                             children: [
                               Icon(
-                                Icons.local_hospital_outlined,
+                                Icons.access_time,
                                 size: 14,
                                 color: cs.onSurface.withOpacity(0.5),
                               ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  req.hospital ?? '',
-                                  style: tt.bodySmall?.copyWith(
-                                    color: cs.onSurface.withOpacity(0.6),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              const SizedBox(width: 6),
+                              Text(
+                                'Needed by: ${req.neededBefore!}',
+                                style: tt.bodySmall?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.7),
                                 ),
                               ),
                             ],
                           ),
                         ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: urgencyBg,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  (req.urgency ?? 'normal').toUpperCase(),
-                  style: tt.labelSmall?.copyWith(
-                    color: urgencyText,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.phone_outlined,
-                          size: 14,
-                          color: cs.onSurface.withOpacity(0.5),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          req.contactNumber ?? '',
-                          style: tt.bodySmall?.copyWith(
-                            color: cs.onSurface.withOpacity(0.7),
-                          ),
-                        ),
                       ],
                     ),
-                    if (req.neededBefore != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.access_time,
-                            size: 14,
-                            color: cs.onSurface.withOpacity(0.5),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            req.neededBefore!,
-                            style: tt.bodySmall?.copyWith(
-                              color: cs.onSurface.withOpacity(0.7),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.share_outlined,
-                      color: Colors.blue.shade700,
-                      size: 20,
-                    ),
-                    tooltip: 'Share Requirement',
-                    onPressed: () {
-                      final shareMessage = '''
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          Icons.share_outlined,
+                          color: Colors.blue.shade700,
+                          size: 20,
+                        ),
+                        tooltip: 'Share Requirement',
+                        onPressed: () {
+                          final needed = req.neededBefore?.isNotEmpty == true
+                              ? req.neededBefore!
+                              : 'ASAP';
+                          final shareMessage =
+                              '''
 🚨 *URGENT BLOOD REQUIREMENT* 🚨
 
-🩸 *Blood Group Needed:* ${req.bloodGroup}
-👤 *Patient Name:* ${req.patientName}
-🏥 *Hospital:* ${req.hospital}
-📞 *Contact Number:* ${req.contactNumber}
-⏰ *Needed By:* ${req.neededBefore ?? 'ASAP'}
-⚡ *Urgency Level:* ${req.urgency}
+🩸 *Blood Group Needed:* ${req.bloodGroup ?? 'Any'}
+👤 *Patient Name:* ${req.patientName?.isNotEmpty == true ? req.patientName : 'Patient in need'}
+🏥 *Hospital:* ${req.hospital?.isNotEmpty == true ? req.hospital : 'Hospital not specified'}
+📞 *Contact Number:* ${req.contactNumber?.isNotEmpty == true ? req.contactNumber : 'N/A'}
+⏰ *Needed By:* $needed
+⚡ *Urgency Level:* ${req.urgency ?? 'Normal'}
 
 ${req.notes?.isNotEmpty == true ? '📝 *Details:* ${req.notes}\n' : ''}
 Please share this message to help find a donor as soon as possible. Thank you!
-'''.trim();
-                      Share.share(shareMessage);
-                    },
+'''
+                                  .trim();
+                          Share.share(shareMessage);
+                        },
+                      ),
+                      if (LocalStorage().readUser().role != 'vol') ...[
+                        IconButton(
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            color: cs.primary,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            Get.to(
+                              () => AddBloodRequirementScreen(requirement: req),
+                            );
+                          },
+                        ),
+                        if (req.id != null)
+                          IconButton(
+                            icon: Icon(
+                              Icons.delete_outline,
+                              color: cs.error,
+                              size: 20,
+                            ),
+                            onPressed: () {
+                              _showDeleteConfirmation(context, req);
+                            },
+                          ),
+                      ],
+                    ],
                   ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.edit_outlined,
-                      color: cs.primary,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      Get.to(() => AddBloodRequirementScreen(requirement: req));
-                    },
+                ],
+              ),
+              if (req.notes?.isNotEmpty == true) ...[
+                const SizedBox(height: 8),
+                Text(
+                  req.notes!,
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurface.withOpacity(0.6),
+                    fontStyle: FontStyle.italic,
                   ),
-                  if (req.id != null)
-                    IconButton(
-                      icon: Icon(Icons.delete_outline, color: cs.error, size: 20),
-                      onPressed: () {
-                        _showDeleteConfirmation(context, req);
-                      },
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Tap for complete details',
+                    style: tt.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: cs.primary.withOpacity(0.8),
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 14,
+                    color: cs.primary.withOpacity(0.8),
+                  ),
                 ],
               ),
             ],
           ),
-          if (req.notes?.isNotEmpty == true) ...[
-            const SizedBox(height: 8),
-            Text(
-              req.notes!,
-              style: tt.bodyMedium?.copyWith(
-                color: cs.onSurface.withOpacity(0.6),
-                fontStyle: FontStyle.italic,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -653,12 +790,29 @@ Please share this message to help find a donor as soon as possible. Thank you!
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Requirement Registry',
-          style: tt.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: cs.primary,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Requirement Registry',
+              style: tt.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: cs.primary,
+              ),
+            ),
+            Obx(() {
+              final count = controller.activeFilterCount;
+              return Badge(
+                isLabelVisible: count > 0,
+                label: Text('$count'),
+                child: IconButton.filledTonal(
+                  icon: const Icon(Icons.filter_list_rounded, size: 20),
+                  tooltip: 'Filter & Sort',
+                  onPressed: () => _showRequirementsFilterBottomSheet(context),
+                ),
+              );
+            }),
+          ],
         ),
         const SizedBox(height: 12),
         Expanded(
@@ -668,30 +822,71 @@ Please share this message to help find a donor as soon as possible. Thank you!
             }
 
             final query = _searchQuery.toLowerCase().trim();
-            final filteredList = controller.requirements.where((req) {
+            final baseList = controller.filteredAndSortedRequirements;
+            final filteredList = baseList.where((req) {
+              if (query.isEmpty) return true;
               final pName = (req.patientName ?? '').toLowerCase();
               final hName = (req.hospital ?? '').toLowerCase();
-              return pName.contains(query) || hName.contains(query);
+              final bGroup = (req.bloodGroup ?? '').toLowerCase();
+              return pName.contains(query) ||
+                  hName.contains(query) ||
+                  bGroup.contains(query);
             }).toList();
 
             if (filteredList.isEmpty) {
+              final hasFilters = controller.activeFilterCount > 0;
               return Center(
-                child: Text(
-                  'No blood requirements found',
-                  style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurface.withOpacity(0.5),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 56,
+                        color: cs.onSurface.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        query.isNotEmpty
+                            ? 'No blood requirements matching "$query"'
+                            : hasFilters
+                            ? 'No blood requirements match the active filters'
+                            : 'No blood requirements registered',
+                        textAlign: TextAlign.center,
+                        style: tt.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      if (hasFilters) ...[
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            controller.resetFilters();
+                          },
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: const Text('Reset Filters'),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               );
             }
 
-            return ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              itemCount: filteredList.length,
-              itemBuilder: (context, index) {
-                final req = filteredList[index];
-                return _buildRequirementCard(context, req, cs, tt);
-              },
+            return RefreshIndicator(
+              onRefresh: () => controller.fetchBloodRequests(),
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                itemCount: filteredList.length,
+                itemBuilder: (context, index) {
+                  final req = filteredList[index];
+                  return _buildRequirementCard(context, req, cs, tt);
+                },
+              ),
             );
           }),
         ),
@@ -717,22 +912,20 @@ Please share this message to help find a donor as soon as possible. Thank you!
                 color: cs.primary,
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.sort_rounded, color: cs.primary),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  builder: (_) => const SortVolunteerBottomSheet(),
-                );
-              },
-            ),
+            Obx(() {
+              final count = volunteerListController.activeFilterCount;
+              return Badge(
+                isLabelVisible: count > 0,
+                label: Text('$count'),
+                child: IconButton.filledTonal(
+                  icon: const Icon(Icons.filter_list_rounded, size: 20),
+                  tooltip: 'Filter & Sort Volunteers',
+                  onPressed: () => _showVolunteerFilterBottomSheet(context),
+                ),
+              );
+            }),
           ],
         ),
-
         const SizedBox(height: 12),
         Expanded(
           child: Obx(() {
@@ -743,84 +936,463 @@ Please share this message to help find a donor as soon as possible. Thank you!
             final list = volunteerListController.usersList;
 
             if (list.isEmpty) {
+              final hasFilters = volunteerListController.activeFilterCount > 0;
               return Center(
-                child: Text(
-                  'No volunteers found',
-                  style: tt.bodyMedium?.copyWith(
-                    color: cs.onSurface.withOpacity(0.5),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.person_off_outlined,
+                        size: 56,
+                        color: cs.onSurface.withOpacity(0.3),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        hasFilters
+                            ? 'No active volunteers match selected filters'
+                            : 'No active volunteers found',
+                        textAlign: TextAlign.center,
+                        style: tt.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      if (hasFilters) ...[
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            volunteerListController.clearFilters();
+                          },
+                          icon: const Icon(Icons.refresh_rounded, size: 16),
+                          label: const Text('Reset Filters'),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               );
             }
 
-            return ListView.builder(
-              physics: const BouncingScrollPhysics(),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final vol = list[index];
-                return _buildVolunteerCard(context, vol, cs, tt);
+            return RefreshIndicator(
+              onRefresh: () async {
+                volunteerListController.getData();
               },
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics(),
+                ),
+                itemCount: list.length,
+                itemBuilder: (context, index) {
+                  final vol = list[index];
+                  return _buildVolunteerCard(context, vol, cs, tt);
+                },
+              ),
             );
           }),
         ),
       ],
     );
   }
-}
 
-class SortVolunteerBottomSheet extends StatelessWidget {
-  const SortVolunteerBottomSheet({super.key});
+  void _showRequirementsFilterBottomSheet(BuildContext context) {
+    String tempBloodGroup = controller.selectedBloodGroup.value;
+    String tempStatus = controller.selectedStatus.value;
+    String tempUrgency = controller.selectedUrgency.value;
+    String tempSort = controller.sortBy.value;
 
-  @override
-  Widget build(BuildContext context) {
-    final controller = Get.find<VolunteerListController>();
-
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Filter & Sort Volunteers",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Blood Group",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-            Wrap(
-              spacing: 8,
-              children: controller.bloodGroups.map((group) {
-                return ChoiceChip(
-                  label: Text(group),
-                  selected: controller.selectedBloodGroup.value == group,
-                  onSelected: (_) {
-                    controller.filterByBloodGroup(group);
-                    Get.back();
-                  },
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: () {
-                  controller.clearFilters();
-                  Get.back();
-                },
-                child: const Text("Clear Filters"),
-              ),
-            ),
-          ],
-        ),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        final tt = Theme.of(ctx).textTheme;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Filter & Sort Requirements',
+                          style: tt.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.primary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 1. Blood Group
+                            const SizedBox(height: 8),
+                            Text(
+                              'Blood Group',
+                              style: tt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                ChoiceChip(
+                                  label: const Text('All'),
+                                  selected: tempBloodGroup.isEmpty,
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempBloodGroup = '';
+                                    });
+                                  },
+                                ),
+                                ...controller.bloodGroups.map((bg) {
+                                  return ChoiceChip(
+                                    label: Text(bg),
+                                    selected: tempBloodGroup == bg,
+                                    onSelected: (selected) {
+                                      setModalState(() {
+                                        tempBloodGroup = selected ? bg : '';
+                                      });
+                                    },
+                                  );
+                                }),
+                              ],
+                            ),
+
+                            // 2. Status
+                            const SizedBox(height: 16),
+                            Text(
+                              'Request Status',
+                              style: tt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                ChoiceChip(
+                                  label: const Text('All'),
+                                  selected: tempStatus.isEmpty,
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempStatus = '';
+                                    });
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Pending / Open'),
+                                  selected: tempStatus == 'pending',
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempStatus = selected ? 'pending' : '';
+                                    });
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Fulfilled'),
+                                  selected: tempStatus == 'fulfilled',
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempStatus = selected ? 'fulfilled' : '';
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+
+                            // 3. Urgency
+                            const SizedBox(height: 16),
+                            Text(
+                              'Urgency Level',
+                              style: tt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              children: [
+                                ChoiceChip(
+                                  label: const Text('All'),
+                                  selected: tempUrgency.isEmpty,
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempUrgency = '';
+                                    });
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Normal'),
+                                  selected: tempUrgency == 'normal',
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempUrgency = selected ? 'normal' : '';
+                                    });
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Urgent'),
+                                  selected: tempUrgency == 'urgent',
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempUrgency = selected ? 'urgent' : '';
+                                    });
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Critical'),
+                                  selected: tempUrgency == 'critical',
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      tempUrgency = selected ? 'critical' : '';
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+
+                            // 4. Sort Options
+                            const SizedBox(height: 16),
+                            Text(
+                              'Sort By',
+                              style: tt.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                ChoiceChip(
+                                  label: const Text('Newest First'),
+                                  selected: tempSort == 'newest',
+                                  onSelected: (selected) {
+                                    setModalState(() => tempSort = 'newest');
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Oldest First'),
+                                  selected: tempSort == 'oldest',
+                                  onSelected: (selected) {
+                                    setModalState(() => tempSort = 'oldest');
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Highest Urgency'),
+                                  selected: tempSort == 'urgency',
+                                  onSelected: (selected) {
+                                    setModalState(() => tempSort = 'urgency');
+                                  },
+                                ),
+                                ChoiceChip(
+                                  label: const Text('Nearest Needed Date'),
+                                  selected: tempSort == 'needed_date',
+                                  onSelected: (selected) {
+                                    setModalState(
+                                      () => tempSort = 'needed_date',
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Actions Row
+                    const Divider(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setModalState(() {
+                                tempBloodGroup = '';
+                                tempStatus = '';
+                                tempUrgency = '';
+                                tempSort = 'newest';
+                              });
+                              controller.resetFilters();
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Reset'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              controller.applyFilters(
+                                bloodGroup: tempBloodGroup,
+                                status: tempStatus,
+                                urgency: tempUrgency,
+                                sort: tempSort,
+                              );
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Apply'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showVolunteerFilterBottomSheet(BuildContext context) {
+    String tempBloodGroup = volunteerListController.selectedBloodGroup.value;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final cs = Theme.of(ctx).colorScheme;
+        final tt = Theme.of(ctx).textTheme;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Filter Volunteers',
+                          style: tt.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.primary,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Blood Group',
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        ChoiceChip(
+                          label: const Text('All'),
+                          selected: tempBloodGroup.isEmpty,
+                          onSelected: (selected) {
+                            setModalState(() {
+                              tempBloodGroup = '';
+                            });
+                          },
+                        ),
+                        ...volunteerListController.bloodGroups.map((bg) {
+                          return ChoiceChip(
+                            label: Text(bg),
+                            selected: tempBloodGroup == bg,
+                            onSelected: (selected) {
+                              setModalState(() {
+                                tempBloodGroup = selected ? bg : '';
+                              });
+                            },
+                          );
+                        }),
+                      ],
+                    ),
+                    const Spacer(),
+                    const Divider(),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              setModalState(() {
+                                tempBloodGroup = '';
+                              });
+                              volunteerListController.clearFilters();
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Reset'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              volunteerListController.filterByBloodGroup(
+                                tempBloodGroup,
+                              );
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Apply'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

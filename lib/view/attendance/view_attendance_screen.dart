@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/common_pages/navbar.dart';
@@ -21,15 +20,22 @@ class AttendanceScreen extends StatefulWidget {
 class _AttendanceScreenState extends State<AttendanceScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  final AttendanceController controller = Get.put(AttendanceController());
+  late final AttendanceController controller;
 
   @override
   void initState() {
     super.initState();
-    final admissionNo = widget.volunteer != null
-        ? widget.volunteer!.admissionNo ?? ''
-        : LocalStorage().readUser().admissionNo ?? '';
-    controller.getAttendance(admissionNo);
+    controller = Get.isRegistered<AttendanceController>()
+        ? Get.find<AttendanceController>()
+        : Get.put(AttendanceController());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final admissionNo = widget.volunteer != null
+          ? widget.volunteer!.admissionNo ?? ''
+          : LocalStorage().readUser().admissionNo ?? '';
+      controller.getAttendance(admissionNo);
+    });
   }
 
   @override

@@ -3,11 +3,7 @@ class Department {
   String? category;
   int? id;
 
-  Department({
-    this.id,
-    this.category,
-    this.name,
-  });
+  Department({this.id, this.category, this.name});
 
   factory Department.fromJson(Map<String, dynamic>? data) {
     if (data == null) return Department();
@@ -27,11 +23,7 @@ class Department {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'category': category,
-      'name': name,
-    };
+    return {'id': id, 'category': category, 'name': name};
   }
 }
 
@@ -46,15 +38,23 @@ class DepartmentList {
     if (json is List) {
       return DepartmentList(
         status: true,
-        programs: json.map((e) => Department.fromJson(e as Map<String, dynamic>)).toList(),
+        programs: json
+            .map((e) => Department.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
     } else if (json is Map<String, dynamic>) {
-      final deptData = json['programs'] ?? json['departments'] ?? json['data'] ?? json['results'];
+      final deptData =
+          json['programs'] ??
+          json['departments'] ??
+          json['data'] ??
+          json['results'];
       return DepartmentList(
         status: json['status'] as bool? ?? true,
         message: json['message'] as String?,
         programs: deptData is List
-            ? deptData.map((e) => Department.fromJson(e as Map<String, dynamic>)).toList()
+            ? deptData
+                  .map((e) => Department.fromJson(e as Map<String, dynamic>))
+                  .toList()
             : [],
       );
     }

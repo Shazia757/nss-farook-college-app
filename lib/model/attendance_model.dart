@@ -25,7 +25,9 @@ class Attendance {
     if (json['program'] is Map<String, dynamic>) {
       final program = json['program'] as Map<String, dynamic>;
       programName = program['name']?.toString();
-      pId = program['id'] is int ? program['id'] : int.tryParse(program['id']?.toString() ?? '');
+      pId = program['id'] is int
+          ? program['id']
+          : int.tryParse(program['id']?.toString() ?? '');
       if (program['date'] != null) {
         attDate = DateTime.tryParse(program['date'].toString());
       }
@@ -37,7 +39,9 @@ class Attendance {
 
     String? volunteerAdmn;
     if (json['volunteer'] is Map<String, dynamic>) {
-      volunteerAdmn = json['volunteer']['admission_number']?.toString() ?? json['volunteer']['name']?.toString();
+      volunteerAdmn =
+          json['volunteer']['admission_number']?.toString() ??
+          json['volunteer']['name']?.toString();
     } else if (json['volunteer'] != null) {
       volunteerAdmn = json['volunteer'].toString();
     }
@@ -54,11 +58,18 @@ class Attendance {
     }
 
     return Attendance(
-      id: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
-      name: programName ?? json['program_name']?.toString() ?? json['name']?.toString(),
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id']?.toString() ?? ''),
+      name:
+          programName ??
+          json['program_name']?.toString() ??
+          json['name']?.toString(),
       admissionNo: volunteerAdmn ?? json['admission_number']?.toString(),
       date: attDate,
-      hours: json['hours'] is int ? json['hours'] as int : int.tryParse(json['hours']?.toString() ?? '0'),
+      hours: json['hours'] is int
+          ? json['hours'] as int
+          : int.tryParse(json['hours']?.toString() ?? '0'),
       markedBy: markedByName,
       programId: pId,
     );
@@ -88,15 +99,23 @@ class AttendanceResponse {
     if (json is List) {
       return AttendanceResponse(
         status: true,
-        attendance: json.map((e) => Attendance.fromJson(e as Map<String, dynamic>)).toList(),
+        attendance: json
+            .map((e) => Attendance.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
     } else if (json is Map<String, dynamic>) {
-      final attData = json['attendance_details'] ?? json['attendance'] ?? json['data'] ?? json['results'];
+      final attData =
+          json['attendance_details'] ??
+          json['attendance'] ??
+          json['data'] ??
+          json['results'];
       return AttendanceResponse(
         status: json['status'] as bool? ?? true,
         message: json['message'] as String?,
         attendance: attData is List
-            ? attData.map((e) => Attendance.fromJson(e as Map<String, dynamic>)).toList()
+            ? attData
+                  .map((e) => Attendance.fromJson(e as Map<String, dynamic>))
+                  .toList()
             : [],
       );
     }

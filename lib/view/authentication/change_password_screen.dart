@@ -14,7 +14,9 @@ class ChangePasswordScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AccountController c = Get.put(AccountController());
+    final AccountController c = Get.isRegistered<AccountController>()
+        ? Get.find<AccountController>()
+        : Get.put(AccountController());
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 

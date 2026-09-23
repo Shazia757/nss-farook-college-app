@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
@@ -72,68 +73,137 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
 
   void _sortOpenedList() {
     if (sortByOldest.isTrue) {
-      modifiedOpenedList.sort((a, b) => (a.createdDate ?? DateTime.now()).compareTo(b.createdDate ?? DateTime.now()));
+      modifiedOpenedList.sort(
+        (a, b) => (a.createdDate ?? DateTime.now()).compareTo(
+          b.createdDate ?? DateTime.now(),
+        ),
+      );
     } else {
-      modifiedOpenedList.sort((a, b) => (b.createdDate ?? DateTime.now()).compareTo(a.createdDate ?? DateTime.now()));
+      modifiedOpenedList.sort(
+        (a, b) => (b.createdDate ?? DateTime.now()).compareTo(
+          a.createdDate ?? DateTime.now(),
+        ),
+      );
     }
   }
 
   void _sortClosedList() {
     if (sortByOldest.isTrue) {
-      modifiedClosedList.sort((a, b) => (a.createdDate ?? DateTime.now()).compareTo(b.createdDate ?? DateTime.now()));
+      modifiedClosedList.sort(
+        (a, b) => (a.createdDate ?? DateTime.now()).compareTo(
+          b.createdDate ?? DateTime.now(),
+        ),
+      );
     } else {
-      modifiedClosedList.sort((a, b) => (b.createdDate ?? DateTime.now()).compareTo(a.createdDate ?? DateTime.now()));
+      modifiedClosedList.sort(
+        (a, b) => (b.createdDate ?? DateTime.now()).compareTo(
+          a.createdDate ?? DateTime.now(),
+        ),
+      );
     }
   }
 
   @override
   void onInit() {
+    super.onInit();
     tabController = TabController(length: 2, vsync: this);
     adminTabController = TabController(length: 2, vsync: this);
-    getAdmins();
-    fetchIssues();
-    super.onInit();
   }
 
-  void fetchIssues() {
+  @override
+  void onReady() {
+    super.onReady();
+    getAdmins();
+    fetchIssues();
+  }
+
+  @override
+  void onClose() {
+    tabController.dispose();
+    adminTabController.dispose();
+    subjectController.dispose();
+    desController.dispose();
+    toController.dispose();
+    resolvedByController.dispose();
+    super.onClose();
+  }
+
+  void clearIssues() {
+    openedList.clear();
+    closedList.clear();
+    modifiedOpenedList.clear();
+    modifiedClosedList.clear();
+  }
+
+  Future<void> fetchIssues() async {
+    if (isClosed) return;
     final user = LocalStorage().readUser();
     if (user.role != 'vol') {
-      getAdminIssues();
+      await getAdminIssues();
     } else {
-      getVolIssues(user.admissionNo ?? '');
+      await getVolIssues(user.admissionNo ?? '');
     }
   }
 
   void getAdmins() {
-    _api.getAdmins().then((value) => adminList.assignAll(value?.data ?? []));
+    if (isClosed) return;
+    _api
+        .getAdmins()
+        .then((value) {
+          if (isClosed) return;
+          adminList.assignAll(value?.data ?? []);
+        })
+        .catchError((_) {});
   }
 
   Future<void> getAdminIssues() async {
+    if (isClosed) return;
+    clearIssues();
     isLoading.value = true;
-    final value = await _api.getAdminIssues();
-    openedList = value?.openIssues ?? [];
-    closedList = value?.closedIssues ?? [];
-    modifiedOpenedList.assignAll(openedList);
-    modifiedClosedList.assignAll(closedList);
-    _sortOpenedList();
-    _sortClosedList();
-    isLoading.value = false;
+    try {
+      final value = await _api.getAdminIssues();
+      if (isClosed) return;
+      openedList = value?.openIssues ?? [];
+      closedList = value?.closedIssues ?? [];
+      modifiedOpenedList.assignAll(openedList);
+      modifiedClosedList.assignAll(closedList);
+      _openFilteredTo();
+      _closedFilteredTo();
+      _sortOpenedList();
+      _sortClosedList();
+    } catch (e) {
+      log('Error fetching admin issues: $e');
+    } finally {
+      if (!isClosed) {
+        isLoading.value = false;
+      }
+    }
   }
 
   Future<void> getVolIssues(String admissionNo) async {
+    if (isClosed) return;
+    clearIssues();
     isLoading.value = true;
-    final value = await _api.getVolIssues(admissionNo);
-    openedList = value?.openIssues ?? [];
-    closedList = value?.closedIssues ?? [];
-    modifiedOpenedList.assignAll(openedList);
-    modifiedClosedList.assignAll(closedList);
-    _sortOpenedList();
-    _sortClosedList();
-    isLoading.value = false;
+    try {
+      final value = await _api.getVolIssues(admissionNo);
+      if (isClosed) return;
+      openedList = value?.openIssues ?? [];
+      closedList = value?.closedIssues ?? [];
+      modifiedOpenedList.assignAll(openedList);
+      modifiedClosedList.assignAll(closedList);
+      _sortOpenedList();
+      _sortClosedList();
+    } catch (e) {
+      log('Error fetching volunteer issues: $e');
+    } finally {
+      if (!isClosed) {
+        isLoading.value = false;
+      }
+    }
   }
 
   void reportIssue() {
-    if (!onSubmitIssueValidation()) return;
+    if (!onSubmitIssueValidation() || isClosed) return;
     isReportLoading.value = true;
     _api
         .addIssue({
@@ -142,6 +212,7 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
           'assigned_to': submittedTo.value,
         })
         .then((value) {
+          if (isClosed) return;
           isReportLoading.value = false;
           Get.back();
           if (value?.status ?? false) {
@@ -158,15 +229,19 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
               value?.message ?? 'Failed to report issue.',
             );
           }
+        })
+        .catchError((_) {
+          if (!isClosed) isReportLoading.value = false;
         });
   }
 
   void resolveIssue(int? id) {
-    if (id == null) return;
+    if (id == null || isClosed) return;
     isResolveLoading.value = true;
     _api
         .resolveIssue({'id': id})
         .then((value) {
+          if (isClosed) return;
           isResolveLoading.value = false;
           if (value?.status ?? false) {
             Get.back();
@@ -181,22 +256,37 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
               value?.message ?? 'Failed to resolve issue.',
             );
           }
+        })
+        .catchError((_) {
+          if (!isClosed) isResolveLoading.value = false;
         });
   }
 
   void deleteIssue(int? id) {
-    if (id == null) return;
+    if (id == null || isClosed) return;
     isLoading.value = true;
-    _api.deleteIssue(id).then((value) {
-      isLoading.value = false;
-      if (value?.status ?? false) {
-        Get.back();
-        CustomWidgets.showSnackBar("Success", value?.message ?? "Issue deleted successfully.");
-        fetchIssues();
-      } else {
-        CustomWidgets.showSnackBar("Error", value?.message ?? "Failed to delete issue.");
-      }
-    });
+    _api
+        .deleteIssue(id)
+        .then((value) {
+          if (isClosed) return;
+          isLoading.value = false;
+          if (value?.status ?? false) {
+            Get.back();
+            CustomWidgets.showSnackBar(
+              "Success",
+              value?.message ?? "Issue deleted successfully.",
+            );
+            fetchIssues();
+          } else {
+            CustomWidgets.showSnackBar(
+              "Error",
+              value?.message ?? "Failed to delete issue.",
+            );
+          }
+        })
+        .catchError((_) {
+          if (!isClosed) isLoading.value = false;
+        });
   }
 
   bool onSubmitIssueValidation() {

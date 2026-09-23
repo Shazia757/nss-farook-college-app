@@ -16,7 +16,7 @@ class AddVolunteerScreen extends StatefulWidget {
 
 class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
   final _formKey = GlobalKey<FormState>();
-  VolunteerController c = Get.put(VolunteerController());
+  late final VolunteerController c;
 
   String? _selectedYear;
   DateTime? _selectedDOB;
@@ -45,6 +45,9 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
   @override
   void initState() {
     super.initState();
+    c = Get.isRegistered<VolunteerController>()
+        ? Get.find<VolunteerController>()
+        : Get.put(VolunteerController());
     final v = widget.volunteer;
     final isEditMode = widget.volunteer != null;
     if (isEditMode) {
@@ -56,6 +59,10 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
       _selectedDOB = null;
       _selectedYear = null;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      c.getDepartments();
+    });
   }
 
   @override

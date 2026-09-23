@@ -7,37 +7,69 @@ import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/view/authentication/token_expired_screen.dart';
 import 'package:nss_new/config/urls.dart';
 
-bool checkValidations(String response) {
-  if (response.contains('Invalid token')) {
-    Get.offAll(() => TokenExpiredScreen());
-    return false;
-  } else if (response.contains('updation required') ||
-      response.contains('Unsupported OS or app version.')) {
-    Get.offAll(() => AppUpdateScreen(status: false));
+import 'dart:convert';
 
-    return false;
+bool checkValidations(String responseBody, {int? statusCode}) {
+  if (responseBody.isEmpty) return true;
+
+  try {
+    final decoded = jsonDecode(responseBody);
+    if (decoded is Map<String, dynamic>) {
+      final detail = decoded['detail']?.toString() ?? '';
+      final message = decoded['message']?.toString() ?? '';
+
+      // Only genuinely invalid / expired tokens should trigger session expired
+      if (statusCode == 401 ||
+          (statusCode == 403 &&
+              (detail == 'Invalid token' ||
+                  detail.toLowerCase().contains('token expired') ||
+                  message == 'Invalid token.'))) {
+        if (LocalStorage.isLoggedIn) {
+          Get.offAll(() => const TokenExpiredScreen());
+        }
+        return false;
+      }
+
+      if (detail.contains('updation required') ||
+          message.contains('updation required') ||
+          message.contains('Unsupported OS or app version.')) {
+        Get.offAll(() => const AppUpdateScreen(status: false));
+        return false;
+      }
+    }
+  } catch (_) {
+    // Non-JSON response (e.g. HTML 502/503) should not trigger logout
   }
+
   return true;
 }
 
-checkConnectivity() async {
+Future<void> checkConnectivity() async {
   final connectivityResult = await Connectivity().checkConnectivity();
   if (connectivityResult.contains(ConnectivityResult.none)) {
-    Get.to(() => NoInternetScreen());
+    Get.to(() => const NoInternetScreen());
   }
 }
 
 Future<Map<String, String>> getHeader() async {
-  String token = await LocalStorage().readToken() ?? '';
-  if (token.isNotEmpty && !token.startsWith('Bearer ') && !token.startsWith('JWT ')) {
+  String token =
+      LocalStorage().currentToken ?? await LocalStorage().readToken() ?? '';
+  if (token.isNotEmpty &&
+      !token.startsWith('Bearer ') &&
+      !token.startsWith('JWT ')) {
     token = 'Bearer $token';
   }
-  return {
+  // Backend strictly expects 'ios' or 'android'. Use 'ios' on iOS, 'android' everywhere else.
+  final os = Platform.isIOS ? 'ios' : 'android';
+  final headers = <String, String>{
     "Content-Type": "application/json",
-    "OS": Platform.operatingSystem,
+    "OS": os,
     "App-Version": Details.appVersion,
-    "Authorization": token,
   };
+  if (token.isNotEmpty) {
+    headers["Authorization"] = token;
+  }
+  return headers;
 }
 
 String formatKey(String key) {

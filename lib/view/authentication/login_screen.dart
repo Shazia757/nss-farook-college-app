@@ -9,7 +9,9 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.put(AccountController());
+    final c = Get.isRegistered<AccountController>()
+        ? Get.find<AccountController>()
+        : Get.put(AccountController());
 
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;

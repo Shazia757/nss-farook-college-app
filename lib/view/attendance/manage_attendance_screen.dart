@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/controller/attendance_controller.dart';
 import 'package:nss_new/view/home_screen.dart';
-import 'package:nss_new/view/view_attendance_screen.dart';
-import 'package:nss_new/view/record_attendance_screen.dart';
+import 'package:nss_new/view/attendance/view_attendance_screen.dart';
+import 'package:nss_new/view/attendance/record_attendance_screen.dart';
 import 'package:nss_new/model/user_model.dart';
 
 class ManageAttendanceScreen extends StatefulWidget {
@@ -14,9 +14,21 @@ class ManageAttendanceScreen extends StatefulWidget {
 }
 
 class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
-
   final TextEditingController _searchController = TextEditingController();
-  final AttendanceController controller = Get.put(AttendanceController());
+  late final AttendanceController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.isRegistered<AttendanceController>()
+        ? Get.find<AttendanceController>()
+        : Get.put(AttendanceController());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      controller.getUsers();
+      controller.getPrograms();
+    });
+  }
 
   @override
   void dispose() {

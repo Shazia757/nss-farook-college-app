@@ -5,15 +5,13 @@ import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/common_pages/navbar.dart';
 import 'package:nss_new/controller/account_controller.dart';
-import 'package:nss_new/controller/volunteer_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
-import 'package:nss_new/view/add_volunteer_screen.dart';
+import 'package:nss_new/view/volunteer/add_volunteer_screen.dart';
 import 'package:nss_new/view/authentication/change_password_screen.dart';
 import 'package:nss_new/view/authentication/delete_account_screen.dart';
-import 'package:nss_new/view/authentication/login_screen.dart';
-import 'package:nss_new/view/view_attendance_screen.dart';
+import 'package:nss_new/view/attendance/view_attendance_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final Users? volunteer;
@@ -33,14 +31,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     rxVolunteer.value = widget.volunteer ?? LocalStorage().readUser();
-    fetchHours();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      fetchHours();
+    });
   }
 
   void fetchHours() async {
     final admn = rxVolunteer.value?.admissionNo;
     if (admn != null && admn.isNotEmpty) {
-      final summary = await _api.getVolunteerHoursSummary(admissionNumber: admn);
-      if (summary != null) {
+      final summary = await _api.getVolunteerHoursSummary(
+        admissionNumber: admn,
+      );
+      if (mounted && summary != null) {
         hoursSummary.value = summary;
       }
     }
@@ -80,7 +83,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Obx(() {
           final displayVol = rxVolunteer.value;
           final name = displayVol?.name;
-          final summary = hoursSummary.value;
 
           return Center(
             child: ConstrainedBox(
@@ -174,9 +176,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ),
                                     ),
                                     style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white.withOpacity(0.18),
+                                      backgroundColor: Colors.white.withOpacity(
+                                        0.18,
+                                      ),
                                       foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14),
                                       ),
@@ -190,12 +196,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   width: double.infinity,
                                   child: FilledButton.icon(
                                     onPressed: () => Get.to(
-                                      () => AddVolunteerScreen(volunteer: displayVol),
+                                      () => AddVolunteerScreen(
+                                        volunteer: displayVol,
+                                      ),
                                     )?.then((_) => fetchHours()),
                                     style: FilledButton.styleFrom(
                                       backgroundColor: Colors.white,
                                       foregroundColor: cs.primary,
-                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(14),
                                       ),
@@ -214,64 +224,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 20),
 
-                  /// ── 240 HOURS TARGET PROGRESS CARD ───────────────────
-                  if (displayVol?.role != 'po')
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: cs.onPrimary,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: cs.outline.withOpacity(0.4)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "240 Hours Goal Progress",
-                                style: tt.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.primary,
-                                ),
-                              ),
-                              Text(
-                                "${summary?.totalHours ?? 0} / ${summary?.targetHours ?? 240} hrs",
-                                style: tt.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: LinearProgressIndicator(
-                              value: ((summary?.totalHours ?? 0) / (summary?.targetHours ?? 240)).clamp(0.0, 1.0),
-                              minHeight: 12,
-                              backgroundColor: cs.primary.withOpacity(0.12),
-                              color: cs.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "${(summary?.progressPercentage ?? 0).toStringAsFixed(1)}% of total target completed",
-                            style: tt.bodySmall?.copyWith(color: cs.onSurface.withOpacity(0.6)),
-                          ),
-                        ],
-                      ),
-                    ),
+                  /// ── 240 HOURS TARGET PROGRESS CARD (Sec / PO View Only) ──
+                  // if (role != 'vol')
+                  //   Container(
+                  //     padding: const EdgeInsets.all(20),
+                  //     decoration: BoxDecoration(
+                  //       color: cs.onPrimary,
+                  //       borderRadius: BorderRadius.circular(20),
+                  //       border: Border.all(color: cs.outline.withOpacity(0.4)),
+                  //       boxShadow: [
+                  //         BoxShadow(
+                  //           color: Colors.black.withOpacity(0.02),
+                  //           blurRadius: 10,
+                  //           offset: const Offset(0, 4),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //     child: Column(
+                  //       crossAxisAlignment: CrossAxisAlignment.start,
+                  //       children: [
+                  //         Row(
+                  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  //           children: [
+                  //             Text(
+                  //               "240 Hours Goal Progress",
+                  //               style: tt.titleMedium?.copyWith(
+                  //                 fontWeight: FontWeight.bold,
+                  //                 color: cs.primary,
+                  //               ),
+                  //             ),
+                  //             Text(
+                  //               "${summary?.totalHours ?? 0} / ${summary?.targetHours ?? 240} hrs",
+                  //               style: tt.titleMedium?.copyWith(
+                  //                 fontWeight: FontWeight.bold,
+                  //                 color: cs.onSurface,
+                  //               ),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //         const SizedBox(height: 12),
+                  //         ClipRRect(
+                  //           borderRadius: BorderRadius.circular(10),
+                  //           child: LinearProgressIndicator(
+                  //             value:
+                  //                 ((summary?.totalHours ?? 0) /
+                  //                         (summary?.targetHours ?? 240))
+                  //                     .clamp(0.0, 1.0),
+                  //             minHeight: 12,
+                  //             backgroundColor: cs.primary.withOpacity(0.12),
+                  //             color: cs.primary,
+                  //           ),
+                  //         ),
+                  //         const SizedBox(height: 8),
+                  //         Text(
+                  //           "${(summary?.progressPercentage ?? 0).toStringAsFixed(1)}% of total target completed",
+                  //           style: tt.bodySmall?.copyWith(
+                  //             color: cs.onSurface.withOpacity(0.6),
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
 
-                  const SizedBox(height: 20),
+                  // const SizedBox(height: 20),
 
                   // ================= PERSONAL DETAILS =================
                   _SectionCard(
@@ -372,7 +387,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            Get.to(() => AttendanceScreen(volunteer: displayVol));
+                            Get.to(
+                              () => AttendanceScreen(volunteer: displayVol),
+                            );
                           },
                           icon: const Icon(Icons.analytics_outlined),
                           label: const Text("View Attendance History"),
@@ -519,7 +536,9 @@ class _DangerZoneCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final role = LocalStorage().readUser().role;
-     AccountController c = Get.put(AccountController());
+    final AccountController c = Get.isRegistered<AccountController>()
+        ? Get.find<AccountController>()
+        : Get.put(AccountController());
 
     return Column(
       children: [
@@ -554,18 +573,17 @@ class _DangerZoneCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               TextButton(
-              
-                    onPressed: () => CustomWidgets().showConfirmationDialog(
-                      title: 'Logout',
-                      message: 'Are you sure you want to logout?',
-                      onConfirm: () => c.logout(),
-                      data: Obx(
-                        () => (c.isLoading.value)
-                            ? CircularProgressIndicator()
-                            : Text("Confirm",
-                                style: TextStyle(color: Colors.red)),
-                      )),
-               
+                onPressed: () => CustomWidgets().showConfirmationDialog(
+                  title: 'Logout',
+                  message: 'Are you sure you want to logout?',
+                  onConfirm: () => c.logout(),
+                  data: Obx(
+                    () => (c.isLoading.value)
+                        ? CircularProgressIndicator()
+                        : Text("Confirm", style: TextStyle(color: Colors.red)),
+                  ),
+                ),
+
                 style: TextButton.styleFrom(
                   foregroundColor: cs.error,
                   backgroundColor: cs.error.withOpacity(0.1),

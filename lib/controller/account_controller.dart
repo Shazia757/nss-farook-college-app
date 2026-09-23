@@ -1,10 +1,8 @@
 import 'dart:developer';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/database/local_storage.dart';
-import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/view/authentication/login_screen.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/view/home_screen.dart';
@@ -30,19 +28,21 @@ class AccountController extends GetxController {
   var errorMessage = ''.obs;
 
   @override
-  onInit() {
-    if (kDebugMode) {
-      userNameController.text = '2781';
-      passwordController.text = '27812006';
-    }
-
-    super.onInit();
+  void onClose() {
+    userNameController.dispose();
+    passwordController.dispose();
+    oldpasswordController.dispose();
+    newPassController.dispose();
+    confirmPassController.dispose();
+    reasonController.dispose();
+    super.onClose();
   }
 
   Future<void> login() async {
+    if (isClosed) return;
     errorMessage.value = '';
 
-    final userName = userNameController.text;
+    final userName = userNameController.text.trim();
     final password = passwordController.text;
 
     if (userName.isEmpty || password.isEmpty) {
@@ -52,16 +52,25 @@ class AccountController extends GetxController {
     }
     isLoading.value = true;
 
-    api.login({'admission_number': userName, 'password': password}).then((
-      response,
-    ) async {
+    try {
+      final response = await api.login({
+        'admission_number': userName,
+        'password': password,
+      });
+      if (isClosed) return;
       if (response?.status == true && response?.data?.admissionNo != null) {
-        await LocalStorage().writeUser(response?.data ?? Users());
-        await LocalStorage().writeToken(response?.token ?? '');
+        final user = response!.data!;
+        final token = response.token ?? '';
+        final role = user.role ?? response.role ?? 'vol';
+
+        LocalStorage().writeSession(user: user, token: token, role: role);
+
+        userNameController.clear();
+        passwordController.clear();
 
         Get.snackbar(
           'Welcome',
-          '${response?.data?.name}',
+          '${user.name}',
           colorText: Colors.white,
           icon: const Icon(Icons.login, color: Colors.white),
         );
@@ -70,8 +79,16 @@ class AccountController extends GetxController {
         errorMessage.value = response?.message ?? 'Failed to login!';
         Get.snackbar('Error', errorMessage.value);
       }
-      isLoading.value = false;
-    });
+    } catch (e) {
+      if (!isClosed) {
+        errorMessage.value = 'Login error: $e';
+        Get.snackbar('Error', errorMessage.value);
+      }
+    } finally {
+      if (!isClosed) {
+        isLoading.value = false;
+      }
+    }
   }
 
   bool onChangePassValidation() {
@@ -110,6 +127,7 @@ class AccountController extends GetxController {
   }
 
   Future<void> changePassword(String id) async {
+    if (isClosed) return;
     isChangePassLoading.value = true;
     api
         .changePassword({
@@ -117,6 +135,7 @@ class AccountController extends GetxController {
           'new_password': confirmPassController.text,
         })
         .then((value) {
+          if (isClosed) return;
           isChangePassLoading.value = false;
           if (value?.status ?? false) {
             Get.to(() => const LoginScreen());
@@ -131,10 +150,14 @@ class AccountController extends GetxController {
               value?.message ?? 'Password not changed.',
             );
           }
+        })
+        .catchError((_) {
+          if (!isClosed) isChangePassLoading.value = false;
         });
   }
 
   Future<void> resetPassword(String id) async {
+    if (isClosed) return;
     isChangePassLoading.value = true;
     api
         .resetPassword({
@@ -142,6 +165,7 @@ class AccountController extends GetxController {
           'new_password': confirmPassController.text,
         })
         .then((value) {
+          if (isClosed) return;
           isChangePassLoading.value = false;
           if (value?.status ?? false) {
             Get.back();
@@ -156,26 +180,36 @@ class AccountController extends GetxController {
               value?.message ?? 'Password not changed.',
             );
           }
+        })
+        .catchError((_) {
+          if (!isClosed) isChangePassLoading.value = false;
         });
   }
 
   void deleteAccount() {
     if (reasonController.text.trim().length >= 20) {
+      if (isClosed) return;
       isLoading.value = true;
       final data = {
         'subject': 'Account delete request',
         'description': reasonController.text,
         'assigned_to': 'sec',
       };
-      Api().addIssue(data).then((value) {
-        isLoading.value = false;
-        if (value?.status ?? false) {
-          Get.snackbar("Success", "Delete request sent successfully");
-          Get.offAll(() => const LoginScreen());
-        } else {
-          Get.snackbar("Error", "Failed to send delete request");
-        }
-      });
+      Api()
+          .addIssue(data)
+          .then((value) {
+            if (isClosed) return;
+            isLoading.value = false;
+            if (value?.status ?? false) {
+              Get.snackbar("Success", "Delete request sent successfully");
+              Get.offAll(() => const LoginScreen());
+            } else {
+              Get.snackbar("Error", "Failed to send delete request");
+            }
+          })
+          .catchError((_) {
+            if (!isClosed) isLoading.value = false;
+          });
     } else {
       CustomWidgets.showSnackBar(
         'Invalid',
@@ -184,16 +218,18 @@ class AccountController extends GetxController {
     }
   }
 
-  void logout() {
-    isLoading.value = true;
-    api.logout().then((value) {
-      isLoading.value = false;
-      if (value?.status ?? false) {
-        log(value!.status!.toString());
-        LocalStorage().clearAll();
-        Get.offAll(() => const LoginScreen());
-      }
-    });
+  void logout() async {
+    if (!isClosed) isLoading.value = true;
+    try {
+      await api.logout();
+    } catch (e) {
+      log('Logout api error: $e');
+    } finally {
+      if (!isClosed) isLoading.value = false;
+      LocalStorage().clearAll();
+      Get.deleteAll(force: true);
+      Get.offAll(() => const LoginScreen());
+    }
   }
 
   void showPassword() => isObscure.value = false;

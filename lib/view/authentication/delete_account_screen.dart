@@ -6,7 +6,9 @@ import 'package:nss_new/common_pages/custom_decorations.dart';
 class DeleteAccountScreen extends StatelessWidget {
   DeleteAccountScreen({super.key});
 
-  final AccountController c = Get.put(AccountController());
+  final AccountController c = Get.isRegistered<AccountController>()
+      ? Get.find<AccountController>()
+      : Get.put(AccountController());
 
   @override
   Widget build(BuildContext context) {

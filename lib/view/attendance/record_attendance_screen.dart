@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/controller/attendance_controller.dart';
-import 'package:nss_new/model/programs_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 
@@ -13,17 +12,19 @@ class RecordAttendanceScreen extends StatefulWidget {
 }
 
 class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
-  final AttendanceController controller = Get.find<AttendanceController>();
+  late final AttendanceController controller;
 
   String _searchQuery = '';
   int? _selectedProgramId;
-  Program? _selectedProgram;
   DateTime? _selectedDate = DateTime.now();
   final TextEditingController _hoursController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    controller = Get.isRegistered<AttendanceController>()
+        ? Get.find<AttendanceController>()
+        : Get.put(AttendanceController());
     controller.selectedVolList.clear();
   }
 
@@ -132,11 +133,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
       return;
     }
 
-    final selectedProgram = controller.programsList.firstWhere(
-      (program) => program.id == _selectedProgramId,
-    );
-    
-controller.programId = _selectedProgramId!;
+    controller.programId = _selectedProgramId!;
     controller.date = _selectedDate;
     controller.dateController.text = _selectedDate != null
         ? _formatDate(_selectedDate!)
@@ -489,7 +486,6 @@ controller.programId = _selectedProgramId!;
                   onChanged: (val) {
                     setState(() {
                       _selectedProgramId = val;
-                      
                     });
                   },
                 ),

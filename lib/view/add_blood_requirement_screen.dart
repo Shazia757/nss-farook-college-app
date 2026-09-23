@@ -16,8 +16,7 @@ class AddBloodRequirementScreen extends StatefulWidget {
 
 class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
   final _formKey = GlobalKey<FormState>();
-  final BloodRequirementController controller =
-      Get.find<BloodRequirementController>();
+  late final BloodRequirementController controller;
 
   late TextEditingController _patientNameController;
   late TextEditingController _bloodGroupController;
@@ -32,15 +31,28 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
   @override
   void initState() {
     super.initState();
+    controller = Get.isRegistered<BloodRequirementController>()
+        ? Get.find<BloodRequirementController>()
+        : Get.put(BloodRequirementController());
     final req = widget.requirement;
-    _patientNameController = TextEditingController(text: req?.patientName ?? '');
+    _patientNameController = TextEditingController(
+      text: req?.patientName ?? '',
+    );
     _bloodGroupController = TextEditingController(text: req?.bloodGroup ?? '');
     _hospitalNameController = TextEditingController(text: req?.hospital ?? '');
-    _contactPersonController = TextEditingController(text: req?.contactPerson ?? '');
-    _contactNumberController = TextEditingController(text: req?.contactNumber ?? '');
+    _contactPersonController = TextEditingController(
+      text: req?.contactPerson ?? '',
+    );
+    _contactNumberController = TextEditingController(
+      text: req?.contactNumber ?? '',
+    );
     _dateTimeController = TextEditingController(text: req?.neededBefore ?? '');
-    _unitsController = TextEditingController(text: (req?.unitsRequired ?? 1).toString());
-    _urgencyLevelController = TextEditingController(text: req?.urgency ?? 'normal');
+    _unitsController = TextEditingController(
+      text: (req?.unitsRequired ?? 1).toString(),
+    );
+    _urgencyLevelController = TextEditingController(
+      text: req?.urgency ?? 'normal',
+    );
     _descriptionController = TextEditingController(text: req?.notes ?? '');
   }
 
@@ -136,11 +148,7 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.arrow_back,
-                              size: 18,
-                              color: cs.primary,
-                            ),
+                            Icon(Icons.arrow_back, size: 18, color: cs.primary),
                             const SizedBox(width: 8),
                             Text(
                               'Back to requirements list',
@@ -204,8 +212,8 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                    ? "Please enter patient name"
-                                    : null,
+                                ? "Please enter patient name"
+                                : null,
                           ),
 
                           CustomWidgets().buildLabel(context, "Blood Group"),
@@ -218,8 +226,8 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                    ? "Please enter blood group"
-                                    : null,
+                                ? "Please enter blood group"
+                                : null,
                           ),
 
                           CustomWidgets().buildLabel(context, "Units Required"),
@@ -243,8 +251,8 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                    ? "Please enter hospital name"
-                                    : null,
+                                ? "Please enter hospital name"
+                                : null,
                           ),
 
                           CustomWidgets().buildLabel(context, "Contact Person"),
@@ -268,14 +276,11 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                    ? "Please enter contact number"
-                                    : null,
+                                ? "Please enter contact number"
+                                : null,
                           ),
 
-                          CustomWidgets().buildLabel(
-                            context,
-                            "Required Date",
-                          ),
+                          CustomWidgets().buildLabel(context, "Required Date"),
                           TextFormField(
                             controller: _dateTimeController,
                             readOnly: true,
@@ -291,27 +296,46 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                             ),
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                    ? "Please select date"
-                                    : null,
+                                ? "Please select date"
+                                : null,
                           ),
 
                           CustomWidgets().buildLabel(context, "Urgency Level"),
                           DropdownButtonFormField<String>(
-                            value: ['normal', 'urgent', 'critical'].contains(_urgencyLevelController.text.toLowerCase())
+                            value:
+                                ['normal', 'urgent', 'critical'].contains(
+                                  _urgencyLevelController.text.toLowerCase(),
+                                )
                                 ? _urgencyLevelController.text.toLowerCase()
                                 : 'normal',
-                            decoration: CustomWidgets().buildInputDecoration(context, "Select urgency"),
+                            decoration: CustomWidgets().buildInputDecoration(
+                              context,
+                              "Select urgency",
+                            ),
                             items: const [
-                              DropdownMenuItem(value: 'normal', child: Text('Normal')),
-                              DropdownMenuItem(value: 'urgent', child: Text('Urgent')),
-                              DropdownMenuItem(value: 'critical', child: Text('Critical')),
+                              DropdownMenuItem(
+                                value: 'normal',
+                                child: Text('Normal'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'urgent',
+                                child: Text('Urgent'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'critical',
+                                child: Text('Critical'),
+                              ),
                             ],
                             onChanged: (val) {
-                              if (val != null) _urgencyLevelController.text = val;
+                              if (val != null)
+                                _urgencyLevelController.text = val;
                             },
                           ),
 
-                          CustomWidgets().buildLabel(context, "Notes / Description"),
+                          CustomWidgets().buildLabel(
+                            context,
+                            "Notes / Description",
+                          ),
                           TextFormField(
                             controller: _descriptionController,
                             maxLines: 3,
@@ -343,27 +367,38 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Obx(() => ElevatedButton(
-                                  onPressed: controller.isLoading.value ? null : _saveRequirement,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: cs.primary,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                                child: Obx(
+                                  () => ElevatedButton(
+                                    onPressed: controller.isLoading.value
+                                        ? null
+                                        : _saveRequirement,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: cs.primary,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      elevation: 0,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 0,
+                                    child: controller.isLoading.value
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : Text(
+                                            isEditMode
+                                                ? 'Update Requirement'
+                                                : 'Save Requirement',
+                                          ),
                                   ),
-                                  child: controller.isLoading.value
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                        )
-                                      : Text(isEditMode ? 'Update Requirement' : 'Save Requirement'),
-                                )),
+                                ),
                               ),
                             ],
                           ),

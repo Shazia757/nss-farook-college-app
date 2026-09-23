@@ -42,8 +42,12 @@ class ProgramOfficer {
       email: json['email']?.toString(),
       phoneNumber: json['phone_number']?.toString(),
       bloodGroup: json['blood_group']?.toString(),
-      createdDate: json['created_date'] != null ? DateTime.tryParse(json['created_date']) : null,
-      updatedDate: json['updated_date'] != null ? DateTime.tryParse(json['updated_date']) : null,
+      createdDate: json['created_date'] != null
+          ? DateTime.tryParse(json['created_date'])
+          : null,
+      updatedDate: json['updated_date'] != null
+          ? DateTime.tryParse(json['updated_date'])
+          : null,
       department: dept,
       departmentId: deptId,
     );

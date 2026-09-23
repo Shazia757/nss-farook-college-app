@@ -8,18 +8,34 @@ import 'package:nss_new/controller/issues_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/issues_model.dart';
 
-class ReportedIssuesScreen extends StatelessWidget {
+class ReportedIssuesScreen extends StatefulWidget {
   const ReportedIssuesScreen({super.key});
+
+  @override
+  State<ReportedIssuesScreen> createState() => _ReportedIssuesScreenState();
+}
+
+class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
+  late final IssuesController c;
+
+  @override
+  void initState() {
+    super.initState();
+    c = Get.isRegistered<IssuesController>()
+        ? Get.find<IssuesController>()
+        : Get.put(IssuesController());
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      c.getAdminIssues();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final IssuesController c = Get.put(IssuesController());
     final role = LocalStorage().readUser().role;
-
-    // Call getAdminIssues to load all tickets reported to PO/Secretary
-    c.getAdminIssues();
 
     return Scaffold(
       backgroundColor: cs.surface,

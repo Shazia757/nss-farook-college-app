@@ -12,7 +12,9 @@ class VolunteerList {
     if (json is List) {
       return VolunteerList(
         status: true,
-        data: json.map((e) => Volunteer.fromJson(e as Map<String, dynamic>)).toList(),
+        data: json
+            .map((e) => Volunteer.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
     } else if (json is Map<String, dynamic>) {
       final listData = json['data'] ?? json['volunteers'] ?? json['results'];
@@ -20,7 +22,9 @@ class VolunteerList {
         status: json['status'] as bool? ?? true,
         message: json['message'] as String?,
         data: listData is List
-            ? listData.map((e) => Volunteer.fromJson(e as Map<String, dynamic>)).toList()
+            ? listData
+                  .map((e) => Volunteer.fromJson(e as Map<String, dynamic>))
+                  .toList()
             : [],
       );
     }
@@ -49,7 +53,9 @@ class VolunteerDetailResponse {
       return VolunteerDetailResponse(
         status: json['status'] as bool? ?? true,
         message: json['message'] as String?,
-        volunteerDetails: details is Map<String, dynamic> ? Users.fromJson(details) : null,
+        volunteerDetails: details is Map<String, dynamic>
+            ? Users.fromJson(details)
+            : null,
       );
     }
     return VolunteerDetailResponse(status: false);
@@ -100,7 +106,8 @@ class Volunteer {
     }
 
     return Volunteer(
-      admissionNo: json['admission_number']?.toString() ?? json['auth']?.toString(),
+      admissionNo:
+          json['admission_number']?.toString() ?? json['auth']?.toString(),
       name: json['name']?.toString(),
       department: dept,
       departmentId: deptId,
@@ -148,13 +155,18 @@ class VolunteerHoursSummary {
   });
 
   factory VolunteerHoursSummary.fromJson(Map<String, dynamic> json) {
-    final breakdownJson = json['program_breakdown'] ?? json['programs'] ?? json['data'];
+    final breakdownJson =
+        json['program_breakdown'] ?? json['programs'] ?? json['data'];
     List<ProgramHourBreakdown> breakdown = [];
     if (breakdownJson is List) {
-      breakdown = breakdownJson.map((e) => ProgramHourBreakdown.fromJson(e as Map<String, dynamic>)).toList();
+      breakdown = breakdownJson
+          .map((e) => ProgramHourBreakdown.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
 
-    int total = json['total_hours'] is int ? json['total_hours'] : int.tryParse(json['total_hours']?.toString() ?? '0') ?? 0;
+    int total = json['total_hours'] is int
+        ? json['total_hours']
+        : int.tryParse(json['total_hours']?.toString() ?? '0') ?? 0;
     int target = json['target_hours'] is int ? json['target_hours'] : 240;
     double progress = json['progress_percentage'] is num
         ? (json['progress_percentage'] as num).toDouble()
@@ -187,9 +199,13 @@ class ProgramHourBreakdown {
 
   factory ProgramHourBreakdown.fromJson(Map<String, dynamic> json) {
     return ProgramHourBreakdown(
-      programId: json['program_id'] is int ? json['program_id'] : int.tryParse(json['program_id']?.toString() ?? ''),
+      programId: json['program_id'] is int
+          ? json['program_id']
+          : int.tryParse(json['program_id']?.toString() ?? ''),
       programName: json['program_name']?.toString() ?? json['name']?.toString(),
-      hours: json['hours'] is int ? json['hours'] : int.tryParse(json['hours']?.toString() ?? '0') ?? 0,
+      hours: json['hours'] is int
+          ? json['hours']
+          : int.tryParse(json['hours']?.toString() ?? '0') ?? 0,
       date: json['date']?.toString(),
     );
   }
@@ -211,9 +227,18 @@ class BatchSummary {
   factory BatchSummary.fromJson(Map<String, dynamic> json) {
     return BatchSummary(
       batch: json['batch']?.toString() ?? '',
-      totalCount: json['total_volunteers'] ?? json['total_count'] ?? json['total'] ?? 0,
-      activeCount: json['active_volunteers'] ?? json['active_count'] ?? json['active'] ?? 0,
-      passiveCount: json['passive_volunteers'] ?? json['passive_count'] ?? json['passive'] ?? 0,
+      totalCount:
+          json['total_volunteers'] ?? json['total_count'] ?? json['total'] ?? 0,
+      activeCount:
+          json['active_volunteers'] ??
+          json['active_count'] ??
+          json['active'] ??
+          0,
+      passiveCount:
+          json['passive_volunteers'] ??
+          json['passive_count'] ??
+          json['passive'] ??
+          0,
     );
   }
 }

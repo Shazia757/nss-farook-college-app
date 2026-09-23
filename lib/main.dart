@@ -3,12 +3,13 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:nss_new/config/color_scheme.dart';
 import 'package:nss_new/config/text_theme.dart';
-import 'package:nss_new/view/authentication/login_screen.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+
+import 'package:nss_new/common_pages/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-    await GetStorage.init();
+  await GetStorage.init();
   runApp(const MyApp());
 }
 
@@ -40,6 +41,6 @@ class MyApp extends StatelessWidget {
     themeMode: ThemeMode.light,
     debugShowCheckedModeBanner: false,
 
-    home: LoginScreen(),
+    home: const SplashScreen(),
   );
 }

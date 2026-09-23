@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:nss_new/config/urls.dart';
 import 'package:nss_new/config/utils.dart';
+import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/attendance_model.dart';
 import 'package:nss_new/model/blood_model.dart';
 import 'package:nss_new/model/department_model.dart';
@@ -475,6 +477,15 @@ class Api {
     return null;
   }
 
+  void _syncServerClock(String? dateHeader) {
+    if (dateHeader == null || dateHeader.isEmpty) return;
+    try {
+      final serverDate = HttpDate.parse(dateHeader);
+      final offset = serverDate.difference(DateTime.now().toUtc());
+      LocalStorage().saveServerClockOffset(offset);
+    } catch (_) {}
+  }
+
   //------------------ 4. Programs & Enrollment ---------------------------//
 
   Future<ProgramResponse?> allPrograms({String? search, String? status}) async {
@@ -490,7 +501,9 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      _syncServerClock(response.headers['date']);
+
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return ProgramResponse.fromJson(decoded);
       }
@@ -524,7 +537,9 @@ class Api {
           .get(Uri.parse(Urls.getUpcomingPrograms), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      _syncServerClock(response.headers['date']);
+
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return ProgramResponse.fromJson(decoded);
       }
@@ -582,8 +597,8 @@ class Api {
       final response = await http
           .delete(
             Uri.parse(Urls.deleteProgram),
-            body: jsonEncode({'id': id}),
             headers: await getHeader(),
+            body: jsonEncode({'id': id}),
           )
           .timeout(const Duration(seconds: 60));
 
@@ -600,15 +615,24 @@ class Api {
 
   Future<GeneralResponse?> enrollToProgram(Map<String, dynamic> data) async {
     try {
+      final payload = Map<String, dynamic>.from(data);
+      if (payload.containsKey('program') && !payload.containsKey('id')) {
+        payload['id'] = payload['program'];
+      } else if (payload.containsKey('id') && !payload.containsKey('program')) {
+        payload['program'] = payload['id'];
+      }
+
       final response = await http
           .post(
             Uri.parse(Urls.enrollToProgram),
-            body: jsonEncode(data),
+            body: jsonEncode(payload),
             headers: await getHeader(),
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      _syncServerClock(response.headers['date']);
+
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -624,7 +648,7 @@ class Api {
     String? volunteer,
   }) async {
     try {
-      final body = <String, dynamic>{'program': programId};
+      final body = <String, dynamic>{'program': programId, 'id': programId};
       if (volunteer != null && volunteer.isNotEmpty) {
         body['volunteer'] = volunteer;
       }
@@ -636,7 +660,9 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      _syncServerClock(response.headers['date']);
+
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }

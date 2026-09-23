@@ -6,7 +6,7 @@ import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/model/department_model.dart';
 import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
-import 'package:nss_new/view/add_volunteer_screen.dart';
+import 'package:nss_new/view/volunteer/add_volunteer_screen.dart';
 import 'package:nss_new/view/profile_screen.dart';
 
 class VolunteerController extends GetxController {
@@ -39,18 +39,41 @@ class VolunteerController extends GetxController {
   int? departmentID;
 
   @override
-  void onInit() {
+  void onReady() {
+    super.onReady();
     getDepartments();
-    super.onInit();
+  }
+
+  @override
+  void onClose() {
+    nameController.dispose();
+    departmentController.dispose();
+    courseController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    rollNoController.dispose();
+    admissionNoController.dispose();
+    dobController.dispose();
+    yearController.dispose();
+    casteController.dispose();
+    genderController.dispose();
+    addressController.dispose();
+    super.onClose();
   }
 
   void getDepartments() async {
-    api.getDepartments().then((value) {
-      departmentList.assignAll(value?.programs?.toList() ?? []);
-    });
+    if (isClosed) return;
+    api
+        .getDepartments()
+        .then((value) {
+          if (isClosed) return;
+          departmentList.assignAll(value?.programs?.toList() ?? []);
+        })
+        .catchError((_) {});
   }
 
   void addVolunteer() async {
+    if (isClosed) return;
     isUpdateButtonLoading.value = true;
     api
         .addVolunteer({
@@ -70,6 +93,7 @@ class VolunteerController extends GetxController {
           'role': role.value,
         })
         .then((value) {
+          if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (value?.status ?? false) {
             Get.back();
@@ -83,10 +107,14 @@ class VolunteerController extends GetxController {
               value?.message ?? 'Failed to add volunteer.',
             );
           }
+        })
+        .catchError((_) {
+          if (!isClosed) isUpdateButtonLoading.value = false;
         });
   }
 
   void updateVolunteer() async {
+    if (isClosed) return;
     isUpdateButtonLoading.value = true;
     api
         .updateVolunteer({
@@ -106,6 +134,7 @@ class VolunteerController extends GetxController {
           'role': role.value,
         })
         .then((response) {
+          if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (response?.status == true) {
             Get.back();
@@ -119,27 +148,42 @@ class VolunteerController extends GetxController {
               response?.message ?? 'Failed to update volunteer.',
             );
           }
+        })
+        .catchError((_) {
+          if (!isClosed) isUpdateButtonLoading.value = false;
         });
   }
 
-  Future<void> deleteVolunteer(String admnNo) async {
+  Future<bool> deleteVolunteer(String admnNo) async {
+    if (isClosed) return false;
     isDeleteButtonLoading.value = true;
-    api.deleteVolunteer(admnNo).then((response) {
-      isDeleteButtonLoading.value = false;
+    try {
+      final response = await api.deleteVolunteer(admnNo);
+      if (isClosed) return false;
       if (response?.status ?? false) {
-        Get.back();
-        Get.back();
+        if (Get.isDialogOpen ?? false) {
+          Get.back();
+        }
         CustomWidgets.showSnackBar(
           "Success",
           response?.message ?? "Volunteer deleted successfully.",
         );
+        return true;
       } else {
         CustomWidgets.showSnackBar(
           "Error",
           response?.message ?? "Failed to delete volunteer.",
         );
+        return false;
       }
-    });
+    } catch (e) {
+      CustomWidgets.showSnackBar("Error", e.toString());
+      return false;
+    } finally {
+      if (!isClosed) {
+        isDeleteButtonLoading.value = false;
+      }
+    }
   }
 
   void setUpdateData(Users user) {
@@ -233,14 +277,60 @@ class VolunteerListController extends GetxController {
     'O-',
   ];
 
+  int get activeFilterCount {
+    int count = 0;
+    if (selectedBloodGroup.value.isNotEmpty) count++;
+    if (selectedBatch.value.isNotEmpty) count++;
+    if (selectedDepartmentId.value != null) count++;
+    return count;
+  }
+
+  void removeVolunteerLocally(String? admnNo) {
+    if (admnNo == null || admnNo.isEmpty) return;
+    usersList.removeWhere((v) => v.admissionNo == admnNo);
+    passiveUsersList.removeWhere((v) => v.admissionNo == admnNo);
+  }
+
+  void updateVolunteerLocally(Volunteer updated) {
+    if (updated.admissionNo == null || isClosed) return;
+    final idx = usersList.indexWhere(
+      (v) => v.admissionNo == updated.admissionNo,
+    );
+    if (idx != -1) {
+      usersList[idx] = updated;
+    }
+    final pIdx = passiveUsersList.indexWhere(
+      (v) => v.admissionNo == updated.admissionNo,
+    );
+    if (pIdx != -1) {
+      passiveUsersList[pIdx] = updated;
+    }
+  }
+
+  void addVolunteerLocally(Volunteer created) {
+    if (isClosed) return;
+    if (created.isActive != false) {
+      usersList.insert(0, created);
+    } else {
+      passiveUsersList.insert(0, created);
+    }
+  }
+
   @override
-  void onInit() {
+  void onReady() {
+    super.onReady();
     getData();
     fetchBatches();
-    super.onInit();
+  }
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
   }
 
   void getData() {
+    if (isClosed) return;
     isLoading.value = true;
     _api
         .getVolunteers(
@@ -250,12 +340,20 @@ class VolunteerListController extends GetxController {
           search: searchQuery.value,
         )
         .then((value) {
-          usersList.assignAll(value?.data ?? []);
+          if (isClosed) return;
+          final activeOnly = (value?.data ?? [])
+              .where((v) => v.isActive != false)
+              .toList();
+          usersList.assignAll(activeOnly);
           isLoading.value = false;
+        })
+        .catchError((_) {
+          if (!isClosed) isLoading.value = false;
         });
   }
 
   void getPassiveData() {
+    if (isClosed) return;
     isPassiveLoading.value = true;
     _api
         .getPassiveVolunteers(
@@ -264,20 +362,30 @@ class VolunteerListController extends GetxController {
           search: searchQuery.value,
         )
         .then((value) {
+          if (isClosed) return;
           passiveUsersList.assignAll(value?.data ?? []);
           isPassiveLoading.value = false;
+        })
+        .catchError((_) {
+          if (!isClosed) isPassiveLoading.value = false;
         });
   }
 
   void fetchBatches() {
-    _api.getBatches().then((list) {
-      if (list != null) {
-        batchSummaries.assignAll(list);
-      }
-    });
+    if (isClosed) return;
+    _api
+        .getBatches()
+        .then((list) {
+          if (isClosed) return;
+          if (list != null) {
+            batchSummaries.assignAll(list);
+          }
+        })
+        .catchError((_) {});
   }
 
   void togglePassiveView(bool showPassive) {
+    if (isClosed) return;
     isShowingPassive.value = showPassive;
     if (showPassive) {
       getPassiveData();
@@ -287,27 +395,35 @@ class VolunteerListController extends GetxController {
   }
 
   void setBatchStatus(String batch, bool isActive) {
+    if (isClosed) return;
     isLoading.value = true;
-    _api.setBatchStatus(batch, isActive).then((res) {
-      isLoading.value = false;
-      if (res?.status ?? false) {
-        CustomWidgets.showSnackBar(
-          'Success',
-          res?.message ?? 'Batch status updated',
-        );
-        getData();
-        getPassiveData();
-        fetchBatches();
-      } else {
-        CustomWidgets.showSnackBar(
-          'Error',
-          res?.message ?? 'Failed to update batch status',
-        );
-      }
-    });
+    _api
+        .setBatchStatus(batch, isActive)
+        .then((res) {
+          if (isClosed) return;
+          isLoading.value = false;
+          if (res?.status ?? false) {
+            CustomWidgets.showSnackBar(
+              'Success',
+              res?.message ?? 'Batch status updated',
+            );
+            getData();
+            getPassiveData();
+            fetchBatches();
+          } else {
+            CustomWidgets.showSnackBar(
+              'Error',
+              res?.message ?? 'Failed to update batch status',
+            );
+          }
+        })
+        .catchError((_) {
+          if (!isClosed) isLoading.value = false;
+        });
   }
 
   void onSearchTextChanged(String value) {
+    if (isClosed) return;
     searchQuery.value = value;
     if (isShowingPassive.value) {
       getPassiveData();
@@ -317,11 +433,13 @@ class VolunteerListController extends GetxController {
   }
 
   void filterByBloodGroup(String group) {
+    if (isClosed) return;
     selectedBloodGroup.value = selectedBloodGroup.value == group ? '' : group;
     getData();
   }
 
   void filterByBatch(String batch) {
+    if (isClosed) return;
     selectedBatch.value = selectedBatch.value == batch ? '' : batch;
     if (isShowingPassive.value) {
       getPassiveData();
@@ -331,6 +449,7 @@ class VolunteerListController extends GetxController {
   }
 
   void filterByDepartment(int? deptId) {
+    if (isClosed) return;
     selectedDepartmentId.value = selectedDepartmentId.value == deptId
         ? null
         : deptId;
@@ -342,6 +461,7 @@ class VolunteerListController extends GetxController {
   }
 
   void clearFilters() {
+    if (isClosed) return;
     selectedBatch.value = '';
     selectedDepartmentId.value = null;
     selectedBloodGroup.value = '';
@@ -355,38 +475,69 @@ class VolunteerListController extends GetxController {
   }
 
   void updateVolunteer(String? admissionNo) {
-    if (admissionNo == null || admissionNo.isEmpty) return;
-    _api.volunteerDetails(admissionNo).then((value) {
-      if (value?.volunteerDetails != null) {
-        Get.to(
-          () => AddVolunteerScreen(volunteer: value!.volunteerDetails),
-        )?.then((_) => getData());
-      }
-    });
-  }
-
-  void viewVolunteerProfile(String? admissionNo) {
-    if (admissionNo == null || admissionNo.isEmpty) return;
+    if (admissionNo == null || admissionNo.isEmpty || isClosed) return;
     Get.dialog(
       const Center(child: CircularProgressIndicator()),
       barrierDismissible: false,
     );
-    _api.volunteerDetails(admissionNo).then((value) {
-      Get.back();
-      if (value?.volunteerDetails != null) {
-        Get.to(
-          () => ProfileScreen(volunteer: value!.volunteerDetails),
-        )?.then((_) => getData());
-      } else {
-        CustomWidgets.showSnackBar("Error", "Failed to load volunteer details");
-      }
-    });
+    _api
+        .volunteerDetails(admissionNo)
+        .then((value) {
+          Get.back();
+          if (isClosed) return;
+          if (value?.volunteerDetails != null) {
+            Get.to(
+              () => AddVolunteerScreen(volunteer: value!.volunteerDetails),
+            )?.then((_) => getData());
+          } else {
+            CustomWidgets.showSnackBar(
+              'Error',
+              'Failed to fetch volunteer details',
+            );
+          }
+        })
+        .catchError((_) {
+          Get.back();
+          CustomWidgets.showSnackBar(
+            'Error',
+            'Failed to fetch volunteer details',
+          );
+        });
+  }
+
+  void viewVolunteerProfile(String? admissionNo) {
+    if (admissionNo == null || admissionNo.isEmpty || isClosed) return;
+    Get.dialog(
+      const Center(child: CircularProgressIndicator()),
+      barrierDismissible: false,
+    );
+    _api
+        .volunteerDetails(admissionNo)
+        .then((value) {
+          Get.back();
+          if (isClosed) return;
+          if (value?.volunteerDetails != null) {
+            Get.to(
+              () => ProfileScreen(volunteer: value!.volunteerDetails),
+            )?.then((_) => getData());
+          } else {
+            CustomWidgets.showSnackBar(
+              "Error",
+              "Failed to load volunteer details",
+            );
+          }
+        })
+        .catchError((_) {
+          Get.back();
+        });
   }
 
   Future<void> fetchHoursSummary(String admissionNo) async {
+    if (isClosed) return;
     final summary = await _api.getVolunteerHoursSummary(
       admissionNumber: admissionNo,
     );
+    if (isClosed) return;
     if (summary != null) {
       volunteerHoursSummary.value = summary;
     }

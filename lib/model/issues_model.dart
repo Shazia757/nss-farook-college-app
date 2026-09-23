@@ -37,13 +37,19 @@ class Issues {
 
     return Issues(
       to: data['assigned_to']?.toString(),
-      createdDate: data['created_at'] != null ? DateTime.tryParse(data['created_at'].toString()) : null,
-      updatedDate: data['updated_at'] != null ? DateTime.tryParse(data['updated_at'].toString()) : null,
+      createdDate: data['created_at'] != null
+          ? DateTime.tryParse(data['created_at'].toString())
+          : null,
+      updatedDate: data['updated_at'] != null
+          ? DateTime.tryParse(data['updated_at'].toString())
+          : null,
       subject: data['subject']?.toString(),
       description: data['description']?.toString(),
       createdBy: vol,
       createdByName: volName,
-      id: data['id'] is int ? data['id'] as int : int.tryParse(data['id']?.toString() ?? ''),
+      id: data['id'] is int
+          ? data['id'] as int
+          : int.tryParse(data['id']?.toString() ?? ''),
       updatedBy: data['updated_by']?.toString(),
       isOpen: data['is_open'] is bool ? data['is_open'] as bool : true,
     );
@@ -79,7 +85,9 @@ class IssueResponse {
 
   factory IssueResponse.fromJson(dynamic json) {
     if (json is List) {
-      final list = json.map((e) => Issues.fromJson(e as Map<String, dynamic>)).toList();
+      final list = json
+          .map((e) => Issues.fromJson(e as Map<String, dynamic>))
+          .toList();
       return IssueResponse(
         status: true,
         openIssues: list.where((i) => i.isOpen == true).toList(),
@@ -89,12 +97,16 @@ class IssueResponse {
       return IssueResponse(
         status: json['status'] as bool? ?? true,
         message: json['message'] as String?,
-        openIssues: (json['open_issues'] as List<dynamic>?)
-            ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
-            .toList() ?? [],
-        closedIssues: (json['closed_issues'] as List<dynamic>?)
-            ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
-            .toList() ?? [],
+        openIssues:
+            (json['open_issues'] as List<dynamic>?)
+                ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
+        closedIssues:
+            (json['closed_issues'] as List<dynamic>?)
+                ?.map((e) => Issues.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
       );
     }
     return IssueResponse(status: false, openIssues: [], closedIssues: []);
