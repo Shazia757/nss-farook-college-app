@@ -90,8 +90,8 @@ class LocalStorage {
   Users readUser() {
     try {
       final data = _box.read('user');
-      if (data != null && data is Map<String, dynamic>) {
-        return Users.fromJson(data);
+      if (data != null && data is Map) {
+        return Users.fromJson(Map<String, dynamic>.from(data));
       }
     } catch (e) {
       log(e.toString());

@@ -280,42 +280,109 @@ class CustomWidgets {
   static void showSnackBar(
     String title,
     String message, {
-    Widget? icon = const Icon(Icons.info_outline, color: Colors.white),
-    Color backgroundColor = Colors.black87,
+    Widget? icon,
+    Color? backgroundColor,
     Color textColor = Colors.white,
   }) {
     if (Get.context == null && Get.testMode) return;
+
+    if (Get.isSnackbarOpen) {
+      Get.closeCurrentSnackbar();
+    }
+
+    final lowerTitle = title.toLowerCase();
+    final Color semanticColor;
+    if (backgroundColor != null) {
+      semanticColor = backgroundColor;
+    } else if (lowerTitle.contains('success') || lowerTitle.contains('done')) {
+      semanticColor = const Color(0xFF388E3C);
+    } else if (lowerTitle.contains('error') ||
+        lowerTitle.contains('fail') ||
+        lowerTitle.contains('invalid')) {
+      semanticColor = const Color(0xFFD32F2F);
+    } else if (lowerTitle.contains('warn') ||
+        lowerTitle.contains('notice') ||
+        lowerTitle.contains('unavailable')) {
+      semanticColor = const Color(0xFFF57C00);
+    } else {
+      semanticColor = const Color(0xFF1976D2);
+    }
+
+    final Widget iconWidget = icon ??
+        Icon(
+          (lowerTitle.contains('success') || lowerTitle.contains('done'))
+              ? Icons.check_circle_rounded
+              : (lowerTitle.contains('error') ||
+                      lowerTitle.contains('fail') ||
+                      lowerTitle.contains('invalid'))
+                  ? Icons.error_outline_rounded
+                  : (lowerTitle.contains('warn') ||
+                          lowerTitle.contains('notice') ||
+                          lowerTitle.contains('unavailable'))
+                      ? Icons.warning_amber_rounded
+                      : Icons.info_outline_rounded,
+          color: semanticColor,
+          size: 20,
+        );
+
     Get.showSnackbar(
       GetSnackBar(
         titleText: Text(
           title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
             color: textColor,
           ),
         ),
         messageText: Text(
           message,
-          style: TextStyle(fontSize: 14, color: textColor.withOpacity(0.9)),
+          maxLines: 3,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            height: 1.3,
+            color: textColor.withValues(alpha: 0.9),
+          ),
         ),
-        isDismissible: true,
-        duration: const Duration(seconds: 3),
-        icon: icon,
+        icon: Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: semanticColor.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: iconWidget,
+        ),
         snackPosition: SnackPosition.TOP,
+        snackStyle: SnackStyle.FLOATING,
+
+        // Shape & spacing
         borderRadius: 12,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        snackStyle: SnackStyle.FLOATING,
-        barBlur: 15,
-        backgroundColor: backgroundColor,
-        boxShadows: [
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+
+        // Appearance - refined dark card with subtle semantic border, NOT a solid color block
+        backgroundColor: const Color(0xFF222428),
+        borderColor: semanticColor.withValues(alpha: 0.35),
+        borderWidth: 1.0,
+        boxShadows: const [
           BoxShadow(
-            color: Colors.black26,
+            color: Color(0x33000000),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
         ],
+
+        // Behavior
+        duration: const Duration(seconds: 3),
+        isDismissible: true,
+        dismissDirection: DismissDirection.horizontal,
+        animationDuration: const Duration(milliseconds: 250),
+        forwardAnimationCurve: Curves.easeOutCubic,
+        reverseAnimationCurve: Curves.easeInCubic,
       ),
     );
   }
@@ -348,13 +415,16 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color backgroundColor;
   final Color textColor;
+  final EdgeInsetsGeometry? padding;
 
   const StatCard({
+    super.key,
     required this.title,
     required this.value,
     required this.icon,
     required this.backgroundColor,
     required this.textColor,
+    this.padding,
   });
 
   @override
@@ -362,7 +432,7 @@ class StatCard extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: padding ?? const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
@@ -370,28 +440,39 @@ class StatCard extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            radius: 22,
-            backgroundColor: Colors.white.withOpacity(.15),
-            child: Icon(icon, color: textColor),
+            radius: 19,
+            backgroundColor: Colors.white.withValues(alpha: .15),
+            child: Icon(icon, color: textColor, size: 20),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  title,
-                  style: tt.bodyMedium?.copyWith(
-                    color: textColor.withOpacity(.9),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    style: tt.bodyMedium?.copyWith(
+                      color: textColor.withValues(alpha: .9),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2),
 
-                Text(
-                  value,
-                  style: tt.headlineSmall?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.bold,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    style: tt.headlineSmall?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],

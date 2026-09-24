@@ -5,6 +5,7 @@ import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/controller/program_controller.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
+import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/enrollment_model.dart';
 import 'package:nss_new/model/programs_model.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,6 +25,16 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
   bool _isLoading = false;
   String _searchQuery = '';
   List<ProgramEnrollmentDetails> _enrollments = [];
+  final Set<String> _selectedAdmissions = <String>{};
+  bool _isSubmittingAttendance = false;
+
+  bool get _isPastProgram =>
+      widget.data?.date != null && !widget.data!.date!.isAfter(DateTime.now());
+
+  bool get _canMarkAttendance {
+    final role = LocalStorage().readUser().role;
+    return role != 'vol' && _isPastProgram;
+  }
 
   @override
   void initState() {
@@ -72,6 +83,8 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
         CustomWidgets.showSnackBar(
           'Error',
           'Failed to load enrolled volunteers: $e',
+          backgroundColor: Colors.red.shade800,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
         );
       }
     } finally {
@@ -83,12 +96,22 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
 
   Future<void> _callVolunteer(String? phone) async {
     if (phone == null || phone.trim().isEmpty) {
-      CustomWidgets.showSnackBar('Phone', 'No phone number available');
+      CustomWidgets.showSnackBar(
+        'Phone',
+        'No phone number available',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return;
     }
     final sanitized = phone.replaceAll(RegExp(r'[^0-9+]'), '');
     if (sanitized.length < 5) {
-      CustomWidgets.showSnackBar('Phone', 'Invalid phone number');
+      CustomWidgets.showSnackBar(
+        'Phone',
+        'Invalid phone number',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return;
     }
     final uri = Uri.parse('tel:$sanitized');
@@ -96,10 +119,20 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        CustomWidgets.showSnackBar('Dialer', 'Could not open phone dialer');
+        CustomWidgets.showSnackBar(
+          'Dialer',
+          'Could not open phone dialer',
+          backgroundColor: Colors.red.shade800,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+        );
       }
     } catch (_) {
-      CustomWidgets.showSnackBar('Dialer', 'Could not open phone dialer');
+      CustomWidgets.showSnackBar(
+        'Dialer',
+        'Could not open phone dialer',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
     }
   }
 
@@ -109,6 +142,168 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
         ? Get.find<VolunteerListController>()
         : Get.put(VolunteerListController());
     volCtrl.viewVolunteerProfile(admissionNo);
+  }
+
+  void _showRecordAttendanceDialog() {
+    final defaultHours = widget.data?.duration ?? 1;
+    final TextEditingController hoursController = TextEditingController(
+      text: defaultHours > 0 ? defaultHours.toString() : '1',
+    );
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Record Attendance',
+            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Record attendance for ${_selectedAdmissions.length} selected volunteer(s) in "${widget.data?.name ?? 'Program'}".',
+                style: tt.bodyMedium?.copyWith(
+                  color: cs.onSurface.withOpacity(0.7),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Hours Served',
+                style: tt.labelLarge?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: hoursController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'e.g. 3',
+                  filled: true,
+                  fillColor: cs.outline.withOpacity(0.08),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: _isSubmittingAttendance
+                  ? null
+                  : () => Navigator.of(dialogCtx).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: _isSubmittingAttendance
+                  ? null
+                  : () async {
+                      final hrs =
+                          int.tryParse(hoursController.text.trim()) ?? 0;
+                      if (hrs <= 0) {
+                        CustomWidgets.showSnackBar(
+                          'Invalid Hours',
+                          'Please enter a valid positive number for hours.',
+                          backgroundColor: Colors.red.shade800,
+                          icon: const Icon(
+                            Icons.error_outline,
+                            color: Colors.white,
+                          ),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => _isSubmittingAttendance = true);
+                      setState(() => _isSubmittingAttendance = true);
+
+                      final list = _selectedAdmissions
+                          .map((admn) => {'volunteer': admn, 'hours': hrs})
+                          .toList();
+
+                      try {
+                        final res = await _api.bulkAddAttendance(
+                          widget.data!.id!,
+                          list,
+                        );
+                        if (mounted) {
+                          Navigator.of(dialogCtx).pop();
+                          if (res?.status ?? false) {
+                            setState(() {
+                              _selectedAdmissions.clear();
+                            });
+                            CustomWidgets.showSnackBar(
+                              'Success',
+                              res?.message ??
+                                  'Attendance marked successfully for volunteers',
+                              backgroundColor: Colors.green.shade800,
+                              icon: const Icon(
+                                Icons.check_circle_outline,
+                                color: Colors.white,
+                              ),
+                            );
+                          } else {
+                            CustomWidgets.showSnackBar(
+                              'Error',
+                              res?.message ?? 'Failed to mark attendance',
+                              backgroundColor: Colors.red.shade800,
+                              icon: const Icon(
+                                Icons.error_outline,
+                                color: Colors.white,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          Navigator.of(dialogCtx).pop();
+                          CustomWidgets.showSnackBar(
+                            'Error',
+                            'Failed to mark attendance: $e',
+                            backgroundColor: Colors.red.shade800,
+                            icon: const Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isSubmittingAttendance = false);
+                        }
+                      }
+                    },
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: _isSubmittingAttendance
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Confirm'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<ProgramEnrollmentDetails> get _filteredEnrollments {
@@ -339,6 +534,66 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
               ),
             ),
 
+            // Optional Select All bar for attendance on past programs
+            if (_canMarkAttendance && filtered.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Enrolled Volunteers (${filtered.length})',
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: cs.primary,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          final allAdmissions = filtered
+                              .map(
+                                (e) =>
+                                    e.volunteer?.admissionNo ??
+                                    e.volunteerAdmissionNo,
+                              )
+                              .whereType<String>()
+                              .where((a) => a != 'N/A' && a.isNotEmpty)
+                              .toList();
+                          if (_selectedAdmissions.length ==
+                              allAdmissions.length) {
+                            _selectedAdmissions.clear();
+                          } else {
+                            _selectedAdmissions.addAll(allAdmissions);
+                          }
+                        });
+                      },
+                      icon: Icon(
+                        _selectedAdmissions.isNotEmpty &&
+                                _selectedAdmissions.length >= filtered.length
+                            ? Icons.deselect_rounded
+                            : Icons.select_all_rounded,
+                        size: 18,
+                        color: cs.primary,
+                      ),
+                      label: Text(
+                        _selectedAdmissions.isNotEmpty &&
+                                _selectedAdmissions.length >= filtered.length
+                            ? 'Deselect All'
+                            : 'Select All',
+                        style: tt.labelMedium?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Content Area
             Expanded(
               child: _isLoading
@@ -426,7 +681,7 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                               ),
                               itemCount: filtered.length,
                               separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 10),
+                                   const SizedBox(height: 10),
                               itemBuilder: (context, index) {
                                 final item = filtered[index];
                                 final vol = item.volunteer;
@@ -441,13 +696,20 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                 final phone = vol?.phoneNumber;
                                 final blood = vol?.bloodGroup;
                                 final enrollmentDate = item.date;
+                                final isSelected =
+                                    _selectedAdmissions.contains(admissionNo);
 
                                 return Container(
                                   decoration: BoxDecoration(
-                                    color: cs.onPrimary,
+                                    color: isSelected
+                                        ? cs.primary.withOpacity(0.04)
+                                        : cs.onPrimary,
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: cs.outline.withOpacity(0.25),
+                                      color: isSelected
+                                          ? cs.primary
+                                          : cs.outline.withOpacity(0.25),
+                                      width: isSelected ? 1.5 : 1,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
@@ -462,14 +724,55 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                     borderRadius: BorderRadius.circular(14),
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(14),
-                                      onTap: () => _viewVolunteer(
-                                        vol?.admissionNo ??
-                                            item.volunteerAdmissionNo,
-                                      ),
+                                      onTap: () {
+                                        if (_canMarkAttendance &&
+                                            admissionNo != 'N/A') {
+                                          setState(() {
+                                            if (isSelected) {
+                                              _selectedAdmissions.remove(
+                                                admissionNo,
+                                              );
+                                            } else {
+                                              _selectedAdmissions.add(
+                                                admissionNo,
+                                              );
+                                            }
+                                          });
+                                        } else {
+                                          _viewVolunteer(
+                                            vol?.admissionNo ??
+                                                item.volunteerAdmissionNo,
+                                          );
+                                        }
+                                      },
                                       child: Padding(
                                         padding: const EdgeInsets.all(12),
                                         child: Row(
                                           children: [
+                                            if (_canMarkAttendance &&
+                                                admissionNo != 'N/A') ...[
+                                              Checkbox(
+                                                value: isSelected,
+                                                activeColor: cs.primary,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                onChanged: (val) {
+                                                  setState(() {
+                                                    if (val == true) {
+                                                      _selectedAdmissions.add(
+                                                        admissionNo,
+                                                      );
+                                                    } else {
+                                                      _selectedAdmissions
+                                                          .remove(admissionNo);
+                                                    }
+                                                  });
+                                                },
+                                              ),
+                                              const SizedBox(width: 4),
+                                            ],
                                             CircleAvatar(
                                               radius: 22,
                                               backgroundColor: cs.primary
@@ -504,12 +807,14 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                                     .onSurface,
                                                               ),
                                                           maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
+                                                          overflow:
+                                                              TextOverflow
+                                                                  .ellipsis,
                                                         ),
                                                       ),
                                                       if (blood != null &&
-                                                          blood.isNotEmpty) ...[
+                                                          blood
+                                                              .isNotEmpty) ...[
                                                         const SizedBox(
                                                           width: 6,
                                                         ),
@@ -519,16 +824,18 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                                 horizontal: 6,
                                                                 vertical: 1,
                                                               ),
-                                                          decoration: BoxDecoration(
-                                                            color: Colors.red
-                                                                .withOpacity(
-                                                                  0.1,
-                                                                ),
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  6,
-                                                                ),
-                                                          ),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                                color: Colors
+                                                                    .red
+                                                                    .withOpacity(
+                                                                      0.1,
+                                                                    ),
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      6,
+                                                                    ),
+                                                              ),
                                                           child: Text(
                                                             blood,
                                                             style:
@@ -566,13 +873,13 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                     Text(
                                                       "Enrolled: ${DateFormat.yMMMd().add_jm().format(enrollmentDate)}",
                                                       style: tt.bodySmall
-                                                          ?.copyWith(
-                                                            color: cs.onSurface
-                                                                .withOpacity(
-                                                                  0.45,
-                                                                ),
-                                                            fontSize: 10,
-                                                          ),
+                                                        ?.copyWith(
+                                                          color: cs.onSurface
+                                                              .withOpacity(
+                                                                0.45,
+                                                              ),
+                                                          fontSize: 10,
+                                                        ),
                                                     ),
                                                   ],
                                                 ],
@@ -593,7 +900,8 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                             IconButton(
                                               tooltip: 'View Details',
                                               icon: Icon(
-                                                Icons.arrow_forward_ios_rounded,
+                                                Icons
+                                                    .arrow_forward_ios_rounded,
                                                 size: 14,
                                                 color: cs.onSurface.withOpacity(
                                                   0.35,
@@ -617,6 +925,59 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
           ],
         ),
       ),
+      bottomNavigationBar:
+          (_canMarkAttendance && _selectedAdmissions.isNotEmpty)
+              ? Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton.icon(
+                        onPressed: _isSubmittingAttendance
+                            ? null
+                            : _showRecordAttendanceDialog,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: cs.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: _isSubmittingAttendance
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.check_circle_outline_rounded),
+                        label: Text(
+                          'Record Attendance (${_selectedAdmissions.length})',
+                          style: tt.labelLarge?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : null,
     );
   }
 }

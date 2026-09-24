@@ -16,7 +16,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
 
   String _searchQuery = '';
   int? _selectedProgramId;
-  DateTime? _selectedDate = DateTime.now();
+  DateTime? _selectedDate;
   final TextEditingController _hoursController = TextEditingController();
 
   @override
@@ -58,7 +58,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -81,54 +81,49 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
 
   void _markAttendance() {
     if (controller.selectedVolList.isEmpty) {
-      Get.snackbar(
-        'Selection Error',
+      CustomWidgets.showSnackBar(
+        'Selection Required',
         'Please select at least one volunteer to mark attendance.',
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
       );
       return;
     }
     if (_selectedProgramId == null) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Required Field Missing',
         'Please select a program.',
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
       );
       return;
     }
     if (_selectedDate == null) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Required Field Missing',
         'Please select a service date.',
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
       );
       return;
     }
     final hrsStr = _hoursController.text.trim();
     if (hrsStr.isEmpty) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Required Field Missing',
         'Please specify the hours served.',
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
       );
       return;
     }
     final int? hrs = int.tryParse(hrsStr);
     if (hrs == null || hrs <= 0) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Invalid Value',
         'Please enter a valid positive whole number for hours served.',
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
       );
       return;
     }
@@ -147,13 +142,16 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
             "Are you sure you want to submit attendance for ${controller.selectedVolList.length} volunteers?",
         onConfirm: () => controller.onSubmitAttendance(),
         data: Obx(
-          () => controller.isLoading.value
+          () => controller.isSubmittingAttendance.value
               ? const SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.red,
+                  ),
                 )
-              : const Text("Confirm"),
+              : const Text("Confirm", style: TextStyle(color: Colors.red)),
         ),
       );
     }
@@ -182,7 +180,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
         ),
       ),
       body: Obx(() {
-        if (controller.isLoading.value) {
+        if (controller.isLoading.value && controller.usersList.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
 
@@ -472,6 +470,11 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                     ),
                   ),
                   items: controller.programsList
+                      .where(
+                        (prog) =>
+                            prog.date != null &&
+                            !prog.date!.isAfter(DateTime.now()),
+                      )
                       .map(
                         (prog) => DropdownMenuItem<int>(
                           value: prog.id,

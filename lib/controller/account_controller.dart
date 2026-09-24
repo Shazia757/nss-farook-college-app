@@ -68,21 +68,20 @@ class AccountController extends GetxController {
         userNameController.clear();
         passwordController.clear();
 
-        Get.snackbar(
+        CustomWidgets.showSnackBar(
           'Welcome',
           '${user.name}',
-          colorText: Colors.white,
-          icon: const Icon(Icons.login, color: Colors.white),
+          icon: const Icon(Icons.login, color: Color(0xFF1976D2), size: 20),
         );
         Get.offAll(() => const HomeScreen());
       } else {
         errorMessage.value = response?.message ?? 'Failed to login!';
-        Get.snackbar('Error', errorMessage.value);
+        CustomWidgets.showSnackBar('Error', errorMessage.value);
       }
     } catch (e) {
       if (!isClosed) {
         errorMessage.value = 'Login error: $e';
-        Get.snackbar('Error', errorMessage.value);
+        CustomWidgets.showSnackBar('Error', errorMessage.value);
       }
     } finally {
       if (!isClosed) {
@@ -193,22 +192,44 @@ class AccountController extends GetxController {
       final data = {
         'subject': 'Account delete request',
         'description': reasonController.text,
-        'assigned_to': 'sec',
       };
       Api()
           .addIssue(data)
           .then((value) {
             if (isClosed) return;
             isLoading.value = false;
+            Get.back(); // close confirmation dialog
             if (value?.status ?? false) {
-              Get.snackbar("Success", "Delete request sent successfully");
+              CustomWidgets.showSnackBar(
+                "Success",
+                "Delete request sent successfully",
+                backgroundColor: Colors.green.shade800,
+                icon: const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                ),
+              );
               Get.offAll(() => const LoginScreen());
             } else {
-              Get.snackbar("Error", "Failed to send delete request");
+              CustomWidgets.showSnackBar(
+                "Error",
+                "Failed to send delete request",
+                backgroundColor: Colors.red.shade800,
+                icon: const Icon(Icons.error_outline, color: Colors.white),
+              );
             }
           })
           .catchError((_) {
-            if (!isClosed) isLoading.value = false;
+            if (!isClosed) {
+              isLoading.value = false;
+              Get.back();
+              CustomWidgets.showSnackBar(
+                "Error",
+                "Failed to send delete request",
+                backgroundColor: Colors.red.shade800,
+                icon: const Icon(Icons.error_outline, color: Colors.white),
+              );
+            }
           });
     } else {
       CustomWidgets.showSnackBar(

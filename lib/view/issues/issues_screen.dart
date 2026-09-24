@@ -229,7 +229,13 @@ class _IssuesScreenState extends State<IssuesScreen> {
                           DropdownButtonFormField<String>(
                             value: c.subjectController.text.isNotEmpty
                                 ? c.subjectController.text
-                                : 'Attendance discrepancy',
+                                : null,
+                            hint: Text(
+                              'Select issue type',
+                              style: tt.bodyMedium?.copyWith(
+                                color: cs.onSurface.withOpacity(0.4),
+                              ),
+                            ),
                             decoration: InputDecoration(
                               filled: true,
                               fillColor: cs.surface,
@@ -270,9 +276,7 @@ class _IssuesScreenState extends State<IssuesScreen> {
                                     )
                                     .toList(),
                             onChanged: (val) {
-                              if (val != null) {
-                                c.subjectController.text = val;
-                              }
+                              c.subjectController.text = val ?? '';
                             },
                           ),
                           const SizedBox(height: 16),
@@ -342,10 +346,6 @@ class _IssuesScreenState extends State<IssuesScreen> {
                             height: 48,
                             child: FilledButton(
                               onPressed: () {
-                                if (c.subjectController.text.isEmpty) {
-                                  c.subjectController.text =
-                                      'Attendance discrepancy';
-                                }
                                 if (c.onSubmitIssueValidation()) {
                                   CustomWidgets().showConfirmationDialog(
                                     title: "Report Issue",
@@ -354,8 +354,15 @@ class _IssuesScreenState extends State<IssuesScreen> {
                                     onConfirm: () => c.reportIssue(),
                                     data: Obx(
                                       () => (c.isReportLoading.value)
-                                          ? CircularProgressIndicator()
-                                          : Text(
+                                          ? const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.red,
+                                              ),
+                                            )
+                                          : const Text(
                                               "Confirm",
                                               style: TextStyle(
                                                 color: Colors.red,
@@ -371,22 +378,13 @@ class _IssuesScreenState extends State<IssuesScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: c.isReportLoading.value
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Text(
-                                      'Submit Report',
-                                      style: tt.labelLarge?.copyWith(
-                                        color: cs.onSecondary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                              child: Text(
+                                'Submit Report',
+                                style: tt.labelLarge?.copyWith(
+                                  color: cs.onSecondary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ),
                         ],

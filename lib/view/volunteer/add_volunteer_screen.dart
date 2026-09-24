@@ -241,19 +241,54 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             context,
                             "Program of Study",
                           ),
-                          CustomWidgets.searchableDropDown(
-                            context: context,
-                            controller: c.departmentController,
-                            stringValueOf: (item) =>
-                                "${item.category ?? ""} ${item.name ?? ''}",
-                            onSelected: (p0) {
-                              c.departmentController.text =
-                                  "${p0.category ?? ""} ${p0.name ?? ''}";
-                              c.departmentID = p0.id;
-                            },
-                            selectionList: c.departmentList,
-                            label: "Department",
-                          ),
+                          Obx(() {
+                            final hasMatch = c.departmentList.any(
+                              (d) => d.id == c.departmentID,
+                            );
+                            return DropdownButtonFormField<int>(
+                              value: hasMatch ? c.departmentID : null,
+                              decoration: CustomWidgets().buildInputDecoration(
+                                context,
+                                'Select Department',
+                              ),
+                              hint: Text(
+                                'Select Department',
+                                style: tt.bodyMedium?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.4),
+                                ),
+                              ),
+                              isExpanded: true,
+                              menuMaxHeight: 300,
+                              dropdownColor: cs.onPrimary,
+                              borderRadius: BorderRadius.circular(12),
+                              items: c.departmentList.map((dept) {
+                                final name =
+                                    "${dept.category ?? ''} ${dept.name ?? ''}"
+                                        .trim();
+                                return DropdownMenuItem<int>(
+                                  value: dept.id,
+                                  child: Text(
+                                    name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: cs.onSurface,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (val) {
+                                final selected = c.departmentList
+                                    .firstWhereOrNull((d) => d.id == val);
+                                if (selected != null) {
+                                  c.departmentID = selected.id;
+                                  c.departmentController.text =
+                                      "${selected.category ?? ''} ${selected.name ?? ''}"
+                                          .trim();
+                                }
+                              },
+                            );
+                          }),
 
                           CustomWidgets().buildLabel(context, "Batch Year"),
                           DropdownButtonFormField<String>(

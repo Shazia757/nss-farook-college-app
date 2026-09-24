@@ -378,7 +378,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  if (displayVol != null && displayVol.role == 'vol') ...[
+                  if (role != 'vol' && displayVol != null && displayVol.role == 'vol') ...[
                     const SizedBox(height: 20),
                     _SectionCard(
                       title: "Participation & Attendance",

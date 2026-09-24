@@ -480,23 +480,38 @@ class AddProgramController extends GetxController {
           if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (value?.status ?? false) {
-            Get.back();
+            Get.back(); // close confirmation dialog
+            Get.back(); // navigate back to Programs page
             if (Get.isRegistered<ProgramListController>()) {
               Get.find<ProgramListController>().getPrograms();
             }
             CustomWidgets.showSnackBar(
               "Success",
               value?.message ?? "Program added successfully",
+              backgroundColor: Colors.green.shade800,
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
             );
           } else {
+            Get.back(); // close confirmation dialog
             CustomWidgets.showSnackBar(
               "Error",
               value?.message ?? 'Failed to add program.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
             );
           }
         })
         .catchError((_) {
-          if (!isClosed) isUpdateButtonLoading.value = false;
+          if (!isClosed) {
+            isUpdateButtonLoading.value = false;
+            Get.back();
+            CustomWidgets.showSnackBar(
+              "Error",
+              'Failed to add program.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
         });
   }
 
@@ -524,25 +539,41 @@ class AddProgramController extends GetxController {
           if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (value?.status ?? false) {
-            Get.back();
+            Get.back(); // close confirmation dialog
+            Get.back(); // navigate back
             if (Get.isRegistered<ProgramListController>()) {
               Get.find<ProgramListController>().updateProgramLocally(
                 updatedProgram,
               );
+              Get.find<ProgramListController>().getPrograms();
             }
             CustomWidgets.showSnackBar(
               "Success",
               value?.message ?? "Program updated successfully.",
+              backgroundColor: Colors.green.shade800,
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
             );
           } else {
+            Get.back();
             CustomWidgets.showSnackBar(
               'Error',
               value?.message ?? 'Failed to update program.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
             );
           }
         })
         .catchError((_) {
-          if (!isClosed) isUpdateButtonLoading.value = false;
+          if (!isClosed) {
+            isUpdateButtonLoading.value = false;
+            Get.back();
+            CustomWidgets.showSnackBar(
+              'Error',
+              'Failed to update program.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
         });
   }
 
@@ -552,25 +583,34 @@ class AddProgramController extends GetxController {
     try {
       final value = await Api().deleteProgram(id);
       if (isClosed) return;
+      Get.back(); // Dismiss confirmation dialog immediately
       if (value?.status == true) {
-        if (Get.isDialogOpen ?? false) {
-          Get.back();
-        }
         if (Get.isRegistered<ProgramListController>()) {
           Get.find<ProgramListController>().removeProgramLocally(id);
+          Get.find<ProgramListController>().getPrograms();
         }
         CustomWidgets.showSnackBar(
           "Success",
           value?.message ?? "Program deleted successfully.",
+          backgroundColor: Colors.green.shade800,
+          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
         );
       } else {
         CustomWidgets.showSnackBar(
           "Error",
           value?.message ?? "Failed to delete program.",
+          backgroundColor: Colors.red.shade800,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
         );
       }
     } catch (e) {
-      CustomWidgets.showSnackBar("Error", e.toString());
+      Get.back();
+      CustomWidgets.showSnackBar(
+        "Error",
+        e.toString(),
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
     } finally {
       if (!isClosed) {
         isDeleteButtonLoading.value = false;

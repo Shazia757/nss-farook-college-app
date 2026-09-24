@@ -221,17 +221,30 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
             CustomWidgets.showSnackBar(
               "Success",
               value?.message ?? "Issue reported successfully",
+              backgroundColor: Colors.green.shade800,
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
             );
             fetchIssues();
           } else {
             CustomWidgets.showSnackBar(
               "Error",
               value?.message ?? 'Failed to report issue.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
             );
           }
         })
         .catchError((_) {
-          if (!isClosed) isReportLoading.value = false;
+          if (!isClosed) {
+            isReportLoading.value = false;
+            Get.back();
+            CustomWidgets.showSnackBar(
+              "Error",
+              'Failed to report issue.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
         });
   }
 
@@ -290,12 +303,22 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
   }
 
   bool onSubmitIssueValidation() {
-    if (subjectController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please enter subject');
+    if (subjectController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select an issue type',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     }
-    if (desController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please add description');
+    if (desController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please enter issue description',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     }
     return true;

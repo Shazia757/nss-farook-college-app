@@ -186,28 +186,41 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
 
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          title: "Programs",
-                          value: totalPrograms.toString(),
-                          icon: Icons.event_rounded,
-                          backgroundColor: cs.primary,
-                          textColor: cs.onPrimary,
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          flex: 9,
+                          child: StatCard(
+                            title: "Programs",
+                            value: totalPrograms.toString(),
+                            icon: Icons.event_rounded,
+                            backgroundColor: cs.primary,
+                            textColor: cs.onPrimary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: StatCard(
-                          title: "Total Hours",
-                          value: "$totalHours hrs",
-                          icon: Icons.schedule_rounded,
-                          backgroundColor: cs.secondary,
-                          textColor: cs.onSecondary,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 11,
+                          child: StatCard(
+                            title: "Total Hours",
+                            value: "$totalHours hrs",
+                            icon: Icons.schedule_rounded,
+                            backgroundColor: cs.secondary,
+                            textColor: cs.onSecondary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               }),

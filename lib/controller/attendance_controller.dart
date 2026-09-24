@@ -1,5 +1,5 @@
 import 'dart:developer';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
@@ -31,6 +31,7 @@ class AttendanceController extends GetxController {
   RxBool isDeleteButtonLoading = false.obs;
   RxBool isAttendanceLoading = false.obs;
   RxBool isProgramLoading = false.obs;
+  RxBool isSubmittingAttendance = false.obs;
 
   RxInt totalHours = 0.obs;
   RxInt totalPrograms = 0.obs;
@@ -126,16 +127,62 @@ class AttendanceController extends GetxController {
   }
 
   bool onSubmitAttendanceValidation() {
-    if (programId == null) {
-      CustomWidgets.showSnackBar('Invalid', 'Please select a valid program');
-      return false;
-    }
-    if (durationController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please enter duration/hours');
-      return false;
-    }
     if (selectedVolList.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please select volunteers');
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select at least one volunteer',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (programId == null) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select a valid program',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    final selectedProg = programsList.firstWhereOrNull((p) => p.id == programId);
+    if (selectedProg != null &&
+        selectedProg.date != null &&
+        selectedProg.date!.isAfter(DateTime.now())) {
+      CustomWidgets.showSnackBar(
+        'Invalid Operation',
+        'Attendance cannot be recorded for upcoming programs',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (date == null) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select a service date',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (date!.isAfter(DateTime.now())) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Service date cannot be in the future',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    final hours = int.tryParse(durationController.text.trim()) ?? 0;
+    if (hours <= 0) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please enter valid hours served',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     }
     return true;
@@ -144,7 +191,7 @@ class AttendanceController extends GetxController {
   Future<void> onSubmitAttendance() async {
     if (!onSubmitAttendanceValidation()) return;
     if (isClosed) return;
-    isLoading.value = true;
+    isSubmittingAttendance.value = true;
     int hours = int.tryParse(durationController.text) ?? 0;
 
     List<Map<String, dynamic>> list = selectedVolList
@@ -155,23 +202,36 @@ class AttendanceController extends GetxController {
         .bulkAddAttendance(programId!, list)
         .then((val) {
           if (isClosed) return;
-          isLoading.value = false;
+          isSubmittingAttendance.value = false;
+          Get.back(); // close confirmation dialog
           if (val?.status ?? false) {
-            Get.back();
-            Get.back();
+            Get.back(); // return to previous screen
             CustomWidgets.showSnackBar(
               'Success',
               val?.message ?? 'Attendance added successfully',
+              backgroundColor: Colors.green.shade800,
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
             );
           } else {
             CustomWidgets.showSnackBar(
               'Error',
               val?.message ?? 'Failed to add attendance',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
             );
           }
         })
         .catchError((_) {
-          if (!isClosed) isLoading.value = false;
+          if (!isClosed) {
+            isSubmittingAttendance.value = false;
+            Get.back();
+            CustomWidgets.showSnackBar(
+              'Error',
+              'Failed to add attendance',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
         });
   }
 

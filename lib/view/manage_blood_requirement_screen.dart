@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/controller/blood_requirement_controller.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
@@ -54,24 +55,21 @@ class _ManageBloodRequirementScreenState
 
   Future<void> _makeCall(String? phoneNumber) async {
     if (phoneNumber == null || phoneNumber.trim().isEmpty) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Unavailable',
         'No contact number provided.',
-        snackPosition: SnackPosition.BOTTOM,
+
         backgroundColor: Colors.orange.shade800,
-        colorText: Colors.white,
       );
       return;
     }
 
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
     if (cleanPhone.length < 5) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Invalid Number',
         'The provided contact number is invalid ($phoneNumber).',
-        snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange.shade800,
-        colorText: Colors.white,
       );
       return;
     }
@@ -81,22 +79,17 @@ class _ManageBloodRequirementScreenState
       if (await canLaunchUrl(launchUri)) {
         await launchUrl(launchUri, mode: LaunchMode.externalApplication);
       } else {
-        Get.snackbar(
+        CustomWidgets.showSnackBar(
           'Dialer Unavailable',
           'Could not launch dialer. Please check if your device has a phone call app installed.',
-          snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.shade800,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
         );
       }
     } catch (e) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Error',
         'Failed to initiate call: $e',
-        snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade800,
-        colorText: Colors.white,
       );
     }
   }
@@ -472,7 +465,7 @@ Please share this message to help find a donor as soon as possible. Thank you!
                           Share.share(shareMessage);
                         },
                       ),
-                      if (LocalStorage().readUser().role != 'vol') ...[
+                      if (LocalStorage().readRole() != 'vol') ...[
                         IconButton(
                           icon: Icon(
                             Icons.edit_outlined,
@@ -555,8 +548,9 @@ Please share this message to help find a donor as soon as possible. Thank you!
           ),
           TextButton(
             onPressed: () {
-              if (req.id != null) controller.deleteRequirement(req.id!);
               Navigator.of(ctx).pop();
+
+              if (req.id != null) controller.deleteRequirement(req.id!);
             },
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
@@ -571,7 +565,8 @@ Please share this message to help find a donor as soon as possible. Thank you!
     final tt = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: cs.surface,
-      floatingActionButton: _activeTab == 0
+      floatingActionButton: (_activeTab == 0 &&
+              LocalStorage().readRole() != 'vol')
           ? FloatingActionButton(
               onPressed: () {
                 Get.to(() => const AddBloodRequirementScreen());
@@ -790,31 +785,393 @@ Please share this message to help find a donor as soon as possible. Thank you!
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Requirement Registry',
-              style: tt.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: cs.primary,
-              ),
-            ),
-            Obx(() {
-              final count = controller.activeFilterCount;
-              return Badge(
-                isLabelVisible: count > 0,
-                label: Text('$count'),
-                child: IconButton.filledTonal(
-                  icon: const Icon(Icons.filter_list_rounded, size: 20),
-                  tooltip: 'Filter & Sort',
-                  onPressed: () => _showRequirementsFilterBottomSheet(context),
-                ),
-              );
-            }),
-          ],
+        Text(
+          'Requirement Registry',
+          style: tt.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: cs.primary,
+          ),
         ),
         const SizedBox(height: 12),
+
+        Obx(() {
+          final isVolunteer = LocalStorage().readRole() == 'vol';
+          final currentFilter = controller.selectedStatus.value.isNotEmpty
+              ? 'status:${controller.selectedStatus.value}'
+              : (controller.selectedBloodGroup.value.isNotEmpty
+                    ? 'bg:${controller.selectedBloodGroup.value}'
+                    : '');
+          final currentSort = controller.sortBy.value;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: cs.onPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: controller.activeFilterCount > 0
+                            ? cs.primary
+                            : cs.outline.withOpacity(0.3),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: isVolunteer
+                            ? (controller.bloodGroups.contains(
+                                controller.selectedBloodGroup.value,
+                              )
+                                ? controller.selectedBloodGroup.value
+                                : '')
+                            : ([
+                                '',
+                                'status:pending',
+                                'status:fulfilled',
+                                'bg:A+',
+                                'bg:A-',
+                                'bg:B+',
+                                'bg:B-',
+                                'bg:AB+',
+                                'bg:AB-',
+                                'bg:O+',
+                                'bg:O-',
+                              ].contains(currentFilter)
+                                ? currentFilter
+                                : ''),
+                        isExpanded: true,
+                        dropdownColor: cs.onPrimary,
+                        borderRadius: BorderRadius.circular(12),
+                        icon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: cs.primary,
+                          size: 18,
+                        ),
+                        items: isVolunteer
+                            ? [
+                                DropdownMenuItem(
+                                  value: '',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.filter_alt_outlined,
+                                        size: 16,
+                                        color: cs.onSurface.withOpacity(0.6),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'All Blood Groups',
+                                          style: tt.bodySmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: cs.onSurface,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ...controller.bloodGroups.map(
+                                  (bg) => DropdownMenuItem(
+                                    value: bg,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.bloodtype_outlined,
+                                          size: 16,
+                                          color: Colors.red.shade700,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            'Group $bg',
+                                            style: tt.bodySmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: cs.onSurface,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ]
+                            : [
+                                DropdownMenuItem(
+                                  value: '',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.filter_alt_outlined,
+                                        size: 16,
+                                        color: cs.onSurface.withOpacity(0.6),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'All Requests',
+                                          style: tt.bodySmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: cs.onSurface,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'status:pending',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.hourglass_empty_rounded,
+                                        size: 16,
+                                        color: Colors.blue,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Pending Only',
+                                          style: tt.bodySmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: cs.onSurface,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'status:fulfilled',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.check_circle_outline_rounded,
+                                        size: 16,
+                                        color: Colors.green,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Fulfilled',
+                                          style: tt.bodySmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: cs.onSurface,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                ...controller.bloodGroups.map(
+                                  (bg) => DropdownMenuItem(
+                                    value: 'bg:$bg',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.bloodtype_outlined,
+                                          size: 16,
+                                          color: Colors.red.shade700,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            'Group $bg',
+                                            style: tt.bodySmall?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                              color: cs.onSurface,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                        onChanged: (val) {
+                          if (val == null) return;
+                          if (isVolunteer) {
+                            controller.selectedBloodGroup.value = val;
+                          } else {
+                            if (val.isEmpty) {
+                              controller.selectedStatus.value = '';
+                              controller.selectedBloodGroup.value = '';
+                              controller.selectedUrgency.value = '';
+                            } else if (val.startsWith('status:')) {
+                              controller.selectedStatus.value = val.replaceFirst(
+                                'status:',
+                                '',
+                              );
+                              controller.selectedBloodGroup.value = '';
+                            } else if (val.startsWith('bg:')) {
+                              controller.selectedBloodGroup.value = val
+                                  .replaceFirst('bg:', '');
+                              controller.selectedStatus.value = '';
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Sort Dropdown
+                Expanded(
+                  child: Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: cs.onPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cs.outline.withOpacity(0.3)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value:
+                            [
+                              'newest',
+                              'oldest',
+                              'urgency',
+                              'needed_date',
+                            ].contains(currentSort)
+                            ? currentSort
+                            : 'newest',
+                        isExpanded: true,
+                        dropdownColor: cs.onPrimary,
+                        borderRadius: BorderRadius.circular(12),
+                        icon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: cs.primary,
+                          size: 18,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'newest',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.swap_vert_rounded,
+                                  size: 16,
+                                  color: cs.onSurface.withOpacity(0.6),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Newest First',
+                                    style: tt.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'oldest',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.swap_vert_rounded,
+                                  size: 16,
+                                  color: cs.onSurface.withOpacity(0.6),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Oldest First',
+                                    style: tt.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'urgency',
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.priority_high_rounded,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Highest Urgency',
+                                    style: tt.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem(
+                            value: 'needed_date',
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.event_outlined,
+                                  size: 16,
+                                  color: Colors.orange,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Needed Date',
+                                    style: tt.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) {
+                            controller.sortBy.value = val;
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+
         Expanded(
           child: Obx(() {
             if (controller.isLoading.value) {
@@ -834,6 +1191,7 @@ Please share this message to help find a donor as soon as possible. Thank you!
             }).toList();
 
             if (filteredList.isEmpty) {
+              final isVolunteer = LocalStorage().readRole() == 'vol';
               final hasFilters = controller.activeFilterCount > 0;
               return Center(
                 child: Padding(
@@ -851,7 +1209,10 @@ Please share this message to help find a donor as soon as possible. Thank you!
                         query.isNotEmpty
                             ? 'No blood requirements matching "$query"'
                             : hasFilters
-                            ? 'No blood requirements match the active filters'
+                            ? (isVolunteer &&
+                                    controller.selectedBloodGroup.value.isNotEmpty
+                                ? 'No blood requirements for blood group ${controller.selectedBloodGroup.value}'
+                                : 'No blood requirements match the active filters')
                             : 'No blood requirements registered',
                         textAlign: TextAlign.center,
                         style: tt.titleSmall?.copyWith(
@@ -993,287 +1354,6 @@ Please share this message to help find a donor as soon as possible. Thank you!
           }),
         ),
       ],
-    );
-  }
-
-  void _showRequirementsFilterBottomSheet(BuildContext context) {
-    String tempBloodGroup = controller.selectedBloodGroup.value;
-    String tempStatus = controller.selectedStatus.value;
-    String tempUrgency = controller.selectedUrgency.value;
-    String tempSort = controller.sortBy.value;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final cs = Theme.of(ctx).colorScheme;
-        final tt = Theme.of(ctx).textTheme;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SafeArea(
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.85,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Filter & Sort Requirements',
-                          style: tt.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: cs.primary,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const Divider(),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // 1. Blood Group
-                            const SizedBox(height: 8),
-                            Text(
-                              'Blood Group',
-                              style: tt.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                ChoiceChip(
-                                  label: const Text('All'),
-                                  selected: tempBloodGroup.isEmpty,
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempBloodGroup = '';
-                                    });
-                                  },
-                                ),
-                                ...controller.bloodGroups.map((bg) {
-                                  return ChoiceChip(
-                                    label: Text(bg),
-                                    selected: tempBloodGroup == bg,
-                                    onSelected: (selected) {
-                                      setModalState(() {
-                                        tempBloodGroup = selected ? bg : '';
-                                      });
-                                    },
-                                  );
-                                }),
-                              ],
-                            ),
-
-                            // 2. Status
-                            const SizedBox(height: 16),
-                            Text(
-                              'Request Status',
-                              style: tt.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              children: [
-                                ChoiceChip(
-                                  label: const Text('All'),
-                                  selected: tempStatus.isEmpty,
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempStatus = '';
-                                    });
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Pending / Open'),
-                                  selected: tempStatus == 'pending',
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempStatus = selected ? 'pending' : '';
-                                    });
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Fulfilled'),
-                                  selected: tempStatus == 'fulfilled',
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempStatus = selected ? 'fulfilled' : '';
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-
-                            // 3. Urgency
-                            const SizedBox(height: 16),
-                            Text(
-                              'Urgency Level',
-                              style: tt.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              children: [
-                                ChoiceChip(
-                                  label: const Text('All'),
-                                  selected: tempUrgency.isEmpty,
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempUrgency = '';
-                                    });
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Normal'),
-                                  selected: tempUrgency == 'normal',
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempUrgency = selected ? 'normal' : '';
-                                    });
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Urgent'),
-                                  selected: tempUrgency == 'urgent',
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempUrgency = selected ? 'urgent' : '';
-                                    });
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Critical'),
-                                  selected: tempUrgency == 'critical',
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      tempUrgency = selected ? 'critical' : '';
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
-
-                            // 4. Sort Options
-                            const SizedBox(height: 16),
-                            Text(
-                              'Sort By',
-                              style: tt.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 6,
-                              children: [
-                                ChoiceChip(
-                                  label: const Text('Newest First'),
-                                  selected: tempSort == 'newest',
-                                  onSelected: (selected) {
-                                    setModalState(() => tempSort = 'newest');
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Oldest First'),
-                                  selected: tempSort == 'oldest',
-                                  onSelected: (selected) {
-                                    setModalState(() => tempSort = 'oldest');
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Highest Urgency'),
-                                  selected: tempSort == 'urgency',
-                                  onSelected: (selected) {
-                                    setModalState(() => tempSort = 'urgency');
-                                  },
-                                ),
-                                ChoiceChip(
-                                  label: const Text('Nearest Needed Date'),
-                                  selected: tempSort == 'needed_date',
-                                  onSelected: (selected) {
-                                    setModalState(
-                                      () => tempSort = 'needed_date',
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    // Actions Row
-                    const Divider(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setModalState(() {
-                                tempBloodGroup = '';
-                                tempStatus = '';
-                                tempUrgency = '';
-                                tempSort = 'newest';
-                              });
-                              controller.resetFilters();
-                              Navigator.of(context).pop();
-                            },
-                            child: const Text('Reset'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () {
-                              controller.applyFilters(
-                                bloodGroup: tempBloodGroup,
-                                status: tempStatus,
-                                urgency: tempUrgency,
-                                sort: tempSort,
-                              );
-                              Navigator.of(context).pop();
-                            },
-                            child: const Text('Apply'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 

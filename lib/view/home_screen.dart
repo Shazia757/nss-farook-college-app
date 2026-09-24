@@ -808,55 +808,100 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       }),
 
-                      Obx(() {
-                        if (bloodController.isLoading.value) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        if (bloodController.requirements.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const SizedBox(height: 20),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Text(
-                                "Active Blood Requirements",
-                                style: Theme.of(context).textTheme.titleMedium!
-                                    .copyWith(color: cs.primary),
-                              ),
+                            Text(
+                              "Active Blood Requirements",
+                              style: Theme.of(context).textTheme.titleMedium!
+                                  .copyWith(color: cs.primary),
                             ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 235,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
+                            InkWell(
+                              onTap: () {
+                                Get.to(() => const ManageBloodRequirementScreen());
+                              },
+                              child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
+                                  horizontal: 12,
+                                  vertical: 4,
                                 ),
-                                itemCount: bloodController.requirements.length,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(width: 16),
-                                itemBuilder: (context, index) {
-                                  final req =
-                                      bloodController.requirements[index];
-                                  return _bloodRequirementCard(
-                                    context,
-                                    cs,
-                                    req,
-                                  );
-                                },
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffECE6FF),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  "View All",
+                                  style: Theme.of(context).textTheme.titleSmall!
+                                      .copyWith(color: cs.primary),
+                                ),
                               ),
                             ),
                           ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      Obx(() {
+                        if (bloodController.isLoading.value) {
+                          return const SizedBox(
+                            height: 180,
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final activeReqs = bloodController.requirements.where((req) {
+                          final status = (req.status ?? 'open').trim().toLowerCase();
+                          if (status.contains('complete') ||
+                              status.contains('cancel') ||
+                              status.contains('fulfill') ||
+                              status.contains('close') ||
+                              status.contains('resolve')) {
+                            return false;
+                          }
+                          return status == 'open' ||
+                              status == 'pending' ||
+                              status == 'active' ||
+                              status.isEmpty;
+                        }).toList();
+
+                        if (activeReqs.isEmpty) {
+                          return SizedBox(
+                            height: 100,
+                            child: Center(
+                              child: Text(
+                                "No active blood requirements",
+                                style: tt.bodyMedium?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.5),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        return SizedBox(
+                          height: 280,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                            itemCount: activeReqs.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(width: 16),
+                            itemBuilder: (context, index) {
+                              final req = activeReqs[index];
+                              return _bloodRequirementCard(
+                                context,
+                                cs,
+                                req,
+                              );
+                            },
+                          ),
                         );
                       }),
 
@@ -1477,8 +1522,8 @@ Widget _bloodRequirementCard(
       onTap: () => BloodRequirementDetailsSheet.show(context, req),
       borderRadius: BorderRadius.circular(24),
       child: Container(
-        width: 300,
-        padding: const EdgeInsets.all(16),
+        width: 280,
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
@@ -1487,16 +1532,15 @@ Widget _bloodRequirementCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Row: Blood Group Avatar, Urgency Chip, Status Chip, and Call Action Button
             Row(
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: Colors.red.shade700,
+                  backgroundColor: cs.secondary.withOpacity(0.12),
                   child: Text(
                     bloodGroup,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: cs.secondary,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -1505,25 +1549,20 @@ Widget _bloodRequirementCard(
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
+                    horizontal: 8,
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
                     color: urgency.contains('CRITIC')
-                        ? Colors.red.shade100
-                        : Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: urgency.contains('CRITIC')
-                          ? Colors.red.shade400
-                          : Colors.orange.shade400,
-                    ),
+                        ? cs.error.withOpacity(0.12)
+                        : Colors.orange.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     urgency,
                     style: TextStyle(
                       color: urgency.contains('CRITIC')
-                          ? Colors.red.shade900
+                          ? cs.error
                           : Colors.orange.shade900,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
@@ -1533,18 +1572,17 @@ Widget _bloodRequirementCard(
                 const SizedBox(width: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 7,
+                    horizontal: 8,
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.blue.shade300),
+                    color: cs.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     status,
                     style: TextStyle(
-                      color: Colors.blue.shade900,
+                      color: cs.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                     ),
@@ -1560,8 +1598,8 @@ Widget _bloodRequirementCard(
                       contactNumber,
                     ),
                     style: IconButton.styleFrom(
-                      backgroundColor: Colors.green.shade100,
-                      foregroundColor: Colors.green.shade900,
+                      backgroundColor: Colors.green.shade50,
+                      foregroundColor: Colors.green.shade800,
                       visualDensity: VisualDensity.compact,
                       padding: const EdgeInsets.all(6),
                     ),
@@ -1569,87 +1607,90 @@ Widget _bloodRequirementCard(
               ],
             ),
             const SizedBox(height: 10),
-
-            // Patient Name and Required Units
             Text(
-              'Patient: $patientName ($units)',
+              patientName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: tt.titleSmall?.copyWith(
+              style: tt.titleMedium!.copyWith(
+                color: cs.primary,
                 fontWeight: FontWeight.bold,
-                color: cs.onSurface,
               ),
             ),
-            const SizedBox(height: 6),
-
-            // Hospital Name
+            const SizedBox(height: 8),
             Row(
               children: [
                 Icon(
                   Icons.local_hospital_outlined,
-                  size: 15,
-                  color: cs.primary,
+                  size: 18,
+                  color: cs.onSurface.withOpacity(0.7),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     hospital,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: tt.bodySmall?.copyWith(
-                      color: cs.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: tt.bodyMedium,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-
-            // Date Needed & Contact Info
+            const SizedBox(height: 6),
             Row(
               children: [
                 Icon(
-                  Icons.event_outlined,
-                  size: 15,
-                  color: Colors.orange.shade800,
+                  Icons.water_drop_outlined,
+                  size: 18,
+                  color: cs.secondary,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
+                Text(
+                  units,
+                  style: tt.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  size: 18,
+                  color: cs.onSurface.withOpacity(0.7),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Needed: $neededDate • $contactPerson',
+                    'Needed: $neededDate',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                    style: tt.bodyMedium,
                   ),
                 ),
               ],
             ),
             const Spacer(),
-
-            // Obvious Tap Affordance Banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: cs.primary.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Tap to view complete details',
-                    style: tt.labelSmall?.copyWith(
-                      color: cs.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: cs.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: cs.primary,
+                ),
+                onPressed: () =>
+                    BloodRequirementDetailsSheet.show(context, req),
+                child: const Text(
+                  "View Details",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
+                ),
               ),
             ),
           ],

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
+import 'package:nss_new/controller/blood_requirement_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/blood_model.dart';
 import 'package:nss_new/view/add_blood_requirement_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class BloodRequirementDetailsSheet extends StatelessWidget {
+class BloodRequirementDetailsSheet extends StatefulWidget {
   final BloodDonationRequest request;
   final VoidCallback? onDelete;
 
@@ -36,24 +38,20 @@ class BloodRequirementDetailsSheet extends StatelessWidget {
     String? phoneNumber,
   ) async {
     if (phoneNumber == null || phoneNumber.trim().isEmpty) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Unavailable',
         'No contact number provided for this requirement.',
-        snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange.shade800,
-        colorText: Colors.white,
       );
       return;
     }
 
     final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
     if (cleanPhone.length < 5) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Invalid Number',
         'The provided phone number is invalid ($phoneNumber).',
-        snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.orange.shade800,
-        colorText: Colors.white,
       );
       return;
     }
@@ -63,24 +61,35 @@ class BloodRequirementDetailsSheet extends StatelessWidget {
       if (await canLaunchUrl(launchUri)) {
         await launchUrl(launchUri, mode: LaunchMode.externalApplication);
       } else {
-        Get.snackbar(
+        CustomWidgets.showSnackBar(
           'Dialer Unavailable',
           'Could not launch dialer. Please verify that this device has a phone call app installed.',
-          snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red.shade800,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
         );
       }
     } catch (e) {
-      Get.snackbar(
+      CustomWidgets.showSnackBar(
         'Error',
         'Failed to initiate call: $e',
-        snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red.shade800,
-        colorText: Colors.white,
       );
     }
+  }
+
+  @override
+  State<BloodRequirementDetailsSheet> createState() =>
+      _BloodRequirementDetailsSheetState();
+}
+
+class _BloodRequirementDetailsSheetState
+    extends State<BloodRequirementDetailsSheet> {
+  late String _currentStatus;
+  BloodDonationRequest get request => widget.request;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentStatus = widget.request.status?.toLowerCase() ?? 'pending';
   }
 
   void _shareRequirement() {
@@ -336,6 +345,183 @@ Please share this message with eligible donors. Every second counts!
                     ),
                     const SizedBox(height: 20),
 
+                    // Requirement Status Section & Dropdown
+                    _buildSectionHeader(
+                      context,
+                      title: 'Requirement Status',
+                      icon: Icons.published_with_changes_rounded,
+                    ),
+                    const SizedBox(height: 8),
+                    if (!isAuthorized) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cs.onPrimary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cs.outline.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
+                                color: _currentStatus == 'fulfilled'
+                                    ? Colors.green
+                                    : _currentStatus == 'cancelled'
+                                        ? Colors.grey
+                                        : Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _currentStatus == 'fulfilled'
+                                    ? 'Fulfilled'
+                                    : _currentStatus == 'cancelled'
+                                        ? 'Cancelled'
+                                        : 'Pending / Open',
+                                style: tt.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: cs.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: cs.onPrimary,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cs.outline.withOpacity(0.3),
+                          ),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: ['pending', 'fulfilled', 'cancelled'].contains(_currentStatus)
+                                ? _currentStatus
+                                : 'pending',
+                            isExpanded: true,
+                            dropdownColor: cs.onPrimary,
+                            borderRadius: BorderRadius.circular(12),
+                            icon: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: cs.primary,
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'pending',
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.blue,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Pending / Open',
+                                      style: tt.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: cs.onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'fulfilled',
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Fulfilled',
+                                      style: tt.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: cs.onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'cancelled',
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.grey,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      'Cancelled',
+                                      style: tt.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: cs.onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            onChanged: (newStatus) async {
+                              if (newStatus == null || newStatus == _currentStatus) return;
+                              setState(() {
+                                _currentStatus = newStatus;
+                                request.status = newStatus;
+                              });
+                              final controller = Get.isRegistered<BloodRequirementController>()
+                                  ? Get.find<BloodRequirementController>()
+                                  : Get.put(BloodRequirementController());
+                              if (request.id != null) {
+                                await controller.updateRequirement({
+                                  'id': request.id,
+                                  'status': newStatus,
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+
                     // Hospital & Location Section
                     _buildSectionHeader(
                       context,
@@ -402,7 +588,10 @@ Please share this message with eligible donors. Every second counts!
                               ? IconButton.filledTonal(
                                   icon: const Icon(Icons.phone, size: 18),
                                   onPressed: () =>
-                                      makeCall(context, request.contactNumber),
+                                      BloodRequirementDetailsSheet.makeCall(
+                                        context,
+                                        request.contactNumber,
+                                      ),
                                   style: IconButton.styleFrom(
                                     backgroundColor: Colors.green.shade100,
                                     foregroundColor: Colors.green.shade900,
@@ -505,7 +694,10 @@ Please share this message with eligible donors. Every second counts!
                           ),
                         ),
                         onPressed: () =>
-                            makeCall(context, request.contactNumber),
+                            BloodRequirementDetailsSheet.makeCall(
+                              context,
+                              request.contactNumber,
+                            ),
                       ),
                     ),
                   if (hasValidPhone) const SizedBox(width: 10),
@@ -539,7 +731,7 @@ Please share this message with eligible donors. Every second counts!
                         );
                       },
                     ),
-                    if (onDelete != null) ...[
+                    if (widget.onDelete != null) ...[
                       const SizedBox(width: 4),
                       IconButton.filledTonal(
                         icon: Icon(
@@ -553,7 +745,7 @@ Please share this message with eligible donors. Every second counts!
                         ),
                         onPressed: () {
                           Navigator.of(context).pop();
-                          onDelete!();
+                          widget.onDelete!();
                         },
                       ),
                     ],

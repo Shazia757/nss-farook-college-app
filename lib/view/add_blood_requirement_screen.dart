@@ -27,6 +27,7 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
   late TextEditingController _unitsController;
   late TextEditingController _urgencyLevelController;
   late TextEditingController _descriptionController;
+  late TextEditingController _statusController;
 
   @override
   void initState() {
@@ -54,6 +55,9 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
       text: req?.urgency ?? 'normal',
     );
     _descriptionController = TextEditingController(text: req?.notes ?? '');
+    _statusController = TextEditingController(
+      text: req?.status?.toLowerCase() ?? 'pending',
+    );
   }
 
   @override
@@ -67,6 +71,7 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
     _unitsController.dispose();
     _urgencyLevelController.dispose();
     _descriptionController.dispose();
+    _statusController.dispose();
     super.dispose();
   }
 
@@ -103,6 +108,9 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
         'urgency': _urgencyLevelController.text.trim().toLowerCase(),
         'notes': _descriptionController.text.trim(),
       };
+      if (req != null) {
+        map['status'] = _statusController.text.trim().toLowerCase();
+      }
 
       bool success = false;
       if (req == null) {
@@ -217,17 +225,66 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                           ),
 
                           CustomWidgets().buildLabel(context, "Blood Group"),
-                          TextFormField(
-                            controller: _bloodGroupController,
-                            style: TextStyle(color: cs.onSurface),
+                          DropdownButtonFormField<String>(
+                            value: [
+                              'A+',
+                              'A-',
+                              'B+',
+                              'B-',
+                              'AB+',
+                              'AB-',
+                              'O+',
+                              'O-',
+                            ].contains(
+                              _bloodGroupController.text.trim().toUpperCase(),
+                            )
+                                ? _bloodGroupController.text.trim().toUpperCase()
+                                : null,
+                            isExpanded: true,
+                            dropdownColor: cs.onPrimary,
+                            borderRadius: BorderRadius.circular(12),
+                            icon: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: cs.primary,
+                            ),
                             decoration: CustomWidgets().buildInputDecoration(
                               context,
-                              "e.g., O+, A-, B+",
+                              "Select blood group",
+                              prefixIcon: Icon(
+                                Icons.bloodtype_outlined,
+                                color: Colors.red.shade700,
+                              ),
                             ),
+                            items: [
+                              'A+',
+                              'A-',
+                              'B+',
+                              'B-',
+                              'AB+',
+                              'AB-',
+                              'O+',
+                              'O-',
+                            ]
+                                .map(
+                                  (bg) => DropdownMenuItem(
+                                    value: bg,
+                                    child: Text(
+                                      bg,
+                                      style: TextStyle(
+                                        color: cs.onSurface,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (val) {
+                              if (val != null) _bloodGroupController.text = val;
+                            },
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                ? "Please enter blood group"
-                                : null,
+                                    ? "Please select blood group"
+                                    : null,
                           ),
 
                           CustomWidgets().buildLabel(context, "Units Required"),
@@ -308,22 +365,68 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                                 )
                                 ? _urgencyLevelController.text.toLowerCase()
                                 : 'normal',
+                            isExpanded: true,
+                            dropdownColor: cs.onPrimary,
+                            borderRadius: BorderRadius.circular(12),
+                            icon: Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: cs.primary,
+                            ),
                             decoration: CustomWidgets().buildInputDecoration(
                               context,
                               "Select urgency",
                             ),
-                            items: const [
+                            items: [
                               DropdownMenuItem(
                                 value: 'normal',
-                                child: Text('Normal'),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Normal'),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 'urgent',
-                                child: Text('Urgent'),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.orange,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Urgent'),
+                                  ],
+                                ),
                               ),
                               DropdownMenuItem(
                                 value: 'critical',
-                                child: Text('Critical'),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text('Critical'),
+                                  ],
+                                ),
                               ),
                             ],
                             onChanged: (val) {
@@ -331,6 +434,88 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                                 _urgencyLevelController.text = val;
                             },
                           ),
+
+                          if (isEditMode) ...[
+                            CustomWidgets().buildLabel(context, "Requirement Status"),
+                            DropdownButtonFormField<String>(
+                              value: ['pending', 'fulfilled', 'cancelled'].contains(
+                                _statusController.text.toLowerCase(),
+                              )
+                                  ? _statusController.text.toLowerCase()
+                                  : 'pending',
+                              isExpanded: true,
+                              dropdownColor: cs.onPrimary,
+                              borderRadius: BorderRadius.circular(12),
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: cs.primary,
+                              ),
+                              decoration: CustomWidgets().buildInputDecoration(
+                                context,
+                                "Select status",
+                                prefixIcon: Icon(
+                                  Icons.published_with_changes_rounded,
+                                  color: cs.primary,
+                                ),
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'pending',
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.blue,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text('Pending / Open'),
+                                    ],
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'fulfilled',
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.green,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text('Fulfilled'),
+                                    ],
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'cancelled',
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.grey,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      const Text('Cancelled'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) _statusController.text = val;
+                              },
+                            ),
+                          ],
 
                           CustomWidgets().buildLabel(
                             context,

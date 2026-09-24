@@ -61,11 +61,13 @@ class DeleteAccountScreen extends StatelessWidget {
                           size: 28,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          "Delete Account Request",
-                          style: tt.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: cs.error,
+                        Expanded(
+                          child: Text(
+                            "Delete Account Request",
+                            style: tt.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: cs.error,
+                            ),
                           ),
                         ),
                       ],
@@ -127,9 +129,14 @@ class DeleteAccountScreen extends StatelessWidget {
                                 ),
                               );
                             } else {
-                              Get.snackbar(
+                              CustomWidgets.showSnackBar(
                                 "Error",
                                 "Please specify the reason",
+                                backgroundColor: Colors.red.shade800,
+                                icon: const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.white,
+                                ),
                               );
                             }
                           },

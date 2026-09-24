@@ -96,20 +96,35 @@ class VolunteerController extends GetxController {
           if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (value?.status ?? false) {
-            Get.back();
+            Get.back(); // close confirmation dialog
+            Get.back(); // navigate back to Manage Volunteers
             CustomWidgets.showSnackBar(
               'Success',
               value?.message ?? 'Volunteer added successfully.',
+              backgroundColor: Colors.green.shade800,
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
             );
           } else {
+            Get.back(); // close confirmation dialog
             CustomWidgets.showSnackBar(
               'Error',
               value?.message ?? 'Failed to add volunteer.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
             );
           }
         })
         .catchError((_) {
-          if (!isClosed) isUpdateButtonLoading.value = false;
+          if (!isClosed) {
+            isUpdateButtonLoading.value = false;
+            Get.back();
+            CustomWidgets.showSnackBar(
+              'Error',
+              'Failed to add volunteer.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
         });
   }
 
@@ -137,20 +152,35 @@ class VolunteerController extends GetxController {
           if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (response?.status == true) {
-            Get.back();
+            Get.back(); // close confirmation dialog
+            Get.back(); // navigate back to previous screen
             CustomWidgets.showSnackBar(
               'Success',
               response?.message ?? 'Volunteer updated successfully.',
+              backgroundColor: Colors.green.shade800,
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
             );
           } else {
+            Get.back();
             CustomWidgets.showSnackBar(
               'Error',
               response?.message ?? 'Failed to update volunteer.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
             );
           }
         })
         .catchError((_) {
-          if (!isClosed) isUpdateButtonLoading.value = false;
+          if (!isClosed) {
+            isUpdateButtonLoading.value = false;
+            Get.back();
+            CustomWidgets.showSnackBar(
+              'Error',
+              'Failed to update volunteer.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
         });
   }
 
@@ -160,24 +190,32 @@ class VolunteerController extends GetxController {
     try {
       final response = await api.deleteVolunteer(admnNo);
       if (isClosed) return false;
+      Get.back(); // Dismiss confirmation dialog immediately
       if (response?.status ?? false) {
-        if (Get.isDialogOpen ?? false) {
-          Get.back();
-        }
         CustomWidgets.showSnackBar(
           "Success",
           response?.message ?? "Volunteer deleted successfully.",
+          backgroundColor: Colors.green.shade800,
+          icon: const Icon(Icons.check_circle_outline, color: Colors.white),
         );
         return true;
       } else {
         CustomWidgets.showSnackBar(
           "Error",
           response?.message ?? "Failed to delete volunteer.",
+          backgroundColor: Colors.red.shade800,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
         );
         return false;
       }
     } catch (e) {
-      CustomWidgets.showSnackBar("Error", e.toString());
+      Get.back();
+      CustomWidgets.showSnackBar(
+        "Error",
+        e.toString(),
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     } finally {
       if (!isClosed) {
@@ -220,6 +258,7 @@ class VolunteerController extends GetxController {
     casteController.clear();
     genderController.clear();
     addressController.clear();
+    departmentID = null;
     selectedCaste.value = null;
     selectedGender.value = null;
     selectedBloodGroup.value = null;
@@ -227,20 +266,40 @@ class VolunteerController extends GetxController {
   }
 
   bool onSubmitVolValidation() {
-    if (nameController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please enter name');
+    if (nameController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please enter name',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     }
-    if (emailController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please enter email');
+    if (emailController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please enter email',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     }
-    if (phoneController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please enter phone number');
+    if (phoneController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please enter phone number',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     }
-    if (admissionNoController.text.isEmpty) {
-      CustomWidgets.showSnackBar('Invalid', 'Please add admission number');
+    if (admissionNoController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please add admission number',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
       return false;
     }
     return true;

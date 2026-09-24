@@ -30,11 +30,7 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (controller.isShowingPassive.value) {
-        controller.getPassiveData();
-      } else {
-        controller.getData();
-      }
+      controller.getData();
       controller.fetchBatches();
     });
   }
@@ -110,6 +106,7 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
         final success = await volunteerController.deleteVolunteer(admn);
         if (success) {
           controller.removeVolunteerLocally(admn);
+          controller.getData();
         }
       },
       data: Obx(
@@ -143,11 +140,7 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Get.to(() => const AddVolunteerScreen())?.then((_) {
-            if (controller.isShowingPassive.value) {
-              controller.getPassiveData();
-            } else {
-              controller.getData();
-            }
+            controller.getData();
           });
         },
         backgroundColor: cs.primary,
@@ -257,56 +250,9 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                   const SizedBox(height: 16),
 
                   Obx(() {
-                    final isPassive = controller.isShowingPassive.value;
-
-                    return Container(
-                      height: 44,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _VolunteerToggleButton(
-                              label: 'Active',
-                              icon: Icons.check_circle_outline_rounded,
-                              selected: !isPassive,
-                              onTap: () {
-                                controller.togglePassiveView(false);
-                              },
-                            ),
-                          ),
-                          Expanded(
-                            child: _VolunteerToggleButton(
-                              label: 'Passive',
-                              icon: Icons.pause_circle_outline_rounded,
-                              selected: isPassive,
-                              onTap: () {
-                                controller.togglePassiveView(true);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-
-                  const SizedBox(height: 12),
-
-                  Obx(() {
-                    final isPassive = controller.isShowingPassive.value;
-
-                    final count = isPassive
-                        ? controller.passiveUsersList.length
-                        : controller.usersList.length;
-
                     return StatCard(
-                      title: isPassive
-                          ? 'Passive Volunteers'
-                          : 'Active Volunteers',
-                      value: count.toString(),
+                      title: 'Active Volunteers',
+                      value: controller.usersList.length.toString(),
                       icon: Icons.people_outline_rounded,
                       backgroundColor: cs.onPrimary,
                       textColor: cs.onSurface,
@@ -317,25 +263,15 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
             ),
             Expanded(
               child: Obx(() {
-                final isCurrentLoading = controller.isShowingPassive.value
-                    ? controller.isPassiveLoading.value
-                    : controller.isLoading.value;
-
-                if (isCurrentLoading) {
+                if (controller.isLoading.value) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final currentList = controller.isShowingPassive.value
-                    ? controller.passiveUsersList
-                    : controller.usersList;
+                final currentList = controller.usersList;
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    if (controller.isShowingPassive.value) {
-                      controller.getPassiveData();
-                    } else {
-                      controller.getData();
-                    }
+                    controller.getData();
                   },
                   child: currentList.isEmpty
                       ? ListView(
@@ -646,55 +582,6 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                         ),
                 );
               }),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VolunteerToggleButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _VolunteerToggleButton({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          color: selected ? cs.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-              ),
             ),
           ],
         ),
