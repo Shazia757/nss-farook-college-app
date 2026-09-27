@@ -18,6 +18,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
   int? _selectedProgramId;
   DateTime? _selectedDate;
   final TextEditingController _hoursController = TextEditingController();
+  bool _isAutoPopulated = false;
 
   @override
   void initState() {
@@ -454,6 +455,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                 DropdownButtonFormField<int>(
                   value: _selectedProgramId,
                   isExpanded: true,
+                  menuMaxHeight: 280,
                   hint: const Text('Choose NSS Program'),
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.symmetric(
@@ -469,6 +471,26 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                       borderSide: BorderSide(color: cs.primary, width: 1.5),
                     ),
                   ),
+                  selectedItemBuilder: (context) {
+                    final validProgs = controller.programsList
+                        .where(
+                          (prog) =>
+                              prog.date != null &&
+                              !prog.date!.isAfter(DateTime.now()),
+                        )
+                        .toList();
+                    return validProgs.map((prog) {
+                      return Text(
+                        prog.name ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
+                      );
+                    }).toList();
+                  },
                   items: controller.programsList
                       .where(
                         (prog) =>
@@ -478,10 +500,31 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                       .map(
                         (prog) => DropdownMenuItem<int>(
                           value: prog.id,
-                          child: Text(
-                            prog.name ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  prog.name ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tt.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "${prog.date != null ? _formatDate(prog.date!) : ''}${prog.duration != null && prog.duration! > 0 ? ' • ${prog.duration} hours' : ''}",
+                                  style: tt.bodySmall?.copyWith(
+                                    fontSize: 11,
+                                    color: cs.onSurface.withValues(alpha: 0.55),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       )
@@ -489,6 +532,22 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                   onChanged: (val) {
                     setState(() {
                       _selectedProgramId = val;
+                      if (val != null) {
+                        final prog = controller.programsList.firstWhereOrNull(
+                          (p) => p.id == val,
+                        );
+                        if (prog != null) {
+                          if (prog.date != null) {
+                            _selectedDate = prog.date;
+                          }
+                          if (prog.duration != null && prog.duration! > 0) {
+                            _hoursController.text = prog.duration.toString();
+                          }
+                          _isAutoPopulated = true;
+                        }
+                      } else {
+                        _isAutoPopulated = false;
+                      }
                     });
                   },
                 ),
@@ -523,7 +582,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                               : _formatDate(_selectedDate!),
                           style: tt.bodyMedium?.copyWith(
                             color: _selectedDate == null
-                                ? cs.onSurface.withOpacity(0.5)
+                                ? cs.onSurface.withValues(alpha: 0.5)
                                 : cs.onSurface,
                           ),
                         ),
@@ -569,7 +628,7 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                 Text(
                   'Note: standard sessions range from 1 to 6 hours',
                   style: tt.bodySmall?.copyWith(
-                    color: cs.onSurface.withOpacity(0.4),
+                    color: cs.onSurface.withValues(alpha: 0.4),
                     fontStyle: FontStyle.italic,
                   ),
                 ),

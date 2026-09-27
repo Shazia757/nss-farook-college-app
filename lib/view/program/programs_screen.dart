@@ -444,6 +444,20 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
     final programId = program.id;
     if (programId == null) return;
 
+    final isLimitReached =
+        program.limit != null &&
+        program.limit! > 0 &&
+        (program.enrollmentCount ?? 0) >= program.limit!;
+    if (isLimitReached) {
+      CustomWidgets.showSnackBar(
+        'Limit Exceeded',
+        'Limit exceeded. Cannot enroll in this program.',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -639,15 +653,21 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
 
                 // 2. Volunteer is NOT enrolled
                 if (!isEnrolled) {
+                  final now = DateTime.now();
+                  final today = DateTime(now.year, now.month, now.day);
+
                   final isPastProgram =
                       isPast ||
                       (program.date != null &&
-                          program.date!.isBefore(DateTime.now()));
+                          DateTime(
+                            program.date!.year,
+                            program.date!.month,
+                            program.date!.day,
+                          ).isBefore(today));
                   final isLimitReached =
                       program.limit != null &&
                       program.limit! > 0 &&
                       (program.enrollmentCount ?? 0) >= program.limit!;
-                  final isEnrollmentAllowed = !isPastProgram && !isLimitReached;
                   final buttonLabel = isLimitReached
                       ? 'Program Full'
                       : 'Enroll Now';
@@ -656,9 +676,20 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                     width: double.infinity,
                     height: 40,
                     child: FilledButton(
-                      onPressed:
-                          (!isEnrollmentAllowed || isEnrolling || isCancelling)
+                      onPressed: (isEnrolling || isCancelling || isPastProgram)
                           ? null
+                          : isLimitReached
+                          ? () {
+                              CustomWidgets.showSnackBar(
+                                'Limit Exceeded',
+                                'Limit exceeded. Cannot enroll in this program.',
+                                backgroundColor: Colors.red.shade800,
+                                icon: const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.white,
+                                ),
+                              );
+                            }
                           : () {
                               _showEnrollConfirmationDialog(context, program);
                             },

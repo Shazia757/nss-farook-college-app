@@ -36,7 +36,7 @@ class Issues {
     }
 
     return Issues(
-      to: data['assigned_to']?.toString(),
+      to: data['assigned_to']?.toString() ?? data['to']?.toString(),
       createdDate: data['created_at'] != null
           ? DateTime.tryParse(data['created_at'].toString())
           : null,

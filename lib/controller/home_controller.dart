@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
@@ -108,6 +109,60 @@ class HomeController extends GetxController {
     }
   }
 
+  Future<void> syncVolunteerEnrollments(List<Program> list) async {
+    final user = LocalStorage().readUser();
+    if (user.role != 'vol' || user.admissionNo == null || user.admissionNo!.isEmpty) {
+      for (final p in list) {
+        if (p.id != null) verifiedProgramEnrollmentIds.add(p.id!);
+      }
+      isCheckingEnrollment.value = false;
+      return;
+    }
+
+    final userAdmn = user.admissionNo!.trim().toLowerCase();
+    isCheckingEnrollment.value = true;
+
+    final targetPrograms = list.where((p) => p.id != null).toList();
+    if (targetPrograms.isEmpty) {
+      isCheckingEnrollment.value = false;
+      return;
+    }
+
+    try {
+      final futures = targetPrograms.map((p) async {
+        final pid = p.id!;
+        try {
+          final res = await _api.getEnrolledStudents(pid);
+          if (isClosed) return;
+          final enrolledList = res?.enrollmentList ?? [];
+          final myEnrollment = enrolledList.firstWhereOrNull((e) {
+            final a1 = e.volunteerAdmissionNo?.trim().toLowerCase();
+            final a2 = e.volunteer?.admissionNo?.trim().toLowerCase();
+            return (a1 != null && a1 == userAdmn) || (a2 != null && a2 == userAdmn);
+          });
+
+          if (myEnrollment != null) {
+            final enrolledAt = myEnrollment.date ?? LocalStorage().getEstimatedServerTime();
+            enrolledPrograms[pid] = enrolledAt;
+            LocalStorage().saveVolunteerEnrollment(user.admissionNo!, pid, enrolledAt);
+          } else {
+            enrolledPrograms.remove(pid);
+            LocalStorage().removeVolunteerEnrollment(user.admissionNo!, pid);
+          }
+        } catch (_) {
+        } finally {
+          verifiedProgramEnrollmentIds.add(pid);
+        }
+      });
+
+      await Future.wait(futures);
+    } finally {
+      if (!isClosed) {
+        isCheckingEnrollment.value = false;
+      }
+    }
+  }
+
   Future<void> fetchUpcomingPrograms() async {
     if (isClosed) return;
     loadVolunteerEnrollments();
@@ -120,11 +175,7 @@ class HomeController extends GetxController {
           (a, b) =>
               (b.date ?? DateTime.now()).compareTo(a.date ?? DateTime.now()),
         );
-        for (final p in upcomingPrograms) {
-          if (p.id != null) {
-            verifiedProgramEnrollmentIds.add(p.id!);
-          }
-        }
+        await syncVolunteerEnrollments(upcomingPrograms);
       }
     } finally {
       if (!isClosed) {
@@ -163,6 +214,19 @@ class HomeController extends GetxController {
         cancellingProgramIds.contains(programId)) {
       return;
     }
+
+    if (program.limit != null &&
+        program.limit! > 0 &&
+        (program.enrollmentCount ?? 0) >= program.limit!) {
+      CustomWidgets.showSnackBar(
+        'Limit Exceeded',
+        'Limit exceeded. Cannot enroll in this program.',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return;
+    }
+
     enrollingProgramIds.add(programId);
     isEnrolledLoading.value = true;
 
@@ -186,6 +250,8 @@ class HomeController extends GetxController {
           );
         }
         enrolledPrograms[programId] = nowServer;
+        program.enrollmentCount = (program.enrollmentCount ?? 0) + 1;
+        verifiedProgramEnrollmentIds.add(programId);
         CustomWidgets.showSnackBar(
           'Success',
           response?.message ?? 'You are enrolled.',
@@ -193,7 +259,8 @@ class HomeController extends GetxController {
         fetchUpcomingPrograms();
       } else {
         final msg = response?.message ?? 'Failed to enroll.';
-        if (msg.toLowerCase().contains('already enrolled')) {
+        final lowerMsg = msg.toLowerCase();
+        if (lowerMsg.contains('already enrolled')) {
           if (admissionNo.isNotEmpty) {
             LocalStorage().saveVolunteerEnrollment(
               admissionNo,
@@ -202,7 +269,19 @@ class HomeController extends GetxController {
             );
           }
           enrolledPrograms[programId] = nowServer;
+          verifiedProgramEnrollmentIds.add(programId);
           CustomWidgets.showSnackBar('Notice', msg);
+        } else if (lowerMsg.contains('limit') ||
+            lowerMsg.contains('full') ||
+            lowerMsg.contains('exceeded') ||
+            lowerMsg.contains('capacity') ||
+            lowerMsg.contains('maximum')) {
+          CustomWidgets.showSnackBar(
+            'Limit Exceeded',
+            'Limit exceeded. Cannot enroll in this program.',
+            backgroundColor: Colors.red.shade800,
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+          );
         } else {
           CustomWidgets.showSnackBar('Error', msg);
         }
@@ -249,6 +328,10 @@ class HomeController extends GetxController {
           LocalStorage().removeVolunteerEnrollment(admissionNo, programId);
         }
         enrolledPrograms.remove(programId);
+        verifiedProgramEnrollmentIds.add(programId);
+        if (program.enrollmentCount != null && program.enrollmentCount! > 0) {
+          program.enrollmentCount = program.enrollmentCount! - 1;
+        }
         CustomWidgets.showSnackBar(
           'Success',
           response?.message ?? 'Enrollment cancelled.',

@@ -1,3 +1,5 @@
+import 'package:nss_new/config/urls.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -214,6 +216,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     label: const Text("Edit Profile"),
                                   ),
                                 ),
+
+                                if (role == 'sec' || role == 'po') ...[
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: OutlinedButton.icon(
+                                      onPressed: () => Get.to(
+                                        () => ChangePasswordScreen(
+                                          userId: displayVol.admissionNo ?? '',
+                                          volunteerName: displayVol.name,
+                                          isChangepassword: false,
+                                        ),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.white,
+                                        side: const BorderSide(
+                                          color: Colors.white70,
+                                          width: 1.2,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                        ),
+                                      ),
+                                      icon: const Icon(
+                                        Icons.lock_reset_rounded,
+                                      ),
+                                      label: const Text(
+                                        "Reset Password",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ],
                           ),
@@ -326,7 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
 
                   // ================= ACADEMIC DETAILS =================
-                  if (role != 'po')
+                  if (displayVol?.role != 'po' || !isOwnProfile)
                     _SectionCard(
                       title: "Academic Details",
                       icon: Icons.school_outlined,
@@ -378,7 +420,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  if (role != 'vol' && displayVol != null && displayVol.role == 'vol') ...[
+                  if (displayVol != null &&
+                      displayVol.role != 'po' &&
+                      ((role == 'po') ||
+                          (role == 'sec' && displayVol.role == 'vol'))) ...[
                     const SizedBox(height: 20),
                     _SectionCard(
                       title: "Participation & Attendance",
@@ -409,7 +454,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 20),
 
-                  if (isOwnProfile) _DangerZoneCard(cs: cs),
+                  if (isOwnProfile) ...[
+                    _AboutLegalCard(cs: cs),
+                    const SizedBox(height: 20),
+                    _DangerZoneCard(cs: cs),
+                  ],
 
                   const SizedBox(height: 100),
                 ],
@@ -673,6 +722,311 @@ class _Divider extends StatelessWidget {
       height: 1,
       thickness: 0.8,
       color: Theme.of(context).colorScheme.outline.withOpacity(.3),
+    );
+  }
+}
+
+class _AboutLegalCard extends StatelessWidget {
+  final ColorScheme cs;
+
+  const _AboutLegalCard({required this.cs});
+
+  void _openUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        CustomWidgets.showSnackBar('Notice', 'Unable to open link ($url).');
+      }
+    } catch (e) {
+      CustomWidgets.showSnackBar('Error', 'Failed to open link: $e');
+    }
+  }
+
+  void _showContactBottomSheet(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.outline.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  "Contact NSS Farook College",
+                  style: tt.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: cs.primary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Reach out to the NSS unit office or program coordinators for any assistance.",
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _contactTile(
+                  icon: Icons.email_outlined,
+                  title: "Official Email",
+                  subtitle: Details.contactEmail,
+                  onTap: () async {
+                    final Uri emailUri = Uri(
+                      scheme: 'mailto',
+                      path: Details.contactEmail,
+                      queryParameters: {
+                        'subject': 'NSS Farook College App Enquiry',
+                      },
+                    );
+                    if (await canLaunchUrl(emailUri)) {
+                      await launchUrl(
+                        emailUri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                _contactTile(
+                  icon: Icons.phone_outlined,
+                  title: "Primary Helpline",
+                  subtitle: Details.contactNo1,
+                  onTap: () async {
+                    final Uri phoneUri = Uri(
+                      scheme: 'tel',
+                      path: Details.contactNo1,
+                    );
+                    if (await canLaunchUrl(phoneUri)) {
+                      await launchUrl(
+                        phoneUri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                _contactTile(
+                  icon: Icons.phone_in_talk_outlined,
+                  title: "Secondary Helpline",
+                  subtitle: Details.contactNo2,
+                  onTap: () async {
+                    final Uri phoneUri = Uri(
+                      scheme: 'tel',
+                      path: Details.contactNo2,
+                    );
+                    if (await canLaunchUrl(phoneUri)) {
+                      await launchUrl(
+                        phoneUri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _contactTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.outline.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.2)),
+      ),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: cs.primary.withValues(alpha: 0.12),
+          child: Icon(icon, color: cs.primary, size: 20),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            color: cs.primary,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 14,
+          color: cs.primary,
+        ),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: cs.onPrimary,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.info_outline_rounded,
+                  size: 18,
+                  color: cs.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "About & Legal",
+                style: tt.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _legalItem(
+            icon: Icons.privacy_tip_outlined,
+            label: "Privacy Policy",
+            onTap: () => _openUrl(Details.privacyPolicyUrl),
+          ),
+          const _Divider(),
+          _legalItem(
+            icon: Icons.gavel_outlined,
+            label: "Terms & Conditions",
+            onTap: () => _openUrl(Details.termsAndConditionsUrl),
+          ),
+          const _Divider(),
+          _legalItem(
+            icon: Icons.contact_support_outlined,
+            label: "Contact Us",
+            subtitle: Details.contactEmail,
+            onTap: () => _showContactBottomSheet(context),
+          ),
+          const _Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.verified_outlined,
+                      size: 18,
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      "App Version",
+                      style: tt.bodyMedium?.copyWith(
+                        color: cs.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  Details.appVersion,
+                  style: tt.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: cs.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _legalItem({
+    required IconData icon,
+    required String label,
+    String? subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: cs.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurface.withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Icon(Icons.open_in_new_rounded, size: 16, color: cs.outline),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'package:nss_new/config/urls.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -249,10 +251,10 @@ class LoginScreen extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 32),
 
                     Text(
-                      "Version 1.0.0",
+                      "Version ${Details.appVersion}",
                       style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(height: 20),

@@ -40,6 +40,7 @@ void main() {
         final c = AddProgramController();
         c.nameController.text = "Blood Donation Camp";
         c.durationController.text = "4";
+        c.limitController.text = "25";
         c.date = null;
         c.dateController.text = "";
 

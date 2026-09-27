@@ -32,6 +32,8 @@ class VolunteerController extends GetxController {
   RxString gender = ''.obs;
   RxString bloodGroup = ''.obs;
   RxList<Department> departmentList = <Department>[].obs;
+  RxList<BatchSummary> batchSummaries = <BatchSummary>[].obs;
+
   RxnString selectedCaste = RxnString();
   RxnString selectedGender = RxnString();
   RxnString selectedBloodGroup = RxnString();
@@ -42,6 +44,7 @@ class VolunteerController extends GetxController {
   void onReady() {
     super.onReady();
     getDepartments();
+    fetchBatches();
   }
 
   @override
@@ -68,6 +71,19 @@ class VolunteerController extends GetxController {
         .then((value) {
           if (isClosed) return;
           departmentList.assignAll(value?.programs?.toList() ?? []);
+        })
+        .catchError((_) {});
+  }
+
+  void fetchBatches() {
+    if (isClosed) return;
+    api
+        .getBatches()
+        .then((list) {
+          if (isClosed) return;
+          if (list != null) {
+            batchSummaries.assignAll(list);
+          }
         })
         .catchError((_) {});
   }
@@ -400,9 +416,16 @@ class VolunteerListController extends GetxController {
         )
         .then((value) {
           if (isClosed) return;
-          final activeOnly = (value?.data ?? [])
+          var activeOnly = (value?.data ?? [])
               .where((v) => v.isActive != false)
               .toList();
+          if (selectedBloodGroup.value.isNotEmpty) {
+            final targetBg = selectedBloodGroup.value.trim().toUpperCase();
+            activeOnly = activeOnly.where((v) {
+              final bg = (v.bloodGroup ?? '').trim().toUpperCase();
+              return bg == targetBg;
+            }).toList();
+          }
           usersList.assignAll(activeOnly);
           isLoading.value = false;
         })
@@ -493,7 +516,7 @@ class VolunteerListController extends GetxController {
 
   void filterByBloodGroup(String group) {
     if (isClosed) return;
-    selectedBloodGroup.value = selectedBloodGroup.value == group ? '' : group;
+    selectedBloodGroup.value = group;
     getData();
   }
 

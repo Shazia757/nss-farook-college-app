@@ -115,13 +115,31 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
       bool success = false;
       if (req == null) {
         success = await controller.addRequirement(map);
+        if (success) {
+          if (mounted) {
+            Navigator.of(context).pop(true);
+          } else {
+            Get.back(result: true);
+          }
+        }
       } else {
         map['id'] = req.id;
-        success = await controller.updateRequirement(map);
-      }
-
-      if (success) {
-        Get.back();
+        success = await controller.updateRequirement(
+          map,
+          showSuccessSnackbar: false,
+        );
+        if (success) {
+          controller.fetchBloodRequests();
+          if (mounted) {
+            Navigator.of(context).pop(true);
+          } else {
+            Get.back(result: true);
+          }
+          CustomWidgets.showSnackBar(
+            'Success',
+            'Blood requirement updated successfully.',
+          );
+        }
       }
     }
   }
@@ -226,19 +244,24 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
 
                           CustomWidgets().buildLabel(context, "Blood Group"),
                           DropdownButtonFormField<String>(
-                            value: [
-                              'A+',
-                              'A-',
-                              'B+',
-                              'B-',
-                              'AB+',
-                              'AB-',
-                              'O+',
-                              'O-',
-                            ].contains(
-                              _bloodGroupController.text.trim().toUpperCase(),
-                            )
-                                ? _bloodGroupController.text.trim().toUpperCase()
+                            value:
+                                [
+                                  'A+',
+                                  'A-',
+                                  'B+',
+                                  'B-',
+                                  'AB+',
+                                  'AB-',
+                                  'O+',
+                                  'O-',
+                                ].contains(
+                                  _bloodGroupController.text
+                                      .trim()
+                                      .toUpperCase(),
+                                )
+                                ? _bloodGroupController.text
+                                      .trim()
+                                      .toUpperCase()
                                 : null,
                             isExpanded: true,
                             dropdownColor: cs.onPrimary,
@@ -255,36 +278,37 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                                 color: Colors.red.shade700,
                               ),
                             ),
-                            items: [
-                              'A+',
-                              'A-',
-                              'B+',
-                              'B-',
-                              'AB+',
-                              'AB-',
-                              'O+',
-                              'O-',
-                            ]
-                                .map(
-                                  (bg) => DropdownMenuItem(
-                                    value: bg,
-                                    child: Text(
-                                      bg,
-                                      style: TextStyle(
-                                        color: cs.onSurface,
-                                        fontWeight: FontWeight.w600,
+                            items:
+                                [
+                                      'A+',
+                                      'A-',
+                                      'B+',
+                                      'B-',
+                                      'AB+',
+                                      'AB-',
+                                      'O+',
+                                      'O-',
+                                    ]
+                                    .map(
+                                      (bg) => DropdownMenuItem(
+                                        value: bg,
+                                        child: Text(
+                                          bg,
+                                          style: TextStyle(
+                                            color: cs.onSurface,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                                    )
+                                    .toList(),
                             onChanged: (val) {
                               if (val != null) _bloodGroupController.text = val;
                             },
                             validator: (val) =>
                                 val == null || val.trim().isEmpty
-                                    ? "Please select blood group"
-                                    : null,
+                                ? "Please select blood group"
+                                : null,
                           ),
 
                           CustomWidgets().buildLabel(context, "Units Required"),
@@ -436,11 +460,19 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                           ),
 
                           if (isEditMode) ...[
-                            CustomWidgets().buildLabel(context, "Requirement Status"),
+                            CustomWidgets().buildLabel(
+                              context,
+                              "Requirement Status",
+                            ),
                             DropdownButtonFormField<String>(
-                              value: ['pending', 'fulfilled', 'cancelled'].contains(
-                                _statusController.text.toLowerCase(),
-                              )
+                              value:
+                                  [
+                                    'pending',
+                                    'fulfilled',
+                                    'cancelled',
+                                  ].contains(
+                                    _statusController.text.toLowerCase(),
+                                  )
                                   ? _statusController.text.toLowerCase()
                                   : 'pending',
                               isExpanded: true,
@@ -581,6 +613,7 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                                             isEditMode
                                                 ? 'Update Requirement'
                                                 : 'Save Requirement',
+                                            textAlign: TextAlign.center,
                                           ),
                                   ),
                                 ),

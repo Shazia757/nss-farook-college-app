@@ -136,24 +136,111 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    Text(
-                      'Pending Issues',
-                      style: tt.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: cs.primary,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Pending Issues',
+                          style: tt.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    // Filter by Reported-To Role: All / Secretary / Program Officer
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _buildRoleFilterChip(
+                            context: context,
+                            label: 'All',
+                            value: 'all',
+                            isSelected:
+                                c.reportedTo.value == 'all' ||
+                                c.reportedTo.value == 'both',
+                            onSelected: () => c.filterByRole('all'),
+                            icon: Icons.all_inclusive_rounded,
+                            count: c.openedList.length,
+                          ),
+                          _buildRoleFilterChip(
+                            context: context,
+                            label: 'Program Officer',
+                            value: 'po',
+                            isSelected: c.reportedTo.value == 'po',
+                            onSelected: () => c.filterByRole('po'),
+                            icon: Icons.school_outlined,
+                            count: c.openedList
+                                .where(
+                                  (i) =>
+                                      (i.to ?? '').toLowerCase() == 'po' ||
+                                      (i.to ?? '').toLowerCase() ==
+                                          'program officer' ||
+                                      (i.to ?? '').toLowerCase() ==
+                                          'program_officer',
+                                )
+                                .length,
+                          ),
+
+                          const SizedBox(width: 8),
+                          _buildRoleFilterChip(
+                            context: context,
+                            label: 'Secretary',
+                            value: 'sec',
+                            isSelected: c.reportedTo.value == 'sec',
+                            onSelected: () => c.filterByRole('sec'),
+                            icon: Icons.badge_outlined,
+                            count: c.openedList
+                                .where(
+                                  (i) =>
+                                      (i.to ?? '').toLowerCase() == 'sec' ||
+                                      (i.to ?? '').toLowerCase() == 'secretary',
+                                )
+                                .length,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
 
                     if (pendingIssues.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 40),
                         child: Center(
-                          child: Text(
-                            'No issues reported',
-                            style: tt.bodyMedium?.copyWith(
-                              color: cs.onSurface.withOpacity(0.5),
-                            ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.inbox_outlined,
+                                size: 48,
+                                color: cs.onSurface.withOpacity(0.3),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                c.reportedTo.value == 'sec'
+                                    ? 'No pending issues reported to Secretary'
+                                    : c.reportedTo.value == 'po'
+                                    ? 'No pending issues reported to Program Officer'
+                                    : 'No pending issues reported',
+                                style: tt.bodyMedium?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.5),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (c.reportedTo.value != 'all' &&
+                                  c.reportedTo.value != 'both') ...[
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () => c.filterByRole('all'),
+                                  child: const Text('Show All Issues'),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       )
@@ -380,7 +467,12 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    _showIssueDetailsDialog(context, issue, tt);
+                    _showIssueDetailsDialog(
+                      context,
+                      issue,
+                      tt,
+                      controller: controller,
+                    );
                   },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
@@ -657,105 +749,430 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
     );
   }
 
-  void _showIssueDetailsDialog(
-    BuildContext context,
-    Issues issue,
-    TextTheme tt,
-  ) {
-    final dateStr = issue.createdDate != null
-        ? DateFormat.yMMMd().format(issue.createdDate!)
-        : 'N/A';
-    final resDateStr = issue.updatedDate != null
-        ? DateFormat.yMMMd().format(issue.updatedDate!)
-        : 'N/A';
+  Widget _buildRoleFilterChip({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required bool isSelected,
+    required VoidCallback onSelected,
+    required IconData icon,
+    int? count,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          issue.subject ?? 'Issue Details',
-          style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+    return InkWell(
+      onTap: onSelected,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? cs.primary : cs.surface,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? cs.primary : cs.outline.withOpacity(0.25),
+            width: 1.2,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: cs.primary.withOpacity(0.2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDialogDetailRow(
-                'Status',
-                issue.isOpen ?? true ? 'Pending' : 'Resolved',
-                isStatus: true,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? cs.onPrimary : cs.onSurface.withOpacity(0.7),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: tt.bodySmall?.copyWith(
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                color: isSelected ? cs.onPrimary : cs.onSurface,
               ),
-              const SizedBox(height: 8),
-              _buildDialogDetailRow(
-                'Reported By',
-                issue.createdBy?.name ?? 'N/A',
-              ),
-              const SizedBox(height: 4),
-              _buildDialogDetailRow(
-                'Admission No',
-                issue.createdBy?.admissionNo ?? 'N/A',
-              ),
-              const SizedBox(height: 4),
-              _buildDialogDetailRow('Reported On', dateStr),
-              const SizedBox(height: 4),
-              _buildDialogDetailRow(
-                'Reported To',
-                issue.to == 'sec' ? 'Secretary' : 'Program Officer',
-              ),
-              if (issue.updatedBy != null && issue.isOpen == false) ...[
-                const SizedBox(height: 4),
-                _buildDialogDetailRow('Resolved On', resDateStr),
-              ],
-              const Divider(height: 24),
-              Text(
-                'Description',
-                style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                issue.description ?? '',
-                style: tt.bodyMedium?.copyWith(height: 1.4),
+            ),
+            if (count != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? cs.onPrimary.withOpacity(0.25)
+                      : cs.outline.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '$count',
+                  style: tt.labelSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                    color: isSelected
+                        ? cs.onPrimary
+                        : cs.onSurface.withOpacity(0.7),
+                  ),
+                ),
               ),
             ],
-          ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildDialogDetailRow(
-    String label,
-    String value, {
-    bool isStatus = false,
+  void _showIssueDetailsDialog(
+    BuildContext context,
+    Issues issue,
+    TextTheme tt, {
+    IssuesController? controller,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final dateStr = issue.createdDate != null
+        ? DateFormat('d MMM yyyy, h:mm a').format(issue.createdDate!)
+        : 'N/A';
+    final resDateStr = issue.updatedDate != null
+        ? DateFormat('d MMM yyyy, h:mm a').format(issue.updatedDate!)
+        : null;
+
+    final isPending = issue.isOpen ?? true;
+    final reportedToName =
+        (issue.to?.toLowerCase() == 'sec' ||
+            issue.to?.toLowerCase() == 'secretary')
+        ? 'Secretary'
+        : 'Program Officer';
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: cs.surface,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 540),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 18, 12, 16),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: cs.outline.withOpacity(0.15)),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isPending
+                            ? Colors.amber.shade50
+                            : Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isPending
+                              ? Colors.amber.shade200
+                              : Colors.green.shade200,
+                        ),
+                      ),
+                      child: Icon(
+                        isPending
+                            ? Icons.hourglass_top_rounded
+                            : Icons.task_alt_rounded,
+                        size: 22,
+                        color: isPending
+                            ? Colors.amber.shade900
+                            : Colors.green.shade800,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            issue.subject?.isNotEmpty == true
+                                ? issue.subject!
+                                : 'General Query',
+                            style: tt.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? Colors.amber.shade50
+                                  : Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isPending ? 'PENDING' : 'RESOLVED',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                                color: isPending
+                                    ? Colors.amber.shade900
+                                    : Colors.green.shade800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(dialogCtx),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Content Body
+              Flexible(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Metadata Info Box
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: cs.onPrimary,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: cs.outline.withOpacity(0.18),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildInfoTile(
+                              context,
+                              icon:
+                                  (issue.to?.toLowerCase() == 'sec' ||
+                                      issue.to?.toLowerCase() == 'secretary')
+                                  ? Icons.badge_outlined
+                                  : Icons.school_outlined,
+                              label: 'Reported To',
+                              value: reportedToName,
+                            ),
+                            const Divider(height: 16),
+                            _buildInfoTile(
+                              context,
+                              icon: Icons.person_outline_rounded,
+                              label: 'Reported By',
+                              value:
+                                  issue.createdBy?.name ??
+                                  issue.createdByName ??
+                                  'Volunteer',
+                              subtitle: issue.createdBy?.admissionNo != null
+                                  ? 'Admission No: ${issue.createdBy!.admissionNo}'
+                                  : null,
+                            ),
+                            const Divider(height: 16),
+                            _buildInfoTile(
+                              context,
+                              icon: Icons.calendar_today_outlined,
+                              label: 'Reported Date',
+                              value: dateStr,
+                            ),
+                            if (!isPending) ...[
+                              const Divider(height: 16),
+                              _buildInfoTile(
+                                context,
+                                icon: Icons.verified_user_outlined,
+                                label: 'Resolved By',
+                                value: issue.updatedBy ?? 'Admin',
+                                subtitle: resDateStr != null
+                                    ? 'On: $resDateStr'
+                                    : null,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Description Section
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.description_outlined,
+                            size: 16,
+                            color: cs.primary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Description',
+                            style: tt.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: cs.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 80),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: cs.outline.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: cs.outline.withOpacity(0.15),
+                          ),
+                        ),
+                        child: Text(
+                          issue.description?.isNotEmpty == true
+                              ? issue.description!
+                              : 'No description provided.',
+                          style: tt.bodyMedium?.copyWith(
+                            height: 1.5,
+                            color: cs.onSurface.withOpacity(0.85),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Action Buttons
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: cs.outline.withOpacity(0.15)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(dialogCtx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          side: BorderSide(color: cs.outline.withOpacity(0.4)),
+                        ),
+                        child: Text(
+                          'Close',
+                          style: tt.labelLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (isPending &&
+                        controller != null &&
+                        issue.id != null) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            Navigator.pop(dialogCtx);
+                            _showResolveConfirmationDialog(
+                              context,
+                              issue,
+                              controller,
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.check_circle_outline,
+                            size: 18,
+                          ),
+                          label: const Text('Resolve Issue'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: cs.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoTile(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    String? subtitle,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Icon(icon, size: 18, color: cs.primary.withOpacity(0.8)),
+        const SizedBox(width: 10),
         SizedBox(
-          width: 100,
+          width: 95,
           child: Text(
-            '$label:',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            label,
+            style: tt.bodySmall?.copyWith(
+              color: cs.onSurface.withOpacity(0.6),
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              color: isStatus
-                  ? (value == 'Resolved' ? Colors.green : Colors.orange)
-                  : null,
-              fontWeight: isStatus ? FontWeight.bold : null,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: tt.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
+                ),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: tt.labelSmall?.copyWith(
+                    color: cs.onSurface.withOpacity(0.55),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ],

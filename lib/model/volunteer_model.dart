@@ -225,20 +225,24 @@ class BatchSummary {
   });
 
   factory BatchSummary.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic val) {
+      if (val is int) return val;
+      if (val is num) return val.toInt();
+      if (val is String) return int.tryParse(val) ?? 0;
+      return 0;
+    }
+
     return BatchSummary(
-      batch: json['batch']?.toString() ?? '',
-      totalCount:
-          json['total_volunteers'] ?? json['total_count'] ?? json['total'] ?? 0,
-      activeCount:
-          json['active_volunteers'] ??
-          json['active_count'] ??
-          json['active'] ??
-          0,
-      passiveCount:
-          json['passive_volunteers'] ??
-          json['passive_count'] ??
-          json['passive'] ??
-          0,
+      batch: json['batch']?.toString().trim() ?? '',
+      totalCount: parseInt(
+        json['total_volunteers'] ?? json['total_count'] ?? json['total'],
+      ),
+      activeCount: parseInt(
+        json['active_volunteers'] ?? json['active_count'] ?? json['active'],
+      ),
+      passiveCount: parseInt(
+        json['passive_volunteers'] ?? json['passive_count'] ?? json['passive'],
+      ),
     );
   }
 }

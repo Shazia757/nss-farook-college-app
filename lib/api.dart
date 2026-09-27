@@ -749,16 +749,21 @@ class Api {
 
   Future<GeneralResponse?> bulkAddAttendance(
     int programId,
-    List<Map<String, dynamic>> attendances,
-  ) async {
+    List<Map<String, dynamic>> attendances, {
+    String? date,
+  }) async {
     try {
+      final Map<String, dynamic> payload = {
+        'program': programId,
+        'attendances': attendances,
+      };
+      if (date != null && date.isNotEmpty) {
+        payload['date'] = date;
+      }
       final response = await http
           .post(
             Uri.parse(Urls.bulkAddAttendance),
-            body: jsonEncode({
-              'program': programId,
-              'attendances': attendances,
-            }),
+            body: jsonEncode(payload),
             headers: await getHeader(),
           )
           .timeout(const Duration(seconds: 60));

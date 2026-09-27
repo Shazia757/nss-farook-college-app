@@ -434,64 +434,6 @@ class _ManageBloodRequirementScreenState
                       ],
                     ),
                   ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.share_outlined,
-                          color: Colors.blue.shade700,
-                          size: 20,
-                        ),
-                        tooltip: 'Share Requirement',
-                        onPressed: () {
-                          final needed = req.neededBefore?.isNotEmpty == true
-                              ? req.neededBefore!
-                              : 'ASAP';
-                          final shareMessage =
-                              '''
-🚨 *URGENT BLOOD REQUIREMENT* 🚨
-
-🩸 *Blood Group Needed:* ${req.bloodGroup ?? 'Any'}
-👤 *Patient Name:* ${req.patientName?.isNotEmpty == true ? req.patientName : 'Patient in need'}
-🏥 *Hospital:* ${req.hospital?.isNotEmpty == true ? req.hospital : 'Hospital not specified'}
-📞 *Contact Number:* ${req.contactNumber?.isNotEmpty == true ? req.contactNumber : 'N/A'}
-⏰ *Needed By:* $needed
-⚡ *Urgency Level:* ${req.urgency ?? 'Normal'}
-
-${req.notes?.isNotEmpty == true ? '📝 *Details:* ${req.notes}\n' : ''}
-Please share this message to help find a donor as soon as possible. Thank you!
-'''
-                                  .trim();
-                          Share.share(shareMessage);
-                        },
-                      ),
-                      if (LocalStorage().readRole() != 'vol') ...[
-                        IconButton(
-                          icon: Icon(
-                            Icons.edit_outlined,
-                            color: cs.primary,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            Get.to(
-                              () => AddBloodRequirementScreen(requirement: req),
-                            );
-                          },
-                        ),
-                        if (req.id != null)
-                          IconButton(
-                            icon: Icon(
-                              Icons.delete_outline,
-                              color: cs.error,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              _showDeleteConfirmation(context, req);
-                            },
-                          ),
-                      ],
-                    ],
-                  ),
                 ],
               ),
               if (req.notes?.isNotEmpty == true) ...[
@@ -565,8 +507,8 @@ Please share this message to help find a donor as soon as possible. Thank you!
     final tt = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: cs.surface,
-      floatingActionButton: (_activeTab == 0 &&
-              LocalStorage().readRole() != 'vol')
+      floatingActionButton:
+          (_activeTab == 0 && LocalStorage().readRole() != 'vol')
           ? FloatingActionButton(
               onPressed: () {
                 Get.to(() => const AddBloodRequirementScreen());
@@ -824,25 +766,25 @@ Please share this message to help find a donor as soon as possible. Thank you!
                       child: DropdownButton<String>(
                         value: isVolunteer
                             ? (controller.bloodGroups.contains(
-                                controller.selectedBloodGroup.value,
-                              )
-                                ? controller.selectedBloodGroup.value
-                                : '')
+                                    controller.selectedBloodGroup.value,
+                                  )
+                                  ? controller.selectedBloodGroup.value
+                                  : '')
                             : ([
-                                '',
-                                'status:pending',
-                                'status:fulfilled',
-                                'bg:A+',
-                                'bg:A-',
-                                'bg:B+',
-                                'bg:B-',
-                                'bg:AB+',
-                                'bg:AB-',
-                                'bg:O+',
-                                'bg:O-',
-                              ].contains(currentFilter)
-                                ? currentFilter
-                                : ''),
+                                    '',
+                                    'status:pending',
+                                    'status:fulfilled',
+                                    'bg:A+',
+                                    'bg:A-',
+                                    'bg:B+',
+                                    'bg:B-',
+                                    'bg:AB+',
+                                    'bg:AB-',
+                                    'bg:O+',
+                                    'bg:O-',
+                                  ].contains(currentFilter)
+                                  ? currentFilter
+                                  : ''),
                         isExpanded: true,
                         dropdownColor: cs.onPrimary,
                         borderRadius: BorderRadius.circular(12),
@@ -1014,10 +956,8 @@ Please share this message to help find a donor as soon as possible. Thank you!
                               controller.selectedBloodGroup.value = '';
                               controller.selectedUrgency.value = '';
                             } else if (val.startsWith('status:')) {
-                              controller.selectedStatus.value = val.replaceFirst(
-                                'status:',
-                                '',
-                              );
+                              controller.selectedStatus.value = val
+                                  .replaceFirst('status:', '');
                               controller.selectedBloodGroup.value = '';
                             } else if (val.startsWith('bg:')) {
                               controller.selectedBloodGroup.value = val
@@ -1210,9 +1150,12 @@ Please share this message to help find a donor as soon as possible. Thank you!
                             ? 'No blood requirements matching "$query"'
                             : hasFilters
                             ? (isVolunteer &&
-                                    controller.selectedBloodGroup.value.isNotEmpty
-                                ? 'No blood requirements for blood group ${controller.selectedBloodGroup.value}'
-                                : 'No blood requirements match the active filters')
+                                      controller
+                                          .selectedBloodGroup
+                                          .value
+                                          .isNotEmpty
+                                  ? 'No blood requirements for blood group ${controller.selectedBloodGroup.value}'
+                                  : 'No blood requirements match the active filters')
                             : 'No blood requirements registered',
                         textAlign: TextAlign.center,
                         style: tt.titleSmall?.copyWith(
@@ -1263,31 +1206,146 @@ Please share this message to help find a donor as soon as possible. Thank you!
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Available Volunteers',
-              style: tt.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: cs.primary,
-              ),
-            ),
-            Obx(() {
-              final count = volunteerListController.activeFilterCount;
-              return Badge(
-                isLabelVisible: count > 0,
-                label: Text('$count'),
-                child: IconButton.filledTonal(
-                  icon: const Icon(Icons.filter_list_rounded, size: 20),
-                  tooltip: 'Filter & Sort Volunteers',
-                  onPressed: () => _showVolunteerFilterBottomSheet(context),
-                ),
-              );
-            }),
-          ],
+        Text(
+          'Available Volunteers',
+          style: tt.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: cs.primary,
+          ),
         ),
         const SizedBox(height: 12),
+        Obx(() {
+          final selectedBg = volunteerListController.selectedBloodGroup.value;
+          final bloodGroups = volunteerListController.bloodGroups;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 44,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: cs.onPrimary,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: selectedBg.isNotEmpty
+                            ? cs.primary
+                            : cs.outline.withOpacity(0.3),
+                      ),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: bloodGroups.contains(selectedBg)
+                            ? selectedBg
+                            : '',
+                        isExpanded: true,
+                        dropdownColor: cs.onPrimary,
+                        borderRadius: BorderRadius.circular(12),
+                        icon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: cs.primary,
+                          size: 18,
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: '',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.filter_alt_outlined,
+                                  size: 16,
+                                  color: cs.onSurface.withOpacity(0.6),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'All Blood Groups',
+                                    style: tt.bodySmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: cs.onSurface,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ...bloodGroups.map(
+                            (bg) => DropdownMenuItem(
+                              value: bg,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.bloodtype_outlined,
+                                    size: 16,
+                                    color: Colors.red.shade700,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Group $bg',
+                                      style: tt.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: cs.onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (val) {
+                          if (val == null) return;
+                          volunteerListController.filterByBloodGroup(val);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                if (selectedBg.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  InkWell(
+                    onTap: () => volunteerListController.clearFilters(),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      height: 44,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: cs.primary.withOpacity(0.3)),
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.clear_rounded,
+                            size: 16,
+                            color: cs.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Clear',
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        }),
         Expanded(
           child: Obx(() {
             if (volunteerListController.isLoading.value) {
@@ -1354,125 +1412,6 @@ Please share this message to help find a donor as soon as possible. Thank you!
           }),
         ),
       ],
-    );
-  }
-
-  void _showVolunteerFilterBottomSheet(BuildContext context) {
-    String tempBloodGroup = volunteerListController.selectedBloodGroup.value;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final cs = Theme.of(ctx).colorScheme;
-        final tt = Theme.of(ctx).textTheme;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SafeArea(
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.7,
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Filter Volunteers',
-                          style: tt.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: cs.primary,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ],
-                    ),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Blood Group',
-                      style: tt.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: [
-                        ChoiceChip(
-                          label: const Text('All'),
-                          selected: tempBloodGroup.isEmpty,
-                          onSelected: (selected) {
-                            setModalState(() {
-                              tempBloodGroup = '';
-                            });
-                          },
-                        ),
-                        ...volunteerListController.bloodGroups.map((bg) {
-                          return ChoiceChip(
-                            label: Text(bg),
-                            selected: tempBloodGroup == bg,
-                            onSelected: (selected) {
-                              setModalState(() {
-                                tempBloodGroup = selected ? bg : '';
-                              });
-                            },
-                          );
-                        }),
-                      ],
-                    ),
-                    const Spacer(),
-                    const Divider(),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setModalState(() {
-                                tempBloodGroup = '';
-                              });
-                              volunteerListController.clearFilters();
-                              Navigator.of(context).pop();
-                            },
-                            child: const Text('Reset'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () {
-                              volunteerListController.filterByBloodGroup(
-                                tempBloodGroup,
-                              );
-                              Navigator.of(context).pop();
-                            },
-                            child: const Text('Apply'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

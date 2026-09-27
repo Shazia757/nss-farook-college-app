@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
@@ -283,10 +284,26 @@ class _AddProgramScreenState extends State<AddProgramScreen> {
                           TextFormField(
                             controller: c.durationController,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                             style: TextStyle(color: cs.onSurface),
                             decoration: CustomWidgets().buildInputDecoration(
                               context,
                               "e.g. 3",
+                            ),
+                          ),
+                          CustomWidgets().buildLabel(context, "Enrollment Limit"),
+                          TextFormField(
+                            controller: c.limitController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            style: TextStyle(color: cs.onSurface),
+                            decoration: CustomWidgets().buildInputDecoration(
+                              context,
+                              "e.g. 50 (Maximum volunteer enrollment)",
                             ),
                           ),
                           const SizedBox(height: 16),

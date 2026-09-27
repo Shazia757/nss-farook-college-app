@@ -32,6 +32,21 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
   late TabController adminTabController;
   RxBool isResolved = false.obs;
 
+  bool _matchesRole(String? to, String roleFilter) {
+    if (roleFilter == 'all' || roleFilter == 'both' || roleFilter.isEmpty) {
+      return true;
+    }
+    final t = (to ?? '').trim().toLowerCase();
+    final f = roleFilter.trim().toLowerCase();
+    if (f == 'sec' || f == 'secretary') {
+      return t == 'sec' || t == 'secretary';
+    }
+    if (f == 'po' || f == 'program officer' || f == 'program_officer') {
+      return t == 'po' || t == 'program officer' || t == 'program_officer';
+    }
+    return t == f;
+  }
+
   void filterByRole(String assignedTo) {
     reportedTo.value = assignedTo;
     _openFilteredTo();
@@ -43,9 +58,10 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
       modifiedOpenedList.assignAll(openedList);
     } else {
       modifiedOpenedList.assignAll(
-        openedList.where((p0) => p0.to == reportedTo.value).toList(),
+        openedList.where((p0) => _matchesRole(p0.to, reportedTo.value)).toList(),
       );
     }
+    _sortOpenedList();
   }
 
   void _closedFilteredTo() {
@@ -53,9 +69,10 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
       modifiedClosedList.assignAll(closedList);
     } else {
       modifiedClosedList.assignAll(
-        closedList.where((p0) => p0.to == reportedTo.value).toList(),
+        closedList.where((p0) => _matchesRole(p0.to, reportedTo.value)).toList(),
       );
     }
+    _sortClosedList();
   }
 
   void resolvedBy(String? admID) {

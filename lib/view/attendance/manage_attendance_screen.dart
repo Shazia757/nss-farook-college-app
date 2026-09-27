@@ -25,6 +25,7 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
         : Get.put(AttendanceController());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      controller.fetchBatches();
       controller.getUsers();
       controller.getPrograms();
     });
@@ -162,8 +163,157 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            // Filter & Export Section
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 4.0,
+              ),
+              child: Row(
+                children: [
+                  // Batch Dropdown
+                  Expanded(
+                    child: Obx(() {
+                      final batches = controller.batchSummaries
+                          .map((b) => b.batch.trim())
+                          .where((b) => b.isNotEmpty)
+                          .toSet()
+                          .toList();
+                      batches.sort((a, b) {
+                        final intA = int.tryParse(a);
+                        final intB = int.tryParse(b);
+                        if (intA != null && intB != null) {
+                          return intB.compareTo(intA);
+                        }
+                        return b.compareTo(a);
+                      });
 
+                      final selected = controller.selectedBatch.value.trim();
+                      final effectiveVal =
+                          (selected.isNotEmpty && batches.contains(selected))
+                              ? selected
+                              : (batches.isNotEmpty ? batches.first : null);
+
+                      final isBatchLoading = controller.isBatchLoading.value;
+
+                      return DropdownButtonFormField<String>(
+                        value: effectiveVal,
+                        isExpanded: true,
+                        icon: Icon(Icons.arrow_drop_down, color: cs.primary),
+                        hint: Text(
+                          isBatchLoading ? 'Loading batches...' : 'Select Batch',
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Batch',
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: cs.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: cs.outline.withOpacity(0.3),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                              color: cs.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: cs.onPrimary,
+                        ),
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        dropdownColor: cs.onPrimary,
+                        borderRadius: BorderRadius.circular(12),
+                        items: batches.map(
+                          (b) => DropdownMenuItem<String>(
+                            value: b,
+                            child: Text(
+                              b,
+                              style: tt.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ),
+                        ).toList(),
+                        onChanged: batches.isEmpty
+                            ? null
+                            : (val) {
+                                if (val != null) {
+                                  controller.filterByBatch(val);
+                                }
+                              },
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Export Button
+                  Obx(() {
+                    final exporting = controller.isExporting.value;
+                    return ElevatedButton.icon(
+                      onPressed: exporting
+                          ? null
+                          : () => controller.exportAttendanceExcel(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: cs.primary,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: cs.primary.withOpacity(0.6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: exporting
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.file_download_outlined,
+                              size: 20,
+                              color: Colors.white,
+                            ),
+                      label: Text(
+                        exporting ? 'Exporting...' : 'Export Attendance',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Volunteer List Section
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
@@ -172,17 +322,31 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
 
                 if (controller.searchList.isEmpty) {
                   return Center(
-                    child: Text(
-                      'No volunteers found',
-                      style: tt.bodyMedium?.copyWith(
-                        color: cs.onSurface.withOpacity(0.5),
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.person_off_outlined,
+                          size: 48,
+                          color: cs.onSurface.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          controller.selectedBatch.value.isNotEmpty
+                              ? 'No volunteers found for batch ${controller.selectedBatch.value}'
+                              : 'No volunteers found',
+                          style: tt.bodyMedium?.copyWith(
+                            color: cs.onSurface.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }
 
                 return RefreshIndicator(
                   onRefresh: () async {
+                    controller.fetchBatches();
                     controller.getUsers();
                   },
                   child: ListView.separated(
@@ -192,7 +356,7 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
                     padding: const EdgeInsets.only(
                       left: 16,
                       right: 16,
-                      top: 12,
+                      top: 4,
                       bottom: 90,
                     ),
                     itemCount: controller.searchList.length,
@@ -223,7 +387,9 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
                               department: v.department,
                               role: v.role,
                             );
-                            Get.to(() => AttendanceScreen(volunteer: userObj));
+                            Get.to(
+                              () => AttendanceScreen(volunteer: userObj),
+                            );
                           },
                           leading: CircleAvatar(
                             radius: 20,

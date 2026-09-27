@@ -4,6 +4,7 @@ import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/volunteer/add_volunteer_screen.dart';
+import 'package:nss_new/view/authentication/change_password_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
 
 class ManageVolunteerScreen extends StatefulWidget {
@@ -342,238 +343,255 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                               child: Material(
                                 color: Colors.transparent,
                                 borderRadius: BorderRadius.circular(16),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: () {
-                                    controller.viewVolunteerProfile(
-                                      v.admissionNo,
-                                    );
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(12),
-                                    child: Column(
-                                      children: [
-                                        Row(
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 22,
-                                              backgroundColor: cs.primary
-                                                  .withOpacity(0.12),
-                                              child: Text(
-                                                (v.name?.isNotEmpty ?? false)
-                                                    ? v.name![0].toUpperCase()
-                                                    : '?',
-                                                style: tt.titleMedium?.copyWith(
-                                                  color: cs.primary,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 22,
+                                            backgroundColor: cs.primary
+                                                .withOpacity(0.12),
+                                            child: Text(
+                                              (v.name?.isNotEmpty ?? false)
+                                                  ? v.name![0].toUpperCase()
+                                                  : '?',
+                                              style: tt.titleMedium?.copyWith(
+                                                color: cs.primary,
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Flexible(
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Flexible(
+                                                      child: Text(
+                                                        v.name ?? '',
+                                                        style: tt.bodyMedium
+                                                            ?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color:
+                                                                  cs.onSurface,
+                                                            ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                    if (v.bloodGroup != null &&
+                                                        v
+                                                            .bloodGroup!
+                                                            .isNotEmpty) ...[
+                                                      const SizedBox(width: 6),
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 6,
+                                                              vertical: 1,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.red
+                                                              .withOpacity(0.1),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                6,
+                                                              ),
+                                                        ),
                                                         child: Text(
-                                                          v.name ?? '',
-                                                          style: tt.bodyMedium
-                                                              ?.copyWith(
+                                                          v.bloodGroup!,
+                                                          style:
+                                                              const TextStyle(
+                                                                color:
+                                                                    Colors.red,
+                                                                fontSize: 10,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .bold,
-                                                                color: cs
-                                                                    .onSurface,
                                                               ),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
                                                         ),
                                                       ),
-                                                      if (v.bloodGroup !=
-                                                              null &&
-                                                          v
-                                                              .bloodGroup!
-                                                              .isNotEmpty) ...[
-                                                        const SizedBox(
-                                                          width: 6,
-                                                        ),
-                                                        Container(
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 6,
-                                                                vertical: 1,
-                                                              ),
-                                                          decoration: BoxDecoration(
-                                                            color: Colors.red
-                                                                .withOpacity(
-                                                                  0.1,
-                                                                ),
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  6,
-                                                                ),
-                                                          ),
-                                                          child: Text(
-                                                            v.bloodGroup!,
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .red,
-                                                                  fontSize: 10,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                      ],
                                                     ],
-                                                  ),
-                                                  const SizedBox(height: 2),
-                                                  Text(
-                                                    "Admission No: ${v.admissionNo ?? 'N/A'}",
-                                                    style: tt.bodySmall
-                                                        ?.copyWith(
-                                                          color: cs.onSurface
-                                                              .withOpacity(
-                                                                0.65,
-                                                              ),
-                                                        ),
-                                                  ),
-                                                  Text(
-                                                    "${v.department?.category ?? ''} ${v.department?.name ?? ''}"
-                                                        .trim(),
-                                                    style: tt.bodySmall
-                                                        ?.copyWith(
-                                                          color: cs.onSurface
-                                                              .withOpacity(
-                                                                0.55,
-                                                              ),
-                                                          fontSize: 11,
-                                                        ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Divider(
-                                          height: 1,
-                                          thickness: 0.7,
-                                          color: cs.outline.withOpacity(0.15),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            TextButton.icon(
-                                              style: TextButton.styleFrom(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                minimumSize: Size.zero,
-                                                tapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                foregroundColor: cs.primary,
-                                              ),
-                                              onPressed: () {
-                                                controller.viewVolunteerProfile(
-                                                  v.admissionNo,
-                                                );
-                                              },
-                                              icon: const Icon(
-                                                Icons.visibility_outlined,
-                                                size: 15,
-                                              ),
-                                              label: const Text(
-                                                'View',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
+                                                  ],
                                                 ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            TextButton.icon(
-                                              style: TextButton.styleFrom(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                minimumSize: Size.zero,
-                                                tapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                foregroundColor: cs.secondary,
-                                              ),
-                                              onPressed: () {
-                                                controller.updateVolunteer(
-                                                  v.admissionNo,
-                                                );
-                                              },
-                                              icon: const Icon(
-                                                Icons.edit_outlined,
-                                                size: 15,
-                                              ),
-                                              label: const Text(
-                                                'Edit',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  "Admission No: ${v.admissionNo ?? 'N/A'}",
+                                                  style: tt.bodySmall?.copyWith(
+                                                    color: cs.onSurface
+                                                        .withOpacity(0.65),
+                                                  ),
                                                 ),
+                                                Text(
+                                                  "${v.department?.category ?? ''} ${v.department?.name ?? ''}"
+                                                      .trim(),
+                                                  style: tt.bodySmall?.copyWith(
+                                                    color: cs.onSurface
+                                                        .withOpacity(0.55),
+                                                    fontSize: 11,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Divider(
+                                        height: 1,
+                                        thickness: 0.7,
+                                        color: cs.outline.withOpacity(0.15),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.end,
+                                        children: [
+                                          TextButton.icon(
+                                            style: TextButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              foregroundColor: cs.primary,
+                                            ),
+                                            onPressed: () {
+                                              controller.viewVolunteerProfile(
+                                                v.admissionNo,
+                                              );
+                                            },
+                                            icon: const Icon(
+                                              Icons.visibility_outlined,
+                                              size: 15,
+                                            ),
+                                            label: const Text(
+                                              'View',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
                                               ),
                                             ),
-                                            const SizedBox(width: 4),
-                                            TextButton.icon(
-                                              style: TextButton.styleFrom(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 4,
-                                                    ),
-                                                minimumSize: Size.zero,
-                                                tapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                foregroundColor: cs.error,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          TextButton.icon(
+                                            style: TextButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              foregroundColor: cs.secondary,
+                                            ),
+                                            onPressed: () {
+                                              controller.updateVolunteer(
+                                                v.admissionNo,
+                                              );
+                                            },
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                              size: 15,
+                                            ),
+                                            label: const Text(
+                                              'Edit',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
                                               ),
-                                              onPressed: () {
-                                                _showDeleteConfirmation(
-                                                  context,
-                                                  v,
-                                                );
-                                              },
-                                              icon: Icon(
-                                                Icons.delete_outline_rounded,
-                                                size: 15,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          TextButton.icon(
+                                            style: TextButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              foregroundColor:
+                                                  Colors.orange.shade800,
+                                            ),
+                                            onPressed: () {
+                                              Get.to(
+                                                () => ChangePasswordScreen(
+                                                  userId: v.admissionNo ?? '',
+                                                  volunteerName: v.name,
+                                                  isChangepassword: false,
+                                                ),
+                                              );
+                                            },
+                                            icon: const Icon(
+                                              Icons.lock_reset,
+                                              size: 15,
+                                            ),
+                                            label: const Text(
+                                              'Reset',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          TextButton.icon(
+                                            style: TextButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                              foregroundColor: cs.error,
+                                            ),
+                                            onPressed: () {
+                                              _showDeleteConfirmation(
+                                                context,
+                                                v,
+                                              );
+                                            },
+                                            icon: Icon(
+                                              Icons.delete_outline_rounded,
+                                              size: 15,
+                                              color: cs.error,
+                                            ),
+                                            label: Text(
+                                              'Delete',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
                                                 color: cs.error,
                                               ),
-                                              label: Text(
-                                                'Delete',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: cs.error,
-                                                ),
-                                              ),
                                             ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

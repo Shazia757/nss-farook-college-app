@@ -342,34 +342,13 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
           icon: Icon(Icons.arrow_back, color: cs.primary),
           onPressed: () => Get.back(),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Enrolled Volunteers',
-              style: tt.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: cs.primary,
-              ),
-            ),
-            if (program?.name != null)
-              Text(
-                program!.name!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tt.bodySmall?.copyWith(
-                  color: cs.onSurface.withOpacity(0.6),
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh List',
-            icon: Icon(Icons.refresh, color: cs.primary),
-            onPressed: _isLoading ? null : _fetchEnrollments,
+        title: Text(
+          'Enrolled Volunteers',
+          style: tt.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: cs.primary,
           ),
-        ],
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -681,7 +660,7 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                               ),
                               itemCount: filtered.length,
                               separatorBuilder: (context, index) =>
-                                   const SizedBox(height: 10),
+                                  const SizedBox(height: 10),
                               itemBuilder: (context, index) {
                                 final item = filtered[index];
                                 final vol = item.volunteer;
@@ -696,8 +675,9 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                 final phone = vol?.phoneNumber;
                                 final blood = vol?.bloodGroup;
                                 final enrollmentDate = item.date;
-                                final isSelected =
-                                    _selectedAdmissions.contains(admissionNo);
+                                final isSelected = _selectedAdmissions.contains(
+                                  admissionNo,
+                                );
 
                                 return Container(
                                   decoration: BoxDecoration(
@@ -807,14 +787,12 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                                     .onSurface,
                                                               ),
                                                           maxLines: 1,
-                                                          overflow:
-                                                              TextOverflow
-                                                                  .ellipsis,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
                                                         ),
                                                       ),
                                                       if (blood != null &&
-                                                          blood
-                                                              .isNotEmpty) ...[
+                                                          blood.isNotEmpty) ...[
                                                         const SizedBox(
                                                           width: 6,
                                                         ),
@@ -824,18 +802,16 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                                 horizontal: 6,
                                                                 vertical: 1,
                                                               ),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                                color: Colors
-                                                                    .red
-                                                                    .withOpacity(
-                                                                      0.1,
-                                                                    ),
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      6,
-                                                                    ),
-                                                              ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.red
+                                                                .withOpacity(
+                                                                  0.1,
+                                                                ),
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  6,
+                                                                ),
+                                                          ),
                                                           child: Text(
                                                             blood,
                                                             style:
@@ -873,13 +849,13 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                     Text(
                                                       "Enrolled: ${DateFormat.yMMMd().add_jm().format(enrollmentDate)}",
                                                       style: tt.bodySmall
-                                                        ?.copyWith(
-                                                          color: cs.onSurface
-                                                              .withOpacity(
-                                                                0.45,
-                                                              ),
-                                                          fontSize: 10,
-                                                        ),
+                                                          ?.copyWith(
+                                                            color: cs.onSurface
+                                                                .withOpacity(
+                                                                  0.45,
+                                                                ),
+                                                            fontSize: 10,
+                                                          ),
                                                     ),
                                                   ],
                                                 ],
@@ -900,8 +876,7 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                             IconButton(
                                               tooltip: 'View Details',
                                               icon: Icon(
-                                                Icons
-                                                    .arrow_forward_ios_rounded,
+                                                Icons.arrow_forward_ios_rounded,
                                                 size: 14,
                                                 color: cs.onSurface.withOpacity(
                                                   0.35,
@@ -927,57 +902,54 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
       ),
       bottomNavigationBar:
           (_canMarkAttendance && _selectedAdmissions.isNotEmpty)
-              ? Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
+          ? Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
                   ),
-                  decoration: BoxDecoration(
-                    color: cs.surface,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, -4),
+                ],
+              ),
+              child: SafeArea(
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: FilledButton.icon(
+                    onPressed: _isSubmittingAttendance
+                        ? null
+                        : _showRecordAttendanceDialog,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: cs.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ],
-                  ),
-                  child: SafeArea(
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: FilledButton.icon(
-                        onPressed: _isSubmittingAttendance
-                            ? null
-                            : _showRecordAttendanceDialog,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: cs.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: _isSubmittingAttendance
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.check_circle_outline_rounded),
-                        label: Text(
-                          'Record Attendance (${_selectedAdmissions.length})',
-                          style: tt.labelLarge?.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                    ),
+                    icon: _isSubmittingAttendance
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.check_circle_outline_rounded),
+                    label: Text(
+                      'Record Attendance (${_selectedAdmissions.length})',
+                      style: tt.labelLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                )
-              : null,
+                ),
+              ),
+            )
+          : null,
     );
   }
 }

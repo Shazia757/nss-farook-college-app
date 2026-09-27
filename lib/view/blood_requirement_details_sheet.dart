@@ -277,6 +277,7 @@ Please share this message with eligible donors. Every second counts!
                       ],
                     ),
                   ),
+                  const SizedBox(width: 4),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
                     onPressed: () => Navigator.of(context).pop(),
@@ -375,8 +376,8 @@ Please share this message with eligible donors. Every second counts!
                                 color: _currentStatus == 'fulfilled'
                                     ? Colors.green
                                     : _currentStatus == 'cancelled'
-                                        ? Colors.grey
-                                        : Colors.blue,
+                                    ? Colors.grey
+                                    : Colors.blue,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -386,8 +387,8 @@ Please share this message with eligible donors. Every second counts!
                                 _currentStatus == 'fulfilled'
                                     ? 'Fulfilled'
                                     : _currentStatus == 'cancelled'
-                                        ? 'Cancelled'
-                                        : 'Pending / Open',
+                                    ? 'Cancelled'
+                                    : 'Pending / Open',
                                 style: tt.bodyMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                   color: cs.onSurface,
@@ -413,7 +414,12 @@ Please share this message with eligible donors. Every second counts!
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: ['pending', 'fulfilled', 'cancelled'].contains(_currentStatus)
+                            value:
+                                [
+                                  'pending',
+                                  'fulfilled',
+                                  'cancelled',
+                                ].contains(_currentStatus)
                                 ? _currentStatus
                                 : 'pending',
                             isExpanded: true,
@@ -501,12 +507,15 @@ Please share this message with eligible donors. Every second counts!
                               ),
                             ],
                             onChanged: (newStatus) async {
-                              if (newStatus == null || newStatus == _currentStatus) return;
+                              if (newStatus == null ||
+                                  newStatus == _currentStatus)
+                                return;
                               setState(() {
                                 _currentStatus = newStatus;
                                 request.status = newStatus;
                               });
-                              final controller = Get.isRegistered<BloodRequirementController>()
+                              final controller =
+                                  Get.isRegistered<BloodRequirementController>()
                                   ? Get.find<BloodRequirementController>()
                                   : Get.put(BloodRequirementController());
                               if (request.id != null) {
@@ -669,88 +678,138 @@ Please share this message with eligible donors. Every second counts!
 
             // Action Buttons Footer
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               decoration: BoxDecoration(
                 color: cs.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
+                  ),
+                ],
                 border: Border(
-                  top: BorderSide(color: cs.outline.withOpacity(0.2)),
+                  top: BorderSide(color: cs.outline.withOpacity(0.15)),
                 ),
               ),
-              child: Row(
-                children: [
-                  // Call button
-                  if (hasValidPhone)
-                    Expanded(
-                      flex: 2,
-                      child: FilledButton.icon(
-                        icon: const Icon(Icons.phone, size: 18),
-                        label: const Text('Call Contact'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.green.shade700,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+              child: SafeArea(
+                top: false,
+                child: Row(
+                  children: [
+                    // Call button
+                    if (hasValidPhone) ...[
+                      Expanded(
+                        flex: 3,
+                        child: SizedBox(
+                          height: 46,
+                          child: FilledButton.icon(
+                            icon: const Icon(Icons.phone, size: 18),
+                            label: const Text(
+                              'Call',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.green.shade700,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () =>
+                                BloodRequirementDetailsSheet.makeCall(
+                                  context,
+                                  request.contactNumber,
+                                ),
                           ),
                         ),
-                        onPressed: () =>
-                            BloodRequirementDetailsSheet.makeCall(
-                              context,
-                              request.contactNumber,
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+
+                    // Share button
+                    Expanded(
+                      flex: hasValidPhone ? 2 : 3,
+                      child: SizedBox(
+                        height: 46,
+                        child: IconButton.outlined(
+                          icon: Icon(
+                            Icons.share_outlined,
+                            size: 18,
+                            color: cs.primary,
+                          ),
+
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: cs.primary.withOpacity(0.4),
+                              width: 1.2,
                             ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _shareRequirement,
+                        ),
                       ),
                     ),
-                  if (hasValidPhone) const SizedBox(width: 10),
 
-                  // Share button
-                  Expanded(
-                    flex: hasValidPhone ? 1 : 2,
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.share_outlined, size: 18),
-                      label: const Text('Share'),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    // Admin actions (Edit / Delete)
+                    if (isAuthorized) ...[
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        height: 46,
+                        width: 46,
+                        child: IconButton.filledTonal(
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          tooltip: 'Edit Requirement',
+                          style: IconButton.styleFrom(
+                            backgroundColor: cs.primary.withOpacity(0.12),
+                            foregroundColor: cs.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            Get.to(
+                              () => AddBloodRequirementScreen(
+                                requirement: request,
+                              ),
+                            );
+                          },
                         ),
                       ),
-                      onPressed: _shareRequirement,
-                    ),
-                  ),
-
-                  // Admin actions (Edit / Delete)
-                  if (isAuthorized) ...[
-                    const SizedBox(width: 8),
-                    IconButton.filledTonal(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      tooltip: 'Edit Requirement',
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        Get.to(
-                          () => AddBloodRequirementScreen(requirement: request),
-                        );
-                      },
-                    ),
-                    if (widget.onDelete != null) ...[
-                      const SizedBox(width: 4),
-                      IconButton.filledTonal(
-                        icon: Icon(
-                          Icons.delete_outline,
-                          size: 20,
-                          color: cs.error,
+                      if (widget.onDelete != null) ...[
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          height: 46,
+                          width: 46,
+                          child: IconButton.filledTonal(
+                            icon: Icon(
+                              Icons.delete_outline,
+                              size: 20,
+                              color: Colors.red.shade700,
+                            ),
+                            tooltip: 'Delete Requirement',
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.red.shade50,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: Colors.red.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              widget.onDelete!();
+                            },
+                          ),
                         ),
-                        tooltip: 'Delete Requirement',
-                        style: IconButton.styleFrom(
-                          backgroundColor: cs.errorContainer.withOpacity(0.5),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          widget.onDelete!();
-                        },
-                      ),
+                      ],
                     ],
                   ],
-                ],
+                ),
               ),
             ),
           ],

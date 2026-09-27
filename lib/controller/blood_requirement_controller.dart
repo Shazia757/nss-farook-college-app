@@ -178,17 +178,22 @@ class BloodRequirementController extends GetxController {
     return false;
   }
 
-  Future<bool> updateRequirement(Map<String, dynamic> data) async {
+  Future<bool> updateRequirement(
+    Map<String, dynamic> data, {
+    bool showSuccessSnackbar = true,
+  }) async {
     if (isClosed) return false;
     isLoading.value = true;
     try {
       final res = await _api.updateBloodRequest(data);
       if (isClosed) return false;
       if (res != null) {
-        CustomWidgets.showSnackBar(
-          'Success',
-          'Blood request updated successfully.',
-        );
+        if (showSuccessSnackbar) {
+          CustomWidgets.showSnackBar(
+            'Success',
+            'Blood requirement updated successfully.',
+          );
+        }
         fetchBloodRequests();
         return true;
       } else {

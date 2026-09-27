@@ -122,6 +122,61 @@ class ProgramListController extends GetxController {
     }
   }
 
+  Future<void> syncVolunteerEnrollments(List<Program> list) async {
+    final user = LocalStorage().readUser();
+    if (user.role != 'vol' || user.admissionNo == null || user.admissionNo!.isEmpty) {
+      for (final p in list) {
+        if (p.id != null) verifiedProgramEnrollmentIds.add(p.id!);
+      }
+      isCheckingEnrollment.value = false;
+      return;
+    }
+
+    final userAdmn = user.admissionNo!.trim().toLowerCase();
+    isCheckingEnrollment.value = true;
+
+    final targetPrograms = list.where((p) => p.id != null).toList();
+    if (targetPrograms.isEmpty) {
+      isCheckingEnrollment.value = false;
+      return;
+    }
+
+    try {
+      final futures = targetPrograms.map((p) async {
+        final pid = p.id!;
+        try {
+          final res = await _api.getEnrolledStudents(pid);
+          if (isClosed) return;
+          final enrolledList = res?.enrollmentList ?? [];
+          final myEnrollment = enrolledList.firstWhereOrNull((e) {
+            final a1 = e.volunteerAdmissionNo?.trim().toLowerCase();
+            final a2 = e.volunteer?.admissionNo?.trim().toLowerCase();
+            return (a1 != null && a1 == userAdmn) || (a2 != null && a2 == userAdmn);
+          });
+
+          if (myEnrollment != null) {
+            final enrolledAt = myEnrollment.date ?? LocalStorage().getEstimatedServerTime();
+            enrolledPrograms[pid] = enrolledAt;
+            LocalStorage().saveVolunteerEnrollment(user.admissionNo!, pid, enrolledAt);
+          } else {
+            enrolledPrograms.remove(pid);
+            LocalStorage().removeVolunteerEnrollment(user.admissionNo!, pid);
+          }
+        } catch (_) {
+          // If individual check fails, preserve local cache if present
+        } finally {
+          verifiedProgramEnrollmentIds.add(pid);
+        }
+      });
+
+      await Future.wait(futures);
+    } finally {
+      if (!isClosed) {
+        isCheckingEnrollment.value = false;
+      }
+    }
+  }
+
   void getPrograms({String? status}) async {
     if (isClosed) return;
     isLoading.value = true;
@@ -134,17 +189,12 @@ class ProgramListController extends GetxController {
           search: searchController.text,
           status: selectedStatusFilter.value,
         )
-        .then((value) {
+        .then((value) async {
           if (isClosed) return;
           programsList.assignAll(value?.programs ?? []);
-          for (final p in programsList) {
-            if (p.id != null) {
-              verifiedProgramEnrollmentIds.add(p.id!);
-            }
-          }
           _applySearchAndSort();
           isLoading.value = false;
-          isCheckingEnrollment.value = false;
+          await syncVolunteerEnrollments(programsList);
         })
         .catchError((_) {
           if (!isClosed) {
@@ -163,17 +213,12 @@ class ProgramListController extends GetxController {
 
     _api
         .getUpcomingPrograms()
-        .then((value) {
+        .then((value) async {
           if (isClosed) return;
           programsList.assignAll(value?.programs ?? []);
-          for (final p in programsList) {
-            if (p.id != null) {
-              verifiedProgramEnrollmentIds.add(p.id!);
-            }
-          }
           _applySearchAndSort();
           isLoading.value = false;
-          isCheckingEnrollment.value = false;
+          await syncVolunteerEnrollments(programsList);
         })
         .catchError((_) {
           if (!isClosed) {
@@ -192,6 +237,21 @@ class ProgramListController extends GetxController {
         cancellingProgramIds.contains(programId)) {
       return;
     }
+
+    final program = programsList.firstWhereOrNull((p) => p.id == programId);
+    if (program != null &&
+        program.limit != null &&
+        program.limit! > 0 &&
+        (program.enrollmentCount ?? 0) >= program.limit!) {
+      CustomWidgets.showSnackBar(
+        'Limit Exceeded',
+        'Limit exceeded. Cannot enroll in this program.',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return;
+    }
+
     enrollingProgramIds.add(programId);
     isButtonLoading.value = true;
 
@@ -217,6 +277,9 @@ class ProgramListController extends GetxController {
           );
         }
         enrolledPrograms[programId] = nowServer;
+        if (program != null) {
+          program.enrollmentCount = (program.enrollmentCount ?? 0) + 1;
+        }
         CustomWidgets.showSnackBar(
           'Success',
           res?.message ?? 'Enrolled successfully',
@@ -224,7 +287,8 @@ class ProgramListController extends GetxController {
         getPrograms();
       } else {
         final msg = res?.message ?? 'Failed to enroll';
-        if (msg.toLowerCase().contains('already enrolled')) {
+        final lowerMsg = msg.toLowerCase();
+        if (lowerMsg.contains('already enrolled')) {
           if (admissionNo.isNotEmpty) {
             LocalStorage().saveVolunteerEnrollment(
               admissionNo,
@@ -234,6 +298,17 @@ class ProgramListController extends GetxController {
           }
           enrolledPrograms[programId] = nowServer;
           CustomWidgets.showSnackBar('Notice', msg);
+        } else if (lowerMsg.contains('limit') ||
+            lowerMsg.contains('full') ||
+            lowerMsg.contains('exceeded') ||
+            lowerMsg.contains('capacity') ||
+            lowerMsg.contains('maximum')) {
+          CustomWidgets.showSnackBar(
+            'Limit Exceeded',
+            'Limit exceeded. Cannot enroll in this program.',
+            backgroundColor: Colors.red.shade800,
+            icon: const Icon(Icons.error_outline, color: Colors.white),
+          );
         } else {
           CustomWidgets.showSnackBar('Error', msg);
         }
@@ -467,12 +542,15 @@ class AddProgramController extends GetxController {
   void addProgram() {
     if (isClosed) return;
     isUpdateButtonLoading.value = true;
+    final user = LocalStorage().readUser();
+    final creator = user.admissionNo ?? user.email ?? user.name;
     final programData = Program(
       name: nameController.text.trim(),
       date: date,
       duration: int.tryParse(durationController.text.trim()) ?? 0,
       limit: int.tryParse(limitController.text.trim()) ?? 0,
       description: descController.text.trim(),
+      createdBy: creator,
     );
     Api()
         .addProgram(programData)
@@ -518,6 +596,8 @@ class AddProgramController extends GetxController {
   void updateProgram(int id) {
     if (isClosed) return;
     isUpdateButtonLoading.value = true;
+    final user = LocalStorage().readUser();
+    final updater = user.admissionNo ?? user.email ?? user.name;
     final updatedProgram = Program(
       id: id,
       name: nameController.text.trim(),
@@ -534,6 +614,7 @@ class AddProgramController extends GetxController {
           'duration': durationController.text.trim(),
           'limit': int.tryParse(limitController.text.trim()) ?? 0,
           'description': descController.text.trim(),
+          if (updater != null && updater.isNotEmpty) 'updated_by': updater,
         })
         .then((value) {
           if (isClosed) return;
@@ -631,6 +712,26 @@ class AddProgramController extends GetxController {
       CustomWidgets.showSnackBar('Invalid', 'Please enter duration');
       return false;
     }
+    final duration = int.tryParse(durationController.text.trim());
+    if (duration == null || duration <= 0) {
+      CustomWidgets.showSnackBar(
+        'Invalid',
+        'Please enter a valid positive duration in hours',
+      );
+      return false;
+    }
+    if (limitController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar('Invalid', 'Please enter enrollment limit');
+      return false;
+    }
+    final limit = int.tryParse(limitController.text.trim());
+    if (limit == null || limit <= 0) {
+      CustomWidgets.showSnackBar(
+        'Invalid',
+        'Enrollment limit must be a valid positive number',
+      );
+      return false;
+    }
     return true;
   }
 
@@ -644,9 +745,9 @@ class AddProgramController extends GetxController {
     durationController.text = (program.duration != null)
         ? program.duration.toString()
         : '';
-    limitController.text = (program.limit != null)
+    limitController.text = (program.limit != null && program.limit! > 0)
         ? program.limit.toString()
-        : '0';
+        : '';
   }
 
   void clearTextFields() {

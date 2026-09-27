@@ -623,61 +623,287 @@ class _IssuesScreenState extends State<IssuesScreen> {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (context) => AlertDialog(
-                      title: Text(
-                        title,
-                        style: tt.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    builder: (dialogCtx) => Dialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Status: ',
-                                style: tt.bodySmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusBg,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  status,
-                                  style: tt.labelSmall?.copyWith(
-                                    color: statusColor,
-                                    fontWeight: FontWeight.bold,
+                      backgroundColor: cs.surface,
+                      insetPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 24,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 520),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Header
+                            Container(
+                              padding: const EdgeInsets.fromLTRB(20, 18, 12, 16),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: cs.outline.withOpacity(0.15),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text('Reported on: $date', style: tt.bodySmall),
-                          const SizedBox(height: 4),
-                          Text('Sent to: $reportedTo', style: tt.bodySmall),
-                          const SizedBox(height: 12),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          Text(description, style: tt.bodyMedium),
-                        ],
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Close'),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isOpen
+                                          ? Colors.amber.shade50
+                                          : Colors.green.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isOpen
+                                            ? Colors.amber.shade200
+                                            : Colors.green.shade200,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      isOpen
+                                          ? Icons.hourglass_top_rounded
+                                          : Icons.task_alt_rounded,
+                                      size: 22,
+                                      color: isOpen
+                                          ? Colors.amber.shade900
+                                          : Colors.green.shade800,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          title.isNotEmpty
+                                              ? title
+                                              : 'General Query',
+                                          style: tt.titleLarge?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: cs.onSurface,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isOpen
+                                                ? Colors.amber.shade50
+                                                : Colors.green.shade50,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            isOpen ? 'PENDING' : 'RESOLVED',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                              color: isOpen
+                                                  ? Colors.amber.shade900
+                                                  : Colors.green.shade800,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close_rounded),
+                                    onPressed: () => Navigator.pop(dialogCtx),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Content Body
+                            Flexible(
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.all(20),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    // Info tile box
+                                    Container(
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: cs.onPrimary,
+                                        borderRadius:
+                                            BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: cs.outline.withOpacity(0.18),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.badge_outlined,
+                                                size: 18,
+                                                color: cs.primary
+                                                    .withOpacity(0.8),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              SizedBox(
+                                                width: 95,
+                                                child: Text(
+                                                  'Reported To',
+                                                  style: tt.bodySmall?.copyWith(
+                                                    color: cs.onSurface
+                                                        .withOpacity(0.6),
+                                                    fontWeight:
+                                                        FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Text(
+                                                  reportedTo,
+                                                  style: tt.bodySmall?.copyWith(
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    color: cs.onSurface,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const Divider(height: 16),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.calendar_today_outlined,
+                                                size: 18,
+                                                color: cs.primary
+                                                    .withOpacity(0.8),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              SizedBox(
+                                                width: 95,
+                                                child: Text(
+                                                  'Reported Date',
+                                                  style: tt.bodySmall?.copyWith(
+                                                    color: cs.onSurface
+                                                        .withOpacity(0.6),
+                                                    fontWeight:
+                                                        FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ),
+                                              Expanded(
+                                                child: Text(
+                                                  date,
+                                                  style: tt.bodySmall?.copyWith(
+                                                    fontWeight:
+                                                        FontWeight.bold,
+                                                    color: cs.onSurface,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+
+                                    // Description Section
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.description_outlined,
+                                          size: 16,
+                                          color: cs.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          'Description',
+                                          style: tt.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: cs.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      width: double.infinity,
+                                      constraints:
+                                          const BoxConstraints(minHeight: 80),
+                                      padding: const EdgeInsets.all(14),
+                                      decoration: BoxDecoration(
+                                        color: cs.outline.withOpacity(0.05),
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: cs.outline.withOpacity(0.15),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        description.isNotEmpty
+                                            ? description
+                                            : 'No description provided.',
+                                        style: tt.bodyMedium?.copyWith(
+                                          height: 1.5,
+                                          color: cs.onSurface
+                                              .withOpacity(0.85),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+
+                            // Footer Action
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  top: BorderSide(
+                                    color: cs.outline.withOpacity(0.15),
+                                  ),
+                                ),
+                              ),
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(dialogCtx),
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  side: BorderSide(
+                                    color: cs.outline.withOpacity(0.4),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Close',
+                                  style: tt.labelLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: cs.onSurface,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   );
                 },

@@ -21,7 +21,23 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
   String? _selectedYear;
   DateTime? _selectedDOB;
 
-  final List<String> _years = ['2023', '2024', '2025', '2026'];
+  List<String> get years {
+    final list = c.batchSummaries
+        .map((item) => item.batch.trim())
+        .where((batch) => batch.isNotEmpty)
+        .toSet()
+        .toList();
+    list.sort((a, b) {
+      final intA = int.tryParse(a);
+      final intB = int.tryParse(b);
+      if (intA != null && intB != null) {
+        return intB.compareTo(intA);
+      }
+      return b.compareTo(a);
+    });
+    return list;
+  }
+      
   final List<String> _castes = [
     'General',
     'OBC',
@@ -62,6 +78,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       c.getDepartments();
+      c.fetchBatches();
     });
   }
 
@@ -291,23 +308,37 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           }),
 
                           CustomWidgets().buildLabel(context, "Batch Year"),
-                          DropdownButtonFormField<String>(
-                            value: _selectedYear,
-                            decoration: CustomWidgets().buildInputDecoration(
-                              context,
-                              'Select Batch Year',
-                            ),
-                            items: _buildDropdownItems(_years, _selectedYear),
-                            style: TextStyle(color: cs.onSurface, fontSize: 15),
-                            dropdownColor: cs.onPrimary,
-                            borderRadius: BorderRadius.circular(12),
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedYear = val;
-                                c.yearController.text = val ?? '';
-                              });
-                            },
-                          ),
+                          Obx(() {
+                            final batchList = years;
+                            final effectiveValue = (_selectedYear != null &&
+                                    batchList.contains(_selectedYear))
+                                ? _selectedYear
+                                : null;
+
+                            return DropdownButtonFormField<String>(
+                              value: effectiveValue,
+                              decoration: CustomWidgets().buildInputDecoration(
+                                context,
+                                'Select Batch Year',
+                              ),
+                              items: batchList
+                                  .map((val) => DropdownMenuItem<String>(
+                                        value: val,
+                                        child: Text(val),
+                                      ))
+                                  .toList(),
+                              style:
+                                  TextStyle(color: cs.onSurface, fontSize: 15),
+                              dropdownColor: cs.onPrimary,
+                              borderRadius: BorderRadius.circular(12),
+                              onChanged: (val) {
+                                setState(() {
+                                  _selectedYear = val;
+                                  c.yearController.text = val ?? '';
+                                });
+                              },
+                            );
+                          }),
 
                           CustomWidgets().buildLabel(context, "Blood Group"),
                           Obx(

@@ -1,6 +1,8 @@
+import 'package:nss_new/view/notifications_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/common_pages/navbar.dart';
 import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/view/program/add_program_screen.dart';
@@ -146,20 +148,118 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
 
-                                Container(
-                                  width: 58,
-                                  height: 58,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: const [
-                                      BoxShadow(
-                                        blurRadius: 8,
-                                        color: Colors.black12,
+                                Column(
+                                  children: [
+                                    Container(
+                                      width: 58,
+                                      height: 58,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: const [
+                                          BoxShadow(
+                                            blurRadius: 8,
+                                            color: Colors.black12,
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                  child: Image.asset('assets/logos/logo.png'),
+                                      child: Image.asset(
+                                        'assets/logos/logo.png',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Obx(() {
+                                      final count =
+                                          homeController
+                                              .openBloodRequests
+                                              .length +
+                                          homeController
+                                              .upcomingPrograms
+                                              .length;
+                                      return Material(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.18,
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: InkWell(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          onTap: () => Get.to(
+                                            () => const NotificationsScreen(),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 10,
+                                              vertical: 5,
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Stack(
+                                                  clipBehavior: Clip.none,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons
+                                                          .notifications_outlined,
+                                                      color: Colors.white,
+                                                      size: 18,
+                                                    ),
+                                                    if (count > 0)
+                                                      Positioned(
+                                                        top: -3,
+                                                        right: -3,
+                                                        child: Container(
+                                                          padding:
+                                                              const EdgeInsets.all(
+                                                                2,
+                                                              ),
+                                                          decoration:
+                                                              const BoxDecoration(
+                                                                color: Colors
+                                                                    .redAccent,
+                                                                shape: BoxShape
+                                                                    .circle,
+                                                              ),
+                                                          constraints:
+                                                              const BoxConstraints(
+                                                                minWidth: 12,
+                                                                minHeight: 12,
+                                                              ),
+                                                          child: Text(
+                                                            '$count',
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style:
+                                                                const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 8,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                  ],
+                                                ),
+                                                const SizedBox(width: 4),
+                                                const Text(
+                                                  'Alerts',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ],
                                 ),
                               ],
                             ),
@@ -233,491 +333,296 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 18),
                       ],
                       Obx(() {
-                        final bloodAlerts = homeController.openBloodRequests
-                            .take(2)
-                            .toList();
-                        final programAlerts = homeController.upcomingPrograms
-                            .take(2)
-                            .toList();
+                        final bloodAlerts = homeController.openBloodRequests;
+                        final programAlerts = homeController.upcomingPrograms;
+                        final totalAlerts =
+                            bloodAlerts.length + programAlerts.length;
 
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Announcements & Alerts',
-                                style: tt.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.primary,
-                                ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Latest Notifications',
+                                        style: tt.titleMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: cs.primary,
+                                        ),
+                                      ),
+                                      if (totalAlerts > 0) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 7,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red.shade700,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            totalAlerts.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  InkWell(
+                                    onTap: () => Get.to(
+                                      () => const NotificationsScreen(),
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            'View All',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: cs.primary,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Icon(
+                                            Icons.chevron_right_rounded,
+                                            size: 16,
+                                            color: cs.primary,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Live updates from NSS Farook College',
-                                style: tt.bodyMedium?.copyWith(
-                                  color: cs.onSurfaceVariant,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              if (bloodAlerts.isEmpty && programAlerts.isEmpty)
+                              const SizedBox(height: 10),
+                              if (totalAlerts == 0)
                                 Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: cs.onPrimary,
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                      color: cs.outline.withOpacity(0.4),
+                                      color: cs.outline.withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Row(
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.green.shade50,
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.check_circle_outline,
-                                          color: Colors.green.shade700,
-                                          size: 22,
-                                        ),
+                                      Icon(
+                                        Icons.check_circle_outline,
+                                        color: Colors.green.shade600,
+                                        size: 20,
                                       ),
-                                      const SizedBox(width: 12),
+                                      const SizedBox(width: 10),
                                       Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'All Caught Up',
-                                              style: tt.titleSmall?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              'No emergency alerts or new announcements today.',
-                                              style: tt.bodySmall?.copyWith(
-                                                color: cs.onSurfaceVariant,
-                                              ),
-                                            ),
-                                          ],
+                                        child: Text(
+                                          'All caught up! No emergency alerts today.',
+                                          style: tt.bodySmall?.copyWith(
+                                            color: cs.onSurfaceVariant,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 )
-                              else ...[
-                                ...bloodAlerts.map((req) {
-                                  final bloodGroup =
-                                      req.bloodGroup?.isNotEmpty == true
-                                      ? req.bloodGroup!
-                                      : 'Any';
-                                  final patientName =
-                                      req.patientName?.isNotEmpty == true
-                                      ? req.patientName!
-                                      : 'Patient in need';
-                                  final units =
-                                      '${req.unitsRequired ?? 1} Unit${(req.unitsRequired ?? 1) > 1 ? 's' : ''}';
-                                  final hospital =
-                                      req.hospital?.isNotEmpty == true
-                                      ? req.hospital!
-                                      : 'Hospital not specified';
-                                  final contactPerson =
-                                      req.contactPerson?.isNotEmpty == true
-                                      ? req.contactPerson!
-                                      : 'NSS Coordinator';
-                                  final contactNumber =
-                                      req.contactNumber?.isNotEmpty == true
-                                      ? req.contactNumber!
-                                      : '';
-                                  final neededDate =
-                                      req.neededBefore?.isNotEmpty == true
-                                      ? req.neededBefore!
-                                      : 'ASAP';
-                                  final urgency = (req.urgency ?? 'Normal')
-                                      .toUpperCase();
-                                  final status = (req.status ?? 'Open')
-                                      .toUpperCase();
-
-                                  final hasValidPhone =
-                                      contactNumber
-                                          .replaceAll(RegExp(r'[^0-9+]'), '')
-                                          .length >=
-                                      5;
-
-                                  return Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () =>
-                                          BloodRequirementDetailsSheet.show(
-                                            context,
-                                            req,
-                                          ),
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: Container(
-                                        margin: const EdgeInsets.only(
-                                          bottom: 12,
+                              else if (bloodAlerts.isNotEmpty) ...[
+                                Builder(
+                                  builder: (context) {
+                                    final req = bloodAlerts.first;
+                                    return Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () => Get.to(
+                                          () => const NotificationsScreen(),
                                         ),
-                                        padding: const EdgeInsets.all(14),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.shade50.withOpacity(
-                                            0.9,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          border: Border.all(
-                                            color: Colors.red.shade300,
-                                            width: 1.2,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.red.shade100
-                                                  .withOpacity(0.5),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // Top row: Blood Group Badge, Urgency, Status, and Call Action
-                                            Row(
-                                              children: [
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 10,
-                                                        vertical: 4,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.red.shade700,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
-                                                        ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      const Icon(
-                                                        Icons.bloodtype,
-                                                        color: Colors.white,
-                                                        size: 16,
-                                                      ),
-                                                      const SizedBox(width: 4),
-                                                      Text(
-                                                        bloodGroup,
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 14,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 3,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        urgency.contains(
-                                                          'CRITIC',
-                                                        )
-                                                        ? Colors.red.shade100
-                                                        : Colors
-                                                              .orange
-                                                              .shade100,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          6,
-                                                        ),
-                                                    border: Border.all(
-                                                      color:
-                                                          urgency.contains(
-                                                            'CRITIC',
-                                                          )
-                                                          ? Colors.red.shade400
-                                                          : Colors
-                                                                .orange
-                                                                .shade400,
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    urgency,
-                                                    style: TextStyle(
-                                                      color:
-                                                          urgency.contains(
-                                                            'CRITIC',
-                                                          )
-                                                          ? Colors.red.shade900
-                                                          : Colors
-                                                                .orange
-                                                                .shade900,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 10,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 3,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.shade50,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          6,
-                                                        ),
-                                                    border: Border.all(
-                                                      color:
-                                                          Colors.blue.shade300,
-                                                    ),
-                                                  ),
-                                                  child: Text(
-                                                    status,
-                                                    style: TextStyle(
-                                                      color:
-                                                          Colors.blue.shade900,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 10,
-                                                    ),
-                                                  ),
-                                                ),
-                                                const Spacer(),
-                                                if (hasValidPhone)
-                                                  IconButton.filledTonal(
-                                                    icon: const Icon(
-                                                      Icons.phone,
-                                                      size: 18,
-                                                    ),
-                                                    tooltip:
-                                                        'Call $contactPerson',
-                                                    onPressed: () =>
-                                                        BloodRequirementDetailsSheet.makeCall(
-                                                          context,
-                                                          contactNumber,
-                                                        ),
-                                                    style: IconButton.styleFrom(
-                                                      backgroundColor:
-                                                          Colors.green.shade100,
-                                                      foregroundColor:
-                                                          Colors.green.shade900,
-                                                      visualDensity:
-                                                          VisualDensity.compact,
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 10),
-
-                                            // Patient and Units
-                                            Text(
-                                              'Patient: $patientName ($units)',
-                                              style: tt.titleSmall?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.red.shade900,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 4),
-
-                                            // Hospital and Date Needed
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.local_hospital_outlined,
-                                                  size: 15,
-                                                  color: Colors.red.shade700,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Expanded(
-                                                  child: Text(
-                                                    hospital,
-                                                    style: tt.bodySmall
-                                                        ?.copyWith(
-                                                          color: Colors
-                                                              .red
-                                                              .shade900,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 3),
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.event_outlined,
-                                                  size: 15,
-                                                  color: Colors.red.shade700,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Expanded(
-                                                  child: Text(
-                                                    'Needed by: $neededDate • Contact: $contactPerson',
-                                                    style: tt.bodySmall
-                                                        ?.copyWith(
-                                                          color: Colors
-                                                              .red
-                                                              .shade800,
-                                                        ),
-                                                    maxLines: 1,
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-
-                                            // Obvious clickable banner cue
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 10,
-                                                    vertical: 6,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.red.shade100
-                                                    .withOpacity(0.6),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    'Tap to view complete details',
-                                                    style: tt.labelSmall
-                                                        ?.copyWith(
-                                                          color: Colors
-                                                              .red
-                                                              .shade900,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                  ),
-                                                  Icon(
-                                                    Icons.arrow_forward_rounded,
-                                                    size: 14,
-                                                    color: Colors.red.shade900,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }),
-                                ...programAlerts.map(
-                                  (prog) => Container(
-                                    margin: const EdgeInsets.only(bottom: 10),
-                                    padding: const EdgeInsets.all(14),
-                                    decoration: BoxDecoration(
-                                      color: cs.onPrimary,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: cs.outline.withOpacity(0.4),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(8),
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: cs.primaryContainer,
+                                            color: Colors.red.shade50
+                                                .withValues(alpha: 0.9),
                                             borderRadius: BorderRadius.circular(
-                                              10,
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.red.shade300,
                                             ),
                                           ),
-                                          child: Icon(
-                                            Icons.event_outlined,
-                                            color: cs.primary,
-                                            size: 20,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade700,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  req.bloodGroup ?? 'Alert',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'URGENT BLOOD REQUIREMENT',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Colors.red.shade900,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 11,
+                                                        letterSpacing: 0.4,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      '${req.patientName ?? "Patient"} • ${req.hospital ?? "Hospital"}',
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: tt.bodySmall
+                                                          ?.copyWith(
+                                                            color: Colors
+                                                                .red
+                                                                .shade900,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Icon(
+                                                Icons.arrow_forward_ios_rounded,
+                                                size: 13,
+                                                color: Colors.red.shade700,
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ] else ...[
+                                Builder(
+                                  builder: (context) {
+                                    final prog = programAlerts.first;
+                                    return Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () => Get.to(
+                                          () => const NotificationsScreen(),
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: cs.onPrimary,
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            border: Border.all(
+                                              color: cs.outline.withValues(
+                                                alpha: 0.3,
+                                              ),
+                                            ),
+                                          ),
+                                          child: Row(
                                             children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  6,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: cs.primaryContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.campaign,
+                                                  size: 18,
+                                                  color: cs.primary,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
                                                       prog.name ??
-                                                          'Upcoming Event',
-                                                      style: tt.titleSmall
+                                                          'New Program Announcement',
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: tt.bodyMedium
                                                           ?.copyWith(
                                                             fontWeight:
                                                                 FontWeight.bold,
                                                           ),
                                                     ),
-                                                  ),
-                                                  if (prog.date != null)
-                                                    Text(
-                                                      DateFormat.MMMd().format(
-                                                        prog.date!,
+                                                    if (prog.date != null)
+                                                      Text(
+                                                        DateFormat.MMMd()
+                                                            .format(prog.date!),
+                                                        style: tt.bodySmall
+                                                            ?.copyWith(
+                                                              color: cs
+                                                                  .onSurfaceVariant,
+                                                            ),
                                                       ),
-                                                      style: tt.labelSmall
-                                                          ?.copyWith(
-                                                            color: cs.primary,
-                                                            fontWeight:
-                                                                FontWeight.w600,
-                                                          ),
-                                                    ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 3),
-                                              Text(
-                                                'Duration: ${prog.duration ?? 0} hrs',
-                                                style: tt.bodySmall?.copyWith(
-                                                  color: cs.onSurfaceVariant,
+                                                  ],
                                                 ),
+                                              ),
+                                              Icon(
+                                                Icons.arrow_forward_ios_rounded,
+                                                size: 13,
+                                                color: cs.primary,
                                               ),
                                             ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ],
@@ -821,7 +726,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             InkWell(
                               onTap: () {
-                                Get.to(() => const ManageBloodRequirementScreen());
+                                Get.to(
+                                  () => const ManageBloodRequirementScreen(),
+                                );
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
@@ -852,8 +759,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }
 
-                        final activeReqs = bloodController.requirements.where((req) {
-                          final status = (req.status ?? 'open').trim().toLowerCase();
+                        final activeReqs = bloodController.requirements.where((
+                          req,
+                        ) {
+                          final status = (req.status ?? 'open')
+                              .trim()
+                              .toLowerCase();
                           if (status.contains('complete') ||
                               status.contains('cancel') ||
                               status.contains('fulfill') ||
@@ -895,11 +806,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SizedBox(width: 16),
                             itemBuilder: (context, index) {
                               final req = activeReqs[index];
-                              return _bloodRequirementCard(
-                                context,
-                                cs,
-                                req,
-                              );
+                              return _bloodRequirementCard(context, cs, req);
                             },
                           ),
                         );
@@ -1353,17 +1260,39 @@ Widget _programCard(
             }
 
             if (!isEnrolled) {
+              final isLimitReached =
+                  program.limit != null &&
+                  program.limit! > 0 &&
+                  (program.enrollmentCount ?? 0) >= program.limit!;
+              final buttonLabel = isLimitReached
+                  ? 'Program Full'
+                  : 'Enroll Now';
+
               return SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: cs.primary,
+                    backgroundColor: isLimitReached
+                        ? cs.outline.withOpacity(0.3)
+                        : cs.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   onPressed: (isEnrolling || isCancelling)
                       ? null
+                      : isLimitReached
+                      ? () {
+                          CustomWidgets.showSnackBar(
+                            'Limit Exceeded',
+                            'Limit exceeded. Cannot enroll in this program.',
+                            backgroundColor: Colors.red.shade800,
+                            icon: const Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                            ),
+                          );
+                        }
                       : () {
                           _showEnrollConfirmationDialog(
                             context,
@@ -1380,9 +1309,14 @@ Widget _programCard(
                             color: Colors.white,
                           ),
                         )
-                      : const Text(
-                          "Enroll Now",
-                          style: TextStyle(color: Colors.white),
+                      : Text(
+                          buttonLabel,
+                          style: TextStyle(
+                            color: isLimitReached
+                                ? cs.onSurface.withOpacity(0.5)
+                                : Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                 ),
               );
@@ -1638,17 +1572,11 @@ Widget _bloodRequirementCard(
             const SizedBox(height: 6),
             Row(
               children: [
-                Icon(
-                  Icons.water_drop_outlined,
-                  size: 18,
-                  color: cs.secondary,
-                ),
+                Icon(Icons.water_drop_outlined, size: 18, color: cs.secondary),
                 const SizedBox(width: 8),
                 Text(
                   units,
-                  style: tt.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
