@@ -329,7 +329,7 @@ class VolunteerListController extends GetxController {
   RxBool isLoading = true.obs;
   RxBool isPassiveLoading = false.obs;
   RxBool isShowingPassive = false.obs;
-
+  RxBool isBatchLoading = false.obs;
   RxList<Volunteer> usersList = <Volunteer>[].obs;
   RxList<Volunteer> passiveUsersList = <Volunteer>[].obs;
   RxList<BatchSummary> batchSummaries = <BatchSummary>[].obs;

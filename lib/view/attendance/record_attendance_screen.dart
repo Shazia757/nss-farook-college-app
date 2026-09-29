@@ -54,32 +54,6 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
     return "${months[date.month - 1]} $dayStr, ${date.year}";
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: Theme.of(context).colorScheme.primary,
-              onPrimary: Theme.of(context).colorScheme.onPrimary,
-              onSurface: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
-  }
-
   void _markAttendance() {
     if (controller.selectedVolList.isEmpty) {
       CustomWidgets.showSnackBar(
@@ -562,33 +536,37 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                InkWell(
-                  onTap: () => _selectDate(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: cs.outline),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _selectedDate == null
-                              ? 'Select Date'
-                              : _formatDate(_selectedDate!),
-                          style: tt.bodyMedium?.copyWith(
-                            color: _selectedDate == null
-                                ? cs.onSurface.withValues(alpha: 0.5)
-                                : cs.onSurface,
-                          ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: cs.outline),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _selectedDate == null
+                            ? 'Select a program first'
+                            : _formatDate(_selectedDate!),
+                        style: tt.bodyMedium?.copyWith(
+                          color: _selectedDate == null
+                              ? cs.onSurface.withValues(alpha: 0.5)
+                              : cs.onSurface,
+                          fontWeight: _selectedDate != null
+                              ? FontWeight.w500
+                              : FontWeight.normal,
                         ),
-                        Icon(Icons.calendar_today, color: cs.primary, size: 20),
-                      ],
-                    ),
+                      ),
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        color: cs.onSurface.withOpacity(0.45),
+                        size: 20,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),

@@ -114,9 +114,9 @@ class AttendanceController extends GetxController {
         .getVolunteers(batch: batchFilter.isNotEmpty ? batchFilter : null)
         .then((value) {
           if (isClosed) return;
-          var data = value?.data
-              ?.where((element) => element.role != 'po')
-              .toList() ?? [];
+          var data =
+              value?.data?.where((element) => element.role != 'po').toList() ??
+              [];
           if (batchFilter.isNotEmpty) {
             data = data
                 .where((v) => (v.batch ?? '').trim() == batchFilter)
@@ -147,14 +147,6 @@ class AttendanceController extends GetxController {
         'Exporting',
         'Generating attendance report for ${batch.isNotEmpty ? "batch $batch" : "all batches"}...',
         backgroundColor: Colors.blue.shade800,
-        icon: const SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Colors.white,
-          ),
-        ),
       );
 
       // 1. First, attempt to retrieve attendance records for this batch
@@ -279,17 +271,14 @@ class AttendanceController extends GetxController {
       }
 
       // 5. Open/Share the generated .xlsx file
-      await Share.shareXFiles(
-        [
-          XFile(
-            file.path,
-            mimeType:
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            name: fileName,
-          ),
-        ],
-        subject: 'NSS Attendance Report ($sanitizeBatch)',
-      );
+      await Share.shareXFiles([
+        XFile(
+          file.path,
+          mimeType:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          name: fileName,
+        ),
+      ], subject: 'NSS Attendance Report ($sanitizeBatch)');
 
       CustomWidgets.showSnackBar(
         'Success',
@@ -383,7 +372,9 @@ class AttendanceController extends GetxController {
       );
       return false;
     }
-    final selectedProg = programsList.firstWhereOrNull((p) => p.id == programId);
+    final selectedProg = programsList.firstWhereOrNull(
+      (p) => p.id == programId,
+    );
     if (selectedProg != null &&
         selectedProg.date != null &&
         selectedProg.date!.isAfter(DateTime.now())) {
@@ -431,15 +422,18 @@ class AttendanceController extends GetxController {
     if (isClosed) return;
     isSubmittingAttendance.value = true;
     int hours = int.tryParse(durationController.text) ?? 0;
-    final dateFormatted =
-        date != null ? date!.toIso8601String().split('T')[0] : null;
+    final dateFormatted = date != null
+        ? date!.toIso8601String().split('T')[0]
+        : null;
 
     List<Map<String, dynamic>> list = selectedVolList
-        .map((v) => {
-          'volunteer': v.admissionNo,
-          'hours': hours,
-          if (dateFormatted != null) 'date': dateFormatted,
-        })
+        .map(
+          (v) => {
+            'volunteer': v.admissionNo,
+            'hours': hours,
+            if (dateFormatted != null) 'date': dateFormatted,
+          },
+        )
         .toList();
 
     _api

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
@@ -37,7 +38,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     });
     return list;
   }
-      
+
   final List<String> _castes = [
     'General',
     'OBC',
@@ -248,10 +249,31 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             controller: c.phoneController,
                             keyboardType: TextInputType.phone,
                             style: TextStyle(color: cs.onSurface),
-                            decoration: CustomWidgets().buildInputDecoration(
-                              context,
-                              "Enter phone number",
-                            ),
+
+                            maxLength: 10,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Phone number is required';
+                              }
+
+                              if (value.length != 10) {
+                                return 'Phone number must be exactly 10 digits';
+                              }
+
+                              return null;
+                            },
+
+                            decoration: CustomWidgets()
+                                .buildInputDecoration(
+                                  context,
+                                  "Enter phone number",
+                                )
+                                .copyWith(counterText: ''),
                           ),
 
                           CustomWidgets().buildLabel(
@@ -310,7 +332,8 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           CustomWidgets().buildLabel(context, "Batch Year"),
                           Obx(() {
                             final batchList = years;
-                            final effectiveValue = (_selectedYear != null &&
+                            final effectiveValue =
+                                (_selectedYear != null &&
                                     batchList.contains(_selectedYear))
                                 ? _selectedYear
                                 : null;
@@ -322,13 +345,17 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                                 'Select Batch Year',
                               ),
                               items: batchList
-                                  .map((val) => DropdownMenuItem<String>(
-                                        value: val,
-                                        child: Text(val),
-                                      ))
+                                  .map(
+                                    (val) => DropdownMenuItem<String>(
+                                      value: val,
+                                      child: Text(val),
+                                    ),
+                                  )
                                   .toList(),
-                              style:
-                                  TextStyle(color: cs.onSurface, fontSize: 15),
+                              style: TextStyle(
+                                color: cs.onSurface,
+                                fontSize: 15,
+                              ),
                               dropdownColor: cs.onPrimary,
                               borderRadius: BorderRadius.circular(12),
                               onChanged: (val) {
@@ -458,8 +485,10 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                             ),
                           ),
 
-                          if ((isEditMode) &&
-                              (LocalStorage().readUser().role == 'po'))
+                          if (isEditMode &&
+                              LocalStorage().readUser().role == 'po' &&
+                              c.admissionNoController.text !=
+                                  LocalStorage().readUser().admissionNo)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [

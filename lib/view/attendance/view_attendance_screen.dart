@@ -749,6 +749,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("Delete Attendance"),

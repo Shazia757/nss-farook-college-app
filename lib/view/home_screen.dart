@@ -688,7 +688,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }
                         return SizedBox(
-                          height: 280,
+                          height: isVolunteer ? 220 : 190,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
@@ -1152,14 +1152,16 @@ Widget _programCard(
   HomeController homeController,
 ) {
   final tt = Theme.of(context).textTheme;
+
   final dateStr = program.date != null
       ? DateFormat.yMMMd().format(program.date!)
       : 'N/A';
+
   final user = LocalStorage().readUser();
   final isVolunteer = user.role == 'vol';
 
   return Container(
-    width: 280,
+    width: 240,
     padding: const EdgeInsets.all(18),
     decoration: BoxDecoration(
       color: Colors.white,
@@ -1169,69 +1171,161 @@ Widget _programCard(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ─────────────────────────────────────────────
+        // TITLE
+        // ─────────────────────────────────────────────
         Text(
           program.name ?? '',
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: tt.titleMedium!.copyWith(
+          style: tt.titleMedium?.copyWith(
             color: cs.primary,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
+            height: 1.25,
           ),
         ),
-        const SizedBox(height: 8),
+
+        const SizedBox(height: 10),
+
+        // ─────────────────────────────────────────────
+        // DESCRIPTION
+        // ─────────────────────────────────────────────
         Text(
           program.description ?? '',
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: tt.bodyMedium,
+          style: tt.bodyMedium?.copyWith(
+            color: cs.onSurface.withOpacity(0.70),
+            height: 1.4,
+          ),
         ),
-        const Spacer(),
-        Row(
+
+        const SizedBox(height: 14),
+
+        // ─────────────────────────────────────────────
+        // PROGRAM META
+        // ─────────────────────────────────────────────
+        Wrap(
+          spacing: 10,
+          runSpacing: 8,
           children: [
-            const Icon(Icons.calendar_today, size: 18),
-            const SizedBox(width: 8),
-            Text(dateStr),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 15,
+                  color: cs.primary,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  dateStr,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withOpacity(0.70),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.schedule_outlined, size: 15, color: cs.primary),
+                const SizedBox(width: 5),
+                Text(
+                  '${program.duration ?? 0} hrs',
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurface.withOpacity(0.70),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+
+            // Enrolled / limit for PO & Secretary
+            if (!isVolunteer)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.people_outline_rounded,
+                    size: 15,
+                    color: cs.primary,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    program.limit != null && program.limit! > 0
+                        ? '${program.enrollmentCount ?? 0} / ${program.limit}'
+                        : '${program.enrollmentCount ?? 0}',
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurface.withOpacity(0.70),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    'enrolled',
+                    style: tt.bodySmall?.copyWith(
+                      color: cs.onSurface.withOpacity(0.60),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            const Icon(Icons.hourglass_empty, size: 18),
-            const SizedBox(width: 8),
-            Text("${program.duration ?? 0} hrs"),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (isVolunteer)
+        // ─────────────────────────────────────────────
+        // VOLUNTEER ENROLLMENT / ACTION
+        // ─────────────────────────────────────────────
+        if (isVolunteer) ...[
+          const SizedBox(height: 14),
+
+          Divider(height: 1, color: cs.outline.withOpacity(0.15)),
+
+          const SizedBox(height: 12),
+
           Obx(() {
             final programId = program.id;
-            if (programId == null) return const SizedBox.shrink();
+
+            if (programId == null) {
+              return const SizedBox.shrink();
+            }
 
             final isChecking =
                 homeController.isCheckingEnrollment.value ||
                 !homeController.verifiedProgramEnrollmentIds.contains(
                   programId,
                 );
+
             final isEnrolled = homeController.isEnrolled(programId);
+
             final isEnrolling = homeController.enrollingProgramIds.contains(
               programId,
             );
+
             final isCancelling = homeController.cancellingProgramIds.contains(
               programId,
             );
+
             final canCancel = homeController.canCancelEnrollment(programId);
+
             final remainingText = homeController.getRemainingCancellationText(
               programId,
             );
 
+            // ─────────────────────────────────────
+            // CHECKING ENROLLMENT
+            // ─────────────────────────────────────
             if (isChecking) {
               return SizedBox(
                 width: double.infinity,
                 child: FilledButton.tonal(
                   onPressed: null,
                   style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(42),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: Row(
@@ -1248,7 +1342,7 @@ Widget _programCard(
                       const SizedBox(width: 8),
                       Text(
                         'Checking enrollment...',
-                        style: TextStyle(
+                        style: tt.labelMedium?.copyWith(
                           color: cs.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1259,11 +1353,15 @@ Widget _programCard(
               );
             }
 
+            // ─────────────────────────────────────
+            // NOT ENROLLED
+            // ─────────────────────────────────────
             if (!isEnrolled) {
               final isLimitReached =
                   program.limit != null &&
                   program.limit! > 0 &&
                   (program.enrollmentCount ?? 0) >= program.limit!;
+
               final buttonLabel = isLimitReached
                   ? 'Program Full'
                   : 'Enroll Now';
@@ -1273,10 +1371,15 @@ Widget _programCard(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isLimitReached
-                        ? cs.outline.withOpacity(0.3)
+                        ? cs.outline.withOpacity(0.25)
                         : cs.primary,
+                    foregroundColor: isLimitReached
+                        ? cs.onSurface.withOpacity(0.5)
+                        : Colors.white,
+                    minimumSize: const Size.fromHeight(42),
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   onPressed: (isEnrolling || isCancelling)
@@ -1311,18 +1414,17 @@ Widget _programCard(
                         )
                       : Text(
                           buttonLabel,
-                          style: TextStyle(
-                            color: isLimitReached
-                                ? cs.onSurface.withOpacity(0.5)
-                                : Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                 ),
               );
-            } else if (canCancel) {
+            }
+
+            // ─────────────────────────────────────
+            // ENROLLED + CANCELLATION AVAILABLE
+            // ─────────────────────────────────────
+            if (canCancel) {
               return Column(
-                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   SizedBox(
@@ -1330,9 +1432,10 @@ Widget _programCard(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: cs.error,
-                        side: BorderSide(color: cs.error.withOpacity(0.7)),
+                        side: BorderSide(color: cs.error.withOpacity(0.6)),
+                        minimumSize: const Size.fromHeight(42),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       onPressed: (isEnrolling || isCancelling)
@@ -1354,65 +1457,77 @@ Widget _programCard(
                               ),
                             )
                           : const Text(
-                              "Cancel Enrollment",
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              'Cancel Enrollment',
+                              style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+
+                  const SizedBox(height: 6),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.schedule,
-                        size: 12,
-                        color: cs.onSurface.withOpacity(0.6),
+                        Icons.schedule_outlined,
+                        size: 13,
+                        color: cs.onSurface.withOpacity(0.5),
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        remainingText,
-                        style: tt.bodySmall?.copyWith(
-                          fontSize: 10,
-                          color: cs.onSurface.withOpacity(0.6),
+                      Flexible(
+                        child: Text(
+                          remainingText,
+                          overflow: TextOverflow.ellipsis,
+                          style: tt.labelSmall?.copyWith(
+                            color: cs.onSurface.withOpacity(0.55),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               );
-            } else {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: null,
-                      icon: const Icon(Icons.check_circle_rounded, size: 16),
-                      label: const Text("Enrolled"),
-                      style: FilledButton.styleFrom(
-                        disabledBackgroundColor: Colors.grey.shade300,
-                        disabledForegroundColor: Colors.grey.shade700,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
+            }
+
+            // ─────────────────────────────────────
+            // ENROLLED + CANCELLATION EXPIRED
+            // ─────────────────────────────────────
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: null,
+                    icon: const Icon(
+                      Icons.check_circle_outline_rounded,
+                      size: 17,
+                    ),
+                    label: const Text('Enrolled'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(42),
+                      disabledBackgroundColor: Colors.grey.shade200,
+                      disabledForegroundColor: Colors.grey.shade700,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Cancellation expired (24h limit)",
-                    textAlign: TextAlign.center,
-                    style: tt.bodySmall?.copyWith(
-                      fontSize: 10,
-                      color: cs.onSurface.withOpacity(0.5),
-                    ),
+                ),
+
+                const SizedBox(height: 6),
+
+                Text(
+                  'Cancellation expired (24h limit)',
+                  textAlign: TextAlign.center,
+                  style: tt.labelSmall?.copyWith(
+                    color: cs.onSurface.withOpacity(0.5),
                   ),
-                ],
-              );
-            }
+                ),
+              ],
+            );
           }),
+        ],
       ],
     ),
   );

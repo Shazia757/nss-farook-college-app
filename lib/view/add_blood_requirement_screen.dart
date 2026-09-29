@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/controller/blood_requirement_controller.dart';
@@ -79,8 +80,8 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
     final DateTime? date = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(Duration(days: 180)),
     );
     if (date == null) return;
 
@@ -347,18 +348,36 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                           ),
 
                           CustomWidgets().buildLabel(context, "Contact Number"),
+
                           TextFormField(
                             controller: _contactNumberController,
                             keyboardType: TextInputType.phone,
                             style: TextStyle(color: cs.onSurface),
-                            decoration: CustomWidgets().buildInputDecoration(
-                              context,
-                              "Enter contact number",
-                            ),
-                            validator: (val) =>
-                                val == null || val.trim().isEmpty
-                                ? "Please enter contact number"
-                                : null,
+
+                            maxLength: 10,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(10),
+                            ],
+
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Phone number is required';
+                              }
+
+                              if (value.length != 10) {
+                                return 'Phone number must be exactly 10 digits';
+                              }
+
+                              return null;
+                            },
+
+                            decoration: CustomWidgets()
+                                .buildInputDecoration(
+                                  context,
+                                  "Enter contact number",
+                                )
+                                .copyWith(counterText: ''),
                           ),
 
                           CustomWidgets().buildLabel(context, "Required Date"),

@@ -261,6 +261,7 @@ class CustomWidgets {
   }) {
     showDialog(
       context: Get.context!,
+      barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
@@ -308,19 +309,20 @@ class CustomWidgets {
       semanticColor = const Color(0xFF1976D2);
     }
 
-    final Widget iconWidget = icon ??
+    final Widget iconWidget =
+        icon ??
         Icon(
           (lowerTitle.contains('success') || lowerTitle.contains('done'))
               ? Icons.check_circle_rounded
               : (lowerTitle.contains('error') ||
-                      lowerTitle.contains('fail') ||
-                      lowerTitle.contains('invalid'))
-                  ? Icons.error_outline_rounded
-                  : (lowerTitle.contains('warn') ||
-                          lowerTitle.contains('notice') ||
-                          lowerTitle.contains('unavailable'))
-                      ? Icons.warning_amber_rounded
-                      : Icons.info_outline_rounded,
+                    lowerTitle.contains('fail') ||
+                    lowerTitle.contains('invalid'))
+              ? Icons.error_outline_rounded
+              : (lowerTitle.contains('warn') ||
+                    lowerTitle.contains('notice') ||
+                    lowerTitle.contains('unavailable'))
+              ? Icons.warning_amber_rounded
+              : Icons.info_outline_rounded,
           color: semanticColor,
           size: 20,
         );

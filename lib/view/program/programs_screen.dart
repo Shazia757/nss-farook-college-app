@@ -166,7 +166,9 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Discover and participate in social service activities',
+                    (role == 'vol')
+                        ? 'Discover and participate in social service activities'
+                        : 'Plan, manage, and monitor service activities',
                     style: tt.bodyMedium?.copyWith(
                       color: cs.onSurface.withOpacity(0.6),
                     ),
@@ -175,57 +177,6 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
               ),
             ),
             const SizedBox(height: 8),
-
-            if (role != 'vol') ...[
-              Obx(() {
-                final totalPrograms = c.programsList.length;
-                final totalHours = c.programsList.fold<int>(
-                  0,
-                  (sum, p) => sum + (p.duration ?? 0),
-                );
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          flex: 9,
-                          child: StatCard(
-                            title: "Programs",
-                            value: totalPrograms.toString(),
-                            icon: Icons.event_rounded,
-                            backgroundColor: cs.primary,
-                            textColor: cs.onPrimary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 14,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 11,
-                          child: StatCard(
-                            title: "Total Hours",
-                            value: "$totalHours hrs",
-                            icon: Icons.schedule_rounded,
-                            backgroundColor: cs.secondary,
-                            textColor: cs.onSecondary,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 16),
-            ],
 
             // Fixed Tab Bar Row
             Padding(
@@ -572,30 +523,104 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
           Text(
             title,
             style: tt.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               color: titleColor,
+              height: 1.25,
             ),
           ),
+
           const SizedBox(height: 12),
-          Row(
+
+          // Program metadata
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Icon(Icons.calendar_today_outlined, size: 16, color: iconColor),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  date,
-                  style: tt.bodySmall?.copyWith(color: textColor),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 15,
+                    color: iconColor,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    date,
+                    style: tt.bodySmall?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Icon(Icons.hourglass_empty, size: 16, color: iconColor),
-              const SizedBox(width: 6),
-              Text(duration, style: tt.bodySmall?.copyWith(color: textColor)),
+
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.schedule_outlined, size: 15, color: iconColor),
+                  const SizedBox(width: 5),
+                  Text(
+                    duration,
+                    style: tt.bodySmall?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Enrollment count for PO / Secretary
+              if (!isPast && (role == 'po' || role == 'sec'))
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(color: cs.primary.withOpacity(0.18)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.people_outline_rounded,
+                        size: 14,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        program.limit != null && program.limit! > 0
+                            ? '${program.enrollmentCount ?? 0} / ${program.limit}'
+                            : '${program.enrollmentCount ?? 0}',
+                        style: tt.labelSmall?.copyWith(
+                          color: cs.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        'enrolled',
+                        style: tt.labelSmall?.copyWith(
+                          color: textColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
+
           const SizedBox(height: 12),
+
           Text(
             description,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
             style: tt.bodyMedium?.copyWith(color: textColor, height: 1.4),
           ),
           if (!isPast) ...[

@@ -1,7 +1,4 @@
 import 'package:nss_new/config/urls.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/controller/account_controller.dart';

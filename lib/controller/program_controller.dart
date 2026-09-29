@@ -124,7 +124,9 @@ class ProgramListController extends GetxController {
 
   Future<void> syncVolunteerEnrollments(List<Program> list) async {
     final user = LocalStorage().readUser();
-    if (user.role != 'vol' || user.admissionNo == null || user.admissionNo!.isEmpty) {
+    if (user.role != 'vol' ||
+        user.admissionNo == null ||
+        user.admissionNo!.isEmpty) {
       for (final p in list) {
         if (p.id != null) verifiedProgramEnrollmentIds.add(p.id!);
       }
@@ -151,13 +153,19 @@ class ProgramListController extends GetxController {
           final myEnrollment = enrolledList.firstWhereOrNull((e) {
             final a1 = e.volunteerAdmissionNo?.trim().toLowerCase();
             final a2 = e.volunteer?.admissionNo?.trim().toLowerCase();
-            return (a1 != null && a1 == userAdmn) || (a2 != null && a2 == userAdmn);
+            return (a1 != null && a1 == userAdmn) ||
+                (a2 != null && a2 == userAdmn);
           });
 
           if (myEnrollment != null) {
-            final enrolledAt = myEnrollment.date ?? LocalStorage().getEstimatedServerTime();
+            final enrolledAt =
+                myEnrollment.date ?? LocalStorage().getEstimatedServerTime();
             enrolledPrograms[pid] = enrolledAt;
-            LocalStorage().saveVolunteerEnrollment(user.admissionNo!, pid, enrolledAt);
+            LocalStorage().saveVolunteerEnrollment(
+              user.admissionNo!,
+              pid,
+              enrolledAt,
+            );
           } else {
             enrolledPrograms.remove(pid);
             LocalStorage().removeVolunteerEnrollment(user.admissionNo!, pid);
@@ -276,15 +284,36 @@ class ProgramListController extends GetxController {
             nowServer,
           );
         }
+
+        // Immediately update the local enrollment state.
         enrolledPrograms[programId] = nowServer;
+
+        // This enrollment has already been verified by the
+        // successful enrollment API response.
+        verifiedProgramEnrollmentIds.add(programId);
+
+        // Prevent the UI from going back into "Checking enrollment..."
+        // because of this successful operation.
+        isCheckingEnrollment.value = false;
+
+        // Update the displayed enrollment count locally.
         if (program != null) {
           program.enrollmentCount = (program.enrollmentCount ?? 0) + 1;
+
+          // Make sure the reactive list notices the model update.
+          final index = programsList.indexWhere((p) => p.id == programId);
+
+          if (index != -1) {
+            programsList[index] = program;
+          }
+
+          _applySearchAndSort();
         }
+
         CustomWidgets.showSnackBar(
           'Success',
           res?.message ?? 'Enrolled successfully',
         );
-        getPrograms();
       } else {
         final msg = res?.message ?? 'Failed to enroll';
         final lowerMsg = msg.toLowerCase();
@@ -296,7 +325,11 @@ class ProgramListController extends GetxController {
               nowServer,
             );
           }
+
           enrolledPrograms[programId] = nowServer;
+          verifiedProgramEnrollmentIds.add(programId);
+          isCheckingEnrollment.value = false;
+
           CustomWidgets.showSnackBar('Notice', msg);
         } else if (lowerMsg.contains('limit') ||
             lowerMsg.contains('full') ||
@@ -361,12 +394,29 @@ class ProgramListController extends GetxController {
         if (admissionNo.isNotEmpty) {
           LocalStorage().removeVolunteerEnrollment(admissionNo, programId);
         }
+
         enrolledPrograms.remove(programId);
+        verifiedProgramEnrollmentIds.add(programId);
+
+        final program = programsList.firstWhereOrNull((p) => p.id == programId);
+
+        if (program != null) {
+          final currentCount = program.enrollmentCount ?? 0;
+          program.enrollmentCount = currentCount > 0 ? currentCount - 1 : 0;
+
+          final index = programsList.indexWhere((p) => p.id == programId);
+
+          if (index != -1) {
+            programsList[index] = program;
+          }
+
+          _applySearchAndSort();
+        }
+
         CustomWidgets.showSnackBar(
           'Success',
           res?.message ?? 'Enrollment cancelled',
         );
-        getPrograms();
       } else {
         final msg = res?.message ?? 'Failed to cancel enrollment';
         if (msg.toLowerCase().contains('not found')) {

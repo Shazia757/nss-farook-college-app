@@ -9,7 +9,6 @@ import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/add_blood_requirement_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
 import 'package:nss_new/view/blood_requirement_details_sheet.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ManageBloodRequirementScreen extends StatefulWidget {
@@ -478,6 +477,7 @@ class _ManageBloodRequirementScreenState
   void _showDeleteConfirmation(BuildContext context, BloodDonationRequest req) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Requirement'),
         content: Text(
@@ -774,14 +774,7 @@ class _ManageBloodRequirementScreenState
                                     '',
                                     'status:pending',
                                     'status:fulfilled',
-                                    'bg:A+',
-                                    'bg:A-',
-                                    'bg:B+',
-                                    'bg:B-',
-                                    'bg:AB+',
-                                    'bg:AB-',
-                                    'bg:O+',
-                                    'bg:O-',
+                                    'status:cancelled',
                                   ].contains(currentFilter)
                                   ? currentFilter
                                   : ''),
@@ -919,30 +912,29 @@ class _ManageBloodRequirementScreenState
                                     ],
                                   ),
                                 ),
-                                ...controller.bloodGroups.map(
-                                  (bg) => DropdownMenuItem(
-                                    value: 'bg:$bg',
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.bloodtype_outlined,
-                                          size: 16,
-                                          color: Colors.red.shade700,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(
-                                            'Group $bg',
-                                            style: tt.bodySmall?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: cs.onSurface,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+
+                                DropdownMenuItem(
+                                  value: 'status:cancelled',
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.cancel_outlined,
+                                        size: 16,
+                                        color: Colors.red,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          'Cancelled',
+                                          style: tt.bodySmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: cs.onSurface,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],

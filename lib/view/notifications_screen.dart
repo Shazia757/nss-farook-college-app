@@ -77,31 +77,36 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  _buildFilterChip(
-                    context,
-                    label: 'All',
-                    count: totalAll,
-                    index: 0,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(
-                    context,
-                    label: 'Alerts',
-                    count: totalAlerts,
-                    index: 1,
-                    badgeColor: Colors.red.shade700,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(
-                    context,
-                    label: 'Announcements',
-                    count: totalAnnouncements,
-                    index: 2,
-                    badgeColor: cs.primary,
-                  ),
-                ],
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildFilterChip(
+                      context,
+                      label: 'All',
+                      count: totalAll,
+                      index: 0,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      context,
+                      label: 'Alerts',
+                      count: totalAlerts,
+                      index: 1,
+                      badgeColor: Colors.red.shade700,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      context,
+                      label: 'Announcements',
+                      count: totalAnnouncements,
+                      index: 2,
+                      badgeColor: cs.primary,
+                    ),
+                  ],
+                ),
               ),
             ),
             const Divider(height: 1, thickness: 1, color: Color(0xFFEEEEEE)),
@@ -338,7 +343,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildAlertCard(BuildContext context, BloodDonationRequest req) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     final bloodGroup = (req.bloodGroup?.isNotEmpty ?? false)
@@ -362,7 +366,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ? req.neededBefore!
         : 'ASAP';
     final urgency = (req.urgency ?? 'Normal').toUpperCase();
-    final status = (req.status ?? 'Open').toUpperCase();
 
     final hasValidPhone =
         contactNumber.replaceAll(RegExp(r'[^0-9+]'), '').length >= 5;
@@ -573,10 +576,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildAnnouncementCard(BuildContext context, Program prog) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-
-    final dateStr = prog.date != null
-        ? DateFormat('EEEE, MMM d, yyyy').format(prog.date!)
-        : 'Date to be announced';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

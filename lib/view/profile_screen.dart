@@ -167,6 +167,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ),
                               ),
                               const SizedBox(height: 24),
+                              // Change password for own profile
                               if (isOwnProfile)
                                 SizedBox(
                                   width: double.infinity,
@@ -193,6 +194,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     label: const Text("Change Password"),
                                   ),
                                 ),
+
+                              // Edit profile for Secretary / Program Officer's own profile
+                              if (isOwnProfile &&
+                                  (displayVol?.role == 'sec' ||
+                                      displayVol?.role == 'po')) ...[
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: FilledButton.icon(
+                                    onPressed: () => Get.to(
+                                      () => AddVolunteerScreen(
+                                        volunteer: displayVol,
+                                      ),
+                                    )?.then((_) => fetchHours()),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: cs.primary,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.edit_rounded),
+                                    label: const Text("Edit Profile"),
+                                  ),
+                                ),
+                              ],
+
+                              // Edit profile + reset password when viewing another profile
                               if (!isOwnProfile && displayVol != null) ...[
                                 SizedBox(
                                   width: double.infinity,
@@ -265,70 +297,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                   const SizedBox(height: 20),
-
-                  /// ── 240 HOURS TARGET PROGRESS CARD (Sec / PO View Only) ──
-                  // if (role != 'vol')
-                  //   Container(
-                  //     padding: const EdgeInsets.all(20),
-                  //     decoration: BoxDecoration(
-                  //       color: cs.onPrimary,
-                  //       borderRadius: BorderRadius.circular(20),
-                  //       border: Border.all(color: cs.outline.withOpacity(0.4)),
-                  //       boxShadow: [
-                  //         BoxShadow(
-                  //           color: Colors.black.withOpacity(0.02),
-                  //           blurRadius: 10,
-                  //           offset: const Offset(0, 4),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //     child: Column(
-                  //       crossAxisAlignment: CrossAxisAlignment.start,
-                  //       children: [
-                  //         Row(
-                  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  //           children: [
-                  //             Text(
-                  //               "240 Hours Goal Progress",
-                  //               style: tt.titleMedium?.copyWith(
-                  //                 fontWeight: FontWeight.bold,
-                  //                 color: cs.primary,
-                  //               ),
-                  //             ),
-                  //             Text(
-                  //               "${summary?.totalHours ?? 0} / ${summary?.targetHours ?? 240} hrs",
-                  //               style: tt.titleMedium?.copyWith(
-                  //                 fontWeight: FontWeight.bold,
-                  //                 color: cs.onSurface,
-                  //               ),
-                  //             ),
-                  //           ],
-                  //         ),
-                  //         const SizedBox(height: 12),
-                  //         ClipRRect(
-                  //           borderRadius: BorderRadius.circular(10),
-                  //           child: LinearProgressIndicator(
-                  //             value:
-                  //                 ((summary?.totalHours ?? 0) /
-                  //                         (summary?.targetHours ?? 240))
-                  //                     .clamp(0.0, 1.0),
-                  //             minHeight: 12,
-                  //             backgroundColor: cs.primary.withOpacity(0.12),
-                  //             color: cs.primary,
-                  //           ),
-                  //         ),
-                  //         const SizedBox(height: 8),
-                  //         Text(
-                  //           "${(summary?.progressPercentage ?? 0).toStringAsFixed(1)}% of total target completed",
-                  //           style: tt.bodySmall?.copyWith(
-                  //             color: cs.onSurface.withOpacity(0.6),
-                  //           ),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //   ),
-
-                  // const SizedBox(height: 20),
 
                   // ================= PERSONAL DETAILS =================
                   _SectionCard(

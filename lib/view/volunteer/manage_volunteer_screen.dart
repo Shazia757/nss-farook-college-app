@@ -262,6 +262,102 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                 ],
               ),
             ),
+            Obx(() {
+              final batches = controller.batchSummaries
+                  .map((b) => b.batch.trim())
+                  .where((b) => b.isNotEmpty)
+                  .toSet()
+                  .toList();
+
+              batches.sort((a, b) {
+                final intA = int.tryParse(a);
+                final intB = int.tryParse(b);
+
+                if (intA != null && intB != null) {
+                  return intB.compareTo(intA);
+                }
+
+                return b.compareTo(a);
+              });
+
+              final selected = controller.selectedBatch.value.trim();
+
+              final effectiveVal =
+                  (selected.isNotEmpty && batches.contains(selected))
+                  ? selected
+                  : (batches.isNotEmpty ? batches.first : null);
+
+              final isBatchLoading = controller.isBatchLoading.value;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                child: DropdownButtonFormField<String>(
+                  value: effectiveVal,
+                  isExpanded: true,
+                  icon: Icon(Icons.arrow_drop_down, color: cs.primary),
+                  hint: Text(
+                    isBatchLoading ? 'Loading batches...' : 'Select Batch',
+                    style: tt.bodyMedium?.copyWith(
+                      color: cs.onSurface.withOpacity(0.5),
+                    ),
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Batch',
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: cs.outline.withOpacity(0.3),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: cs.outline.withOpacity(0.3),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: cs.primary, width: 1.5),
+                    ),
+                    filled: true,
+                    fillColor: cs.onPrimary,
+                  ),
+                  style: tt.bodyMedium?.copyWith(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  dropdownColor: cs.onPrimary,
+                  borderRadius: BorderRadius.circular(12),
+                  items: batches
+                      .map(
+                        (b) => DropdownMenuItem<String>(
+                          value: b,
+                          child: Text(
+                            b,
+                            style: tt.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurface,
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: batches.isEmpty
+                      ? null
+                      : (val) {
+                          if (val != null) {
+                            controller.filterByBatch(val);
+                          }
+                        },
+                ),
+              );
+            }),
+
+            const SizedBox(height: 5),
             Expanded(
               child: Obx(() {
                 if (controller.isLoading.value) {
