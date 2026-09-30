@@ -36,6 +36,7 @@ class Urls {
   static String enrollToProgram = '$base/enroll_program/';
   static String cancelEnrollment = '$base/cancel_enrollment/';
   static String getEnrolledStudents = '$base/get_enrollment_list/';
+  static String getVolunteerEnrollments = '$base/get_volunteer_upcoming_enrollments/';
 
   // Attendance
   static String getAttendance = '$base/get_attendance/';

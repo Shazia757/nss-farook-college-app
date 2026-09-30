@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -45,7 +47,6 @@ class ProgramListController extends GetxController {
 
   void resetEnrollmentState() {
     enrolledPrograms.clear();
-    verifiedProgramEnrollmentIds.clear();
     enrollingProgramIds.clear();
     cancellingProgramIds.clear();
     isCheckingEnrollment.value = true;
@@ -122,62 +123,53 @@ class ProgramListController extends GetxController {
     }
   }
 
-  Future<void> syncVolunteerEnrollments(List<Program> list) async {
-    final user = LocalStorage().readUser();
-    if (user.role != 'vol' ||
-        user.admissionNo == null ||
-        user.admissionNo!.isEmpty) {
-      for (final p in list) {
-        if (p.id != null) verifiedProgramEnrollmentIds.add(p.id!);
-      }
-      isCheckingEnrollment.value = false;
-      return;
-    }
+  Future<void> syncVolunteerEnrollments() async {
+    if (isClosed) return;
 
-    final userAdmn = user.admissionNo!.trim().toLowerCase();
+    final user = LocalStorage().readUser();
+
+    if (user.role != 'vol') return;
+
     isCheckingEnrollment.value = true;
 
-    final targetPrograms = list.where((p) => p.id != null).toList();
-    if (targetPrograms.isEmpty) {
-      isCheckingEnrollment.value = false;
-      return;
-    }
-
     try {
-      final futures = targetPrograms.map((p) async {
-        final pid = p.id!;
-        try {
-          final res = await _api.getEnrolledStudents(pid);
-          if (isClosed) return;
-          final enrolledList = res?.enrollmentList ?? [];
-          final myEnrollment = enrolledList.firstWhereOrNull((e) {
-            final a1 = e.volunteerAdmissionNo?.trim().toLowerCase();
-            final a2 = e.volunteer?.admissionNo?.trim().toLowerCase();
-            return (a1 != null && a1 == userAdmn) ||
-                (a2 != null && a2 == userAdmn);
-          });
+      final res = await _api.getVolunteerUpcomingEnrollments();
 
-          if (myEnrollment != null) {
-            final enrolledAt =
-                myEnrollment.date ?? LocalStorage().getEstimatedServerTime();
-            enrolledPrograms[pid] = enrolledAt;
+      if (isClosed) return;
+
+      if (res?.status == true) {
+        final serverEnrollments = <int, DateTime>{};
+
+        for (final enrollment in res?.programs ?? []) {
+          final programId = enrollment.program.id;
+
+          if (programId == null) continue;
+
+          final enrollmentDate =
+              enrollment.enrollmentDate ??
+              LocalStorage().getEstimatedServerTime();
+
+          serverEnrollments[programId] = enrollmentDate;
+
+          if (user.admissionNo != null && user.admissionNo!.isNotEmpty) {
             LocalStorage().saveVolunteerEnrollment(
               user.admissionNo!,
-              pid,
-              enrolledAt,
+              programId,
+              enrollmentDate,
             );
-          } else {
-            enrolledPrograms.remove(pid);
-            LocalStorage().removeVolunteerEnrollment(user.admissionNo!, pid);
           }
-        } catch (_) {
-          // If individual check fails, preserve local cache if present
-        } finally {
-          verifiedProgramEnrollmentIds.add(pid);
         }
-      });
 
-      await Future.wait(futures);
+        enrolledPrograms.assignAll(serverEnrollments);
+
+        // The API request completed successfully.
+        // We have verified the enrollment state from the server.
+        isCheckingEnrollment.value = false;
+      }
+    } catch (e) {
+      log('Volunteer enrollment sync failed: $e');
+
+      // Keep the locally cached enrollment state if the API fails.
     } finally {
       if (!isClosed) {
         isCheckingEnrollment.value = false;
@@ -202,7 +194,7 @@ class ProgramListController extends GetxController {
           programsList.assignAll(value?.programs ?? []);
           _applySearchAndSort();
           isLoading.value = false;
-          await syncVolunteerEnrollments(programsList);
+          await syncVolunteerEnrollments();
         })
         .catchError((_) {
           if (!isClosed) {
@@ -226,7 +218,7 @@ class ProgramListController extends GetxController {
           programsList.assignAll(value?.programs ?? []);
           _applySearchAndSort();
           isLoading.value = false;
-          await syncVolunteerEnrollments(programsList);
+          await syncVolunteerEnrollments();
         })
         .catchError((_) {
           if (!isClosed) {

@@ -1,3 +1,4 @@
+import 'package:nss_new/model/programs_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 
 class ProgramEnrollmentDetails {
@@ -97,5 +98,59 @@ class EnrollmentResponse {
       'message': message,
       'enrollment_list': enrollmentList?.map((e) => e.toJson()).toList(),
     };
+  }
+}
+
+class VolunteerUpcomingEnrollmentsResponse {
+  bool? status;
+  String? message;
+  int? count;
+  List<VolunteerProgramEnrollment>? programs;
+
+  VolunteerUpcomingEnrollmentsResponse({
+    this.status,
+    this.message,
+    this.count,
+    this.programs,
+  });
+
+  factory VolunteerUpcomingEnrollmentsResponse.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return VolunteerUpcomingEnrollmentsResponse(
+      status: json['status'] as bool? ?? false,
+      message: json['message']?.toString(),
+      count: int.tryParse(json['count']?.toString() ?? ''),
+      programs: json['programs'] is List
+          ? (json['programs'] as List)
+                .whereType<Map<String, dynamic>>()
+                .map((e) => VolunteerProgramEnrollment.fromJson(e))
+                .toList()
+          : [],
+    );
+  }
+}
+
+class VolunteerProgramEnrollment {
+  final Program program;
+  final int? enrollmentId;
+  final DateTime? enrollmentDate;
+
+  VolunteerProgramEnrollment({
+    required this.program,
+    this.enrollmentId,
+    this.enrollmentDate,
+  });
+
+  factory VolunteerProgramEnrollment.fromJson(Map<String, dynamic> json) {
+    return VolunteerProgramEnrollment(
+      program: Program.fromJson(json),
+      enrollmentId: json['enrollment_id'] is int
+          ? json['enrollment_id'] as int
+          : int.tryParse(json['enrollment_id']?.toString() ?? ''),
+      enrollmentDate: json['enrollment_date'] != null
+          ? DateTime.tryParse(json['enrollment_date'].toString())
+          : null,
+    );
   }
 }

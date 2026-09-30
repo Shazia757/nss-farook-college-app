@@ -694,6 +694,31 @@ class Api {
     return null;
   }
 
+  Future<VolunteerUpcomingEnrollmentsResponse?>
+  getVolunteerUpcomingEnrollments() async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(Urls.getVolunteerEnrollments),
+            body: jsonEncode({}),
+            headers: await getHeader(),
+          )
+          .timeout(const Duration(seconds: 60));
+
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is Map<String, dynamic>) {
+          return VolunteerUpcomingEnrollmentsResponse.fromJson(decoded);
+        }
+      }
+    } catch (e) {
+      checkConnectivity();
+      log('Api error get volunteer upcoming enrollments: $e');
+    }
+
+    return null;
+  }
   //------------------ 5. Attendance ---------------------------//
 
   Future<AttendanceResponse?> getAttendance({

@@ -688,7 +688,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }
                         return SizedBox(
-                          height: isVolunteer ? 220 : 190,
+                          height: isVolunteer ? 240 : 190,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
@@ -1294,11 +1294,7 @@ Widget _programCard(
               return const SizedBox.shrink();
             }
 
-            final isChecking =
-                homeController.isCheckingEnrollment.value ||
-                !homeController.verifiedProgramEnrollmentIds.contains(
-                  programId,
-                );
+            final isChecking = homeController.isCheckingEnrollment.value;
 
             final isEnrolled = homeController.isEnrolled(programId);
 

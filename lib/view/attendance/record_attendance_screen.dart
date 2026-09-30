@@ -18,7 +18,6 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
   int? _selectedProgramId;
   DateTime? _selectedDate;
   final TextEditingController _hoursController = TextEditingController();
-  bool _isAutoPopulated = false;
 
   @override
   void initState() {
@@ -517,10 +516,8 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
                           if (prog.duration != null && prog.duration! > 0) {
                             _hoursController.text = prog.duration.toString();
                           }
-                          _isAutoPopulated = true;
                         }
                       } else {
-                        _isAutoPopulated = false;
                       }
                     });
                   },

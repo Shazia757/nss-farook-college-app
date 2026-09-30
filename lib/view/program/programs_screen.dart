@@ -633,8 +633,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                 if (programId == null) return const SizedBox.shrink();
 
                 final isChecking =
-                    c.isCheckingEnrollment.value ||
-                    !c.verifiedProgramEnrollmentIds.contains(programId);
+                    c.isCheckingEnrollment.value;
                 final isEnrolled = c.isEnrolled(programId);
                 final isEnrolling = c.enrollingProgramIds.contains(programId);
                 final isCancelling = c.cancellingProgramIds.contains(programId);
