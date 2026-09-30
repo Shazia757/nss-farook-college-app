@@ -74,8 +74,7 @@ class Details {
   static String contactNo2 = '+919497343998';
   static String contactEmail = 'nss@farookcollege.ac.in';
   static String collegeWebsite = 'https://farookcollege.ac.in';
-  static String privacyPolicyUrl =
-      'https://nss.noorabiyad.com/api/privacy-policy';
+  static String privacyPolicyUrl = 'https://nss.noorabiyad.com/privacy-policy';
   static String termsAndConditionsUrl =
-      'https://nss.noorabiyad.com/terms-and-conditions';
+      'https://nss.noorabiyad.com/terms-and-conditions/';
 }

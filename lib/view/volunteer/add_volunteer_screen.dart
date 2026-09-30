@@ -42,12 +42,11 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
   final List<String> _castes = [
     'General',
     'OBC',
-    'Muslim',
     'SC',
     'ST',
     'Others',
   ];
-  final List<String> _genders = ['M', 'F', 'O'];
+  final List<String> _genders = ['Male', 'Female', 'Others'];
   final List<String> _bloodGroups = [
     'A+',
     'A-',
