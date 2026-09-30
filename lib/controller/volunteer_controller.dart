@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
+import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/department_model.dart';
 import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
@@ -21,7 +22,6 @@ class VolunteerController extends GetxController {
   TextEditingController yearController = TextEditingController();
   TextEditingController casteController = TextEditingController();
   TextEditingController genderController = TextEditingController();
-  TextEditingController addressController = TextEditingController();
 
   var isUpdateButtonLoading = false.obs;
   var isDeleteButtonLoading = false.obs;
@@ -60,7 +60,6 @@ class VolunteerController extends GetxController {
     yearController.dispose();
     casteController.dispose();
     genderController.dispose();
-    addressController.dispose();
     super.onClose();
   }
 
@@ -105,7 +104,6 @@ class VolunteerController extends GetxController {
           'caste': casteController.text,
           'gender': selectedGender.value ?? genderController.text,
           'blood_group': selectedBloodGroup.value ?? bloodGroup.value,
-          'address': addressController.text,
           'role': role.value,
         })
         .then((value) {
@@ -161,7 +159,6 @@ class VolunteerController extends GetxController {
           'caste': casteController.text,
           'gender': selectedGender.value ?? genderController.text,
           'blood_group': selectedBloodGroup.value ?? bloodGroup.value,
-          'address': addressController.text,
           'role': role.value,
         })
         .then((response) {
@@ -170,6 +167,76 @@ class VolunteerController extends GetxController {
           if (response?.status == true) {
             Get.back(); // close confirmation dialog
             Get.back(); // navigate back to previous screen
+            CustomWidgets.showSnackBar(
+              'Success',
+              response?.message ?? 'Volunteer updated successfully.',
+              backgroundColor: Colors.green.shade800,
+              icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+            );
+          } else {
+            Get.back();
+            CustomWidgets.showSnackBar(
+              'Error',
+              response?.message ?? 'Failed to update volunteer.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
+        })
+        .catchError((_) {
+          if (!isClosed) {
+            isUpdateButtonLoading.value = false;
+            Get.back();
+            CustomWidgets.showSnackBar(
+              'Error',
+              'Failed to update volunteer.',
+              backgroundColor: Colors.red.shade800,
+              icon: const Icon(Icons.error_outline, color: Colors.white),
+            );
+          }
+        });
+  }
+
+  void updatePo() async {
+    if (isClosed) return;
+    isUpdateButtonLoading.value = true;
+    api
+        .updateProgramOfficer({
+          'admission_number': admissionNoController.text,
+          'name': nameController.text,
+          'email': emailController.text,
+          'phone_number': phoneController.text,
+          'date_of_birth': dob != null
+              ? DateFormat('yyyy-MM-dd').format(dob!)
+              : dobController.text,
+          'department': departmentID,
+          'caste': casteController.text,
+          'gender': selectedGender.value ?? genderController.text,
+          'blood_group': selectedBloodGroup.value ?? bloodGroup.value,
+        })
+        .then((response) {
+          if (isClosed) return;
+          isUpdateButtonLoading.value = false;
+          if (response?.status == true) {
+            final currentUser = LocalStorage().readUser();
+            currentUser.admissionNo = admissionNoController.text;
+            currentUser.name = nameController.text;
+            currentUser.email = emailController.text;
+            currentUser.phoneNo = phoneController.text;
+            final selectedDepartment = departmentList.firstWhereOrNull(
+              (d) => d.id == departmentID,
+            );
+
+            if (selectedDepartment != null) {
+              currentUser.department = selectedDepartment;
+            }
+            currentUser.caste = casteController.text;
+            currentUser.gender = selectedGender.value ?? genderController.text;
+            currentUser.bloodGroup =
+                selectedBloodGroup.value ?? bloodGroup.value;
+            LocalStorage().writeUser(currentUser);
+            Get.back();
+            Get.back();
             CustomWidgets.showSnackBar(
               'Success',
               response?.message ?? 'Volunteer updated successfully.',
@@ -273,7 +340,6 @@ class VolunteerController extends GetxController {
     yearController.clear();
     casteController.clear();
     genderController.clear();
-    addressController.clear();
     departmentID = null;
     selectedCaste.value = null;
     selectedGender.value = null;
@@ -335,6 +401,7 @@ class VolunteerListController extends GetxController {
   RxList<BatchSummary> batchSummaries = <BatchSummary>[].obs;
   Rxn<VolunteerHoursSummary> volunteerHoursSummary =
       Rxn<VolunteerHoursSummary>();
+  RxList<Volunteer> filteredVolunteers = <Volunteer>[].obs;
 
   RxString selectedBatch = ''.obs;
   RxnInt selectedDepartmentId = RxnInt();
@@ -522,7 +589,13 @@ class VolunteerListController extends GetxController {
 
   void filterByBatch(String batch) {
     if (isClosed) return;
-    selectedBatch.value = selectedBatch.value == batch ? '' : batch;
+
+    if (batch == 'All') {
+      selectedBatch.value = '';
+    } else {
+      selectedBatch.value = selectedBatch.value == batch ? '' : batch;
+    }
+
     if (isShowingPassive.value) {
       getPassiveData();
     } else {

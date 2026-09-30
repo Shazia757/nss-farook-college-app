@@ -39,13 +39,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     return list;
   }
 
-  final List<String> _castes = [
-    'General',
-    'OBC',
-    'SC',
-    'ST',
-    'Others',
-  ];
+  final List<String> _castes = ['General', 'OBC', 'SC', 'ST', 'Others'];
   final List<String> _genders = ['Male', 'Female', 'Others'];
   final List<String> _bloodGroups = [
     'A+',
@@ -126,6 +120,10 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isEditMode = widget.volunteer != null;
+    final isPo = LocalStorage().readUser().role == 'po';
+    final isOwnProfile =
+        isEditMode &&
+        widget.volunteer?.admissionNo == LocalStorage().readUser().admissionNo;
 
     return Scaffold(
       backgroundColor: cs.surface,
@@ -187,7 +185,11 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            isEditMode ? 'Edit Volunteer' : 'Add Volunteer',
+                            isEditMode
+                                ? isOwnProfile
+                                      ? 'Edit Profile'
+                                      : 'Edit Volunteer'
+                                : 'Add Volunteer',
                             style: tt.headlineSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: cs.primary,
@@ -196,7 +198,9 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           const SizedBox(height: 6),
                           Text(
                             isEditMode
-                                ? 'Update the details of the volunteer.'
+                                ? (isOwnProfile)
+                                      ? 'Update your personal details'
+                                      : 'Update the details of the volunteer.'
                                 : 'Register a new NSS volunteer for the current academic session.',
                             style: tt.bodyMedium?.copyWith(
                               color: cs.onSurface.withOpacity(0.6),
@@ -277,7 +281,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
 
                           CustomWidgets().buildLabel(
                             context,
-                            "Program of Study",
+                            isPo ? "Department" : "Program of Study",
                           ),
                           Obx(() {
                             final hasMatch = c.departmentList.any(
@@ -327,44 +331,46 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                               },
                             );
                           }),
+                          if (!isPo) ...[
+                            CustomWidgets().buildLabel(context, "Batch Year"),
+                            Obx(() {
+                              final batchList = years;
+                              final effectiveValue =
+                                  (_selectedYear != null &&
+                                      batchList.contains(_selectedYear))
+                                  ? _selectedYear
+                                  : null;
 
-                          CustomWidgets().buildLabel(context, "Batch Year"),
-                          Obx(() {
-                            final batchList = years;
-                            final effectiveValue =
-                                (_selectedYear != null &&
-                                    batchList.contains(_selectedYear))
-                                ? _selectedYear
-                                : null;
-
-                            return DropdownButtonFormField<String>(
-                              value: effectiveValue,
-                              decoration: CustomWidgets().buildInputDecoration(
-                                context,
-                                'Select Batch Year',
-                              ),
-                              items: batchList
-                                  .map(
-                                    (val) => DropdownMenuItem<String>(
-                                      value: val,
-                                      child: Text(val),
+                              return DropdownButtonFormField<String>(
+                                value: effectiveValue,
+                                decoration: CustomWidgets()
+                                    .buildInputDecoration(
+                                      context,
+                                      'Select Batch Year',
                                     ),
-                                  )
-                                  .toList(),
-                              style: TextStyle(
-                                color: cs.onSurface,
-                                fontSize: 15,
-                              ),
-                              dropdownColor: cs.onPrimary,
-                              borderRadius: BorderRadius.circular(12),
-                              onChanged: (val) {
-                                setState(() {
-                                  _selectedYear = val;
-                                  c.yearController.text = val ?? '';
-                                });
-                              },
-                            );
-                          }),
+                                items: batchList
+                                    .map(
+                                      (val) => DropdownMenuItem<String>(
+                                        value: val,
+                                        child: Text(val),
+                                      ),
+                                    )
+                                    .toList(),
+                                style: TextStyle(
+                                  color: cs.onSurface,
+                                  fontSize: 15,
+                                ),
+                                dropdownColor: cs.onPrimary,
+                                borderRadius: BorderRadius.circular(12),
+                                onChanged: (val) {
+                                  setState(() {
+                                    _selectedYear = val;
+                                    c.yearController.text = val ?? '';
+                                  });
+                                },
+                              );
+                            }),
+                          ],
 
                           CustomWidgets().buildLabel(context, "Blood Group"),
                           Obx(
@@ -434,7 +440,9 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           CustomWidgets().buildLabel(context, "Gender"),
                           Obx(
                             () => DropdownButtonFormField<String>(
-                              value: c.selectedGender.value,
+                              value: _genders.contains(c.selectedGender.value)
+                                  ? c.selectedGender.value
+                                  : null,
                               decoration: CustomWidgets().buildInputDecoration(
                                 context,
                                 'Select Gender',
@@ -460,7 +468,9 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           CustomWidgets().buildLabel(context, "Caste"),
                           Obx(
                             () => DropdownButtonFormField<String>(
-                              value: c.selectedCaste.value,
+                              value: _castes.contains(c.selectedCaste.value)
+                                  ? c.selectedCaste.value
+                                  : null,
                               decoration: CustomWidgets().buildInputDecoration(
                                 context,
                                 'Select Caste',
@@ -540,10 +550,16 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                                     if (c.onSubmitVolValidation()) {
                                       if (isEditMode) {
                                         CustomWidgets().showConfirmationDialog(
-                                          title: "Update Volunteer",
-                                          message:
-                                              "Are you sure you want to update the volunteer details?",
-                                          onConfirm: () => c.updateVolunteer(),
+                                          title: isPo
+                                              ? "Update Profile"
+                                              : "Update Volunteer",
+                                          message: isPo
+                                              ? "Are you sure you want to update your details?"
+                                              : "Are you sure you want to update the volunteer details?",
+                                          onConfirm: () =>
+                                              (isPo && isOwnProfile)
+                                              ? c.updatePo()
+                                              : c.updateVolunteer(),
                                           data: Obx(
                                             () => c.isUpdateButtonLoading.value
                                                 ? const SizedBox(

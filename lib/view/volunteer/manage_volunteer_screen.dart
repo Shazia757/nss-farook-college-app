@@ -282,12 +282,15 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
 
               final selected = controller.selectedBatch.value.trim();
 
+              // "All" is the initial/default filter
               final effectiveVal =
-                  (selected.isNotEmpty && batches.contains(selected))
+                  selected.isNotEmpty && batches.contains(selected)
                   ? selected
-                  : (batches.isNotEmpty ? batches.first : null);
+                  : 'All';
 
               final isBatchLoading = controller.isBatchLoading.value;
+
+              final dropdownBatches = ['All', ...batches];
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18.0),
@@ -332,12 +335,13 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                   ),
                   dropdownColor: cs.onPrimary,
                   borderRadius: BorderRadius.circular(12),
-                  items: batches
+
+                  items: dropdownBatches
                       .map(
-                        (b) => DropdownMenuItem<String>(
-                          value: b,
+                        (batch) => DropdownMenuItem<String>(
+                          value: batch,
                           child: Text(
-                            b,
+                            batch,
                             style: tt.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: cs.onSurface,
@@ -346,6 +350,7 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                         ),
                       )
                       .toList(),
+
                   onChanged: batches.isEmpty
                       ? null
                       : (val) {
@@ -356,7 +361,6 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
                 ),
               );
             }),
-
             const SizedBox(height: 5),
             Expanded(
               child: Obx(() {

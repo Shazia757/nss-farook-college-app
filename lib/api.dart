@@ -28,7 +28,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return LoginResponse.fromJson(responseJson);
       }
@@ -49,7 +49,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return LoginResponse.fromJson(responseJson);
       }
@@ -70,7 +70,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -91,7 +91,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -144,7 +144,7 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return VolunteerList.fromJson(decoded);
       }
@@ -173,7 +173,7 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return VolunteerList.fromJson(decoded);
       }
@@ -194,7 +194,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return VolunteerDetailResponse.fromJson(decoded);
       }
@@ -215,7 +215,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -236,7 +236,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -261,7 +261,7 @@ class Api {
           .delete(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -282,7 +282,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -308,7 +308,7 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return VolunteerHoursSummary.fromJson(decoded);
       }
@@ -324,7 +324,7 @@ class Api {
       final response = await http
           .get(Uri.parse(Urls.getBatches), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         if (decoded is List) {
           return decoded
@@ -387,7 +387,7 @@ class Api {
       final response = await http
           .get(Uri.parse(Urls.getProgramOfficers), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         if (decoded is List) {
           return decoded
@@ -422,7 +422,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return ProgramOfficer.fromJson(decoded);
       }
@@ -433,7 +433,7 @@ class Api {
     return null;
   }
 
-  Future<ProgramOfficer?> updateProgramOfficer(
+  Future<GeneralResponse?> updateProgramOfficer(
     Map<String, dynamic> data,
   ) async {
     try {
@@ -445,9 +445,9 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-        return ProgramOfficer.fromJson(decoded);
+        return GeneralResponse.fromJson(decoded);
       }
     } catch (e) {
       checkConnectivity();
@@ -466,7 +466,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -520,7 +520,7 @@ class Api {
           .get(Uri.parse(Urls.getProgramNames), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return ProgramNameResponse.fromJson(decoded);
       }
@@ -560,7 +560,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -581,7 +581,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -602,7 +602,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -683,7 +683,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return EnrollmentResponse.fromJson(decoded);
       }
@@ -715,7 +715,7 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return AttendanceResponse.fromJson(decoded);
       }
@@ -736,7 +736,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -768,7 +768,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -789,7 +789,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -810,7 +810,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -868,7 +868,7 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         if (decoded is List) {
           return decoded
@@ -908,7 +908,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
 
         final requestData = decoded['data'];
@@ -937,7 +937,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
 
         final requestData = decoded['data'];
@@ -964,7 +964,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -991,7 +991,7 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         if (decoded is List) {
           return decoded
@@ -1026,7 +1026,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body) as Map<String, dynamic>;
         return BloodDonationRecord.fromJson(decoded);
       }
@@ -1055,7 +1055,7 @@ class Api {
           .get(uri, headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         if (decoded is List) {
           return decoded
@@ -1093,7 +1093,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -1112,7 +1112,7 @@ class Api {
           .get(Uri.parse(Urls.getAdminIssue), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return IssueResponse.fromJson(decoded);
       }
@@ -1129,7 +1129,7 @@ class Api {
           .get(Uri.parse(Urls.getVolIssue), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return IssueResponse.fromJson(decoded);
       }
@@ -1150,7 +1150,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -1171,7 +1171,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -1192,7 +1192,7 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
         return GeneralResponse.fromJson(responseJson);
       }
@@ -1211,7 +1211,7 @@ class Api {
           .get(Uri.parse(Urls.getDepartments), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return DepartmentList.fromJson(decoded);
       }
@@ -1228,7 +1228,7 @@ class Api {
           .get(Uri.parse(Urls.getAdmins), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         final decoded = jsonDecode(response.body);
         return VolunteerList.fromJson(decoded);
       }
@@ -1245,7 +1245,7 @@ class Api {
           .get(Uri.parse(Urls.getExportableFields), headers: await getHeader())
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body)) {
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
     } catch (e) {

@@ -39,12 +39,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  void fetchHours() async {
+  Future<void> refreshProfile() async {
+    if (!mounted) return;
+
+    if (widget.volunteer == null) {
+      // Own profile → reload the latest locally stored user
+      rxVolunteer.value = LocalStorage().readUser();
+    }
+
+    await fetchHours();
+  }
+
+  Future<void> fetchHours() async {
     final admn = rxVolunteer.value?.admissionNo;
+
     if (admn != null && admn.isNotEmpty) {
       final summary = await _api.getVolunteerHoursSummary(
         admissionNumber: admn,
       );
+
       if (mounted && summary != null) {
         hoursSummary.value = summary;
       }
@@ -89,184 +102,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 680),
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 20,
-                ),
-                children: [
-                  /// ── PROFILE HERO CARD ──────────────────────────────────
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [cs.primary, cs.primary.withOpacity(0.78)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+              child: RefreshIndicator(
+                onRefresh: refreshProfile,
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 20,
+                  ),
+                  children: [
+                    /// ── PROFILE HERO CARD ──────────────────────────────────
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [cs.primary, cs.primary.withOpacity(0.78)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          top: -30,
-                          right: -30,
-                          child: Container(
-                            width: 130,
-                            height: 130,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.07),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            top: -30,
+                            right: -30,
+                            child: Container(
+                              width: 130,
+                              height: 130,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.07),
+                              ),
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 42,
-                                backgroundColor: Colors.white.withOpacity(.2),
-                                child: Text(
-                                  (name != null && name.isNotEmpty)
-                                      ? name.substring(0, 1).toUpperCase()
-                                      : "S",
-                                  style: tt.headlineLarge?.copyWith(
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 42,
+                                  backgroundColor: Colors.white.withOpacity(.2),
+                                  child: Text(
+                                    (name != null && name.isNotEmpty)
+                                        ? name.substring(0, 1).toUpperCase()
+                                        : "S",
+                                    style: tt.headlineLarge?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  displayVol?.name ?? "NSS User",
+                                  style: tt.headlineSmall?.copyWith(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                displayVol?.name ?? "NSS User",
-                                style: tt.headlineSmall?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.18),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  displayVol?.role == 'sec'
-                                      ? "Secretary"
-                                      : displayVol?.role == 'po'
-                                      ? "Program Officer"
-                                      : "Volunteer",
-                                  style: tt.titleSmall?.copyWith(
-                                    color: Colors.white.withOpacity(0.9),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.18),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    displayVol?.role == 'sec'
+                                        ? "Secretary"
+                                        : displayVol?.role == 'po'
+                                        ? "Program Officer"
+                                        : "Volunteer",
+                                    style: tt.titleSmall?.copyWith(
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 24),
-                              // Change password for own profile
-                              if (isOwnProfile)
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: () => Get.to(
-                                      () => ChangePasswordScreen(
-                                        userId: displayVol?.admissionNo ?? '',
-                                        isChangepassword: true,
-                                      ),
-                                    ),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white.withOpacity(
-                                        0.18,
-                                      ),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.lock_reset_rounded),
-                                    label: const Text("Change Password"),
-                                  ),
-                                ),
-
-                              // Edit profile for Secretary / Program Officer's own profile
-                              if (isOwnProfile &&
-                                  (displayVol?.role == 'sec' ||
-                                      displayVol?.role == 'po')) ...[
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: () => Get.to(
-                                      () => AddVolunteerScreen(
-                                        volunteer: displayVol,
-                                      ),
-                                    )?.then((_) => fetchHours()),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: cs.primary,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.edit_rounded),
-                                    label: const Text("Edit Profile"),
-                                  ),
-                                ),
-                              ],
-
-                              // Edit profile + reset password when viewing another profile
-                              if (!isOwnProfile && displayVol != null) ...[
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: FilledButton.icon(
-                                    onPressed: () => Get.to(
-                                      () => AddVolunteerScreen(
-                                        volunteer: displayVol,
-                                      ),
-                                    )?.then((_) => fetchHours()),
-                                    style: FilledButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: cs.primary,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.edit_rounded),
-                                    label: const Text("Edit Profile"),
-                                  ),
-                                ),
-
-                                if (role == 'sec' || role == 'po') ...[
-                                  const SizedBox(height: 12),
+                                const SizedBox(height: 24),
+                                // Change password for own profile
+                                if (isOwnProfile)
                                   SizedBox(
                                     width: double.infinity,
-                                    child: OutlinedButton.icon(
+                                    child: FilledButton.icon(
                                       onPressed: () => Get.to(
                                         () => ChangePasswordScreen(
-                                          userId: displayVol.admissionNo ?? '',
-                                          volunteerName: displayVol.name,
-                                          isChangepassword: false,
+                                          userId: displayVol?.admissionNo ?? '',
+                                          isChangepassword: true,
                                         ),
                                       ),
-                                      style: OutlinedButton.styleFrom(
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.white
+                                            .withOpacity(0.18),
                                         foregroundColor: Colors.white,
-                                        side: const BorderSide(
-                                          color: Colors.white70,
-                                          width: 1.2,
-                                        ),
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 14,
                                         ),
@@ -279,157 +209,251 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       icon: const Icon(
                                         Icons.lock_reset_rounded,
                                       ),
-                                      label: const Text(
-                                        "Reset Password",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
+                                      label: const Text("Change Password"),
+                                    ),
+                                  ),
+
+                                // Edit profile for Secretary / Program Officer's own profile
+                                if (isOwnProfile &&
+                                    (displayVol?.role == 'sec' ||
+                                        displayVol?.role == 'po')) ...[
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      onPressed: () => Get.to(
+                                        () => AddVolunteerScreen(
+                                          volunteer: displayVol,
+                                        ),
+                                      )?.then((_) => fetchHours()),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: cs.primary,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
                                         ),
                                       ),
+                                      icon: const Icon(Icons.edit_rounded),
+                                      label: const Text("Edit Profile"),
                                     ),
                                   ),
                                 ],
+
+                                // Edit profile + reset password when viewing another profile
+                                if (!isOwnProfile && displayVol != null) ...[
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.icon(
+                                      onPressed: () => Get.to(
+                                        () => AddVolunteerScreen(
+                                          volunteer: displayVol,
+                                        ),
+                                      )?.then((_) => fetchHours()),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: Colors.white,
+                                        foregroundColor: cs.primary,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                        ),
+                                      ),
+                                      icon: const Icon(Icons.edit_rounded),
+                                      label: const Text("Edit Profile"),
+                                    ),
+                                  ),
+
+                                  if (role == 'sec' || role == 'po') ...[
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => Get.to(
+                                          () => ChangePasswordScreen(
+                                            userId:
+                                                displayVol.admissionNo ?? '',
+                                            volunteerName: displayVol.name,
+                                            isChangepassword: false,
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Colors.white,
+                                          side: const BorderSide(
+                                            color: Colors.white70,
+                                            width: 1.2,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                        ),
+                                        icon: const Icon(
+                                          Icons.lock_reset_rounded,
+                                        ),
+                                        label: const Text(
+                                          "Reset Password",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ================= PERSONAL DETAILS =================
-                  _SectionCard(
-                    title: "Personal Details",
-                    icon: Icons.person_outline_rounded,
-                    child: Column(
-                      children: [
-                        _InfoRow(
-                          label: "Gender",
-                          value: displayVol?.gender ?? "N/A",
-                          icon: Icons.wc_rounded,
-                        ),
-                        const _Divider(),
-                        _InfoRow(
-                          label: "Date of Birth",
-                          value: displayVol?.dob != null
-                              ? DateFormat.yMMMd().format(displayVol!.dob!)
-                              : "N/A",
-                          icon: Icons.cake_outlined,
-                        ),
-                        const _Divider(),
-                        _InfoRow(
-                          label: "Caste",
-                          value: displayVol?.caste ?? "N/A",
-                          icon: Icons.groups_outlined,
-                        ),
-                        const _Divider(),
-                        _InfoRow(
-                          label: "Blood Group",
-                          value: displayVol?.bloodGroup ?? "N/A",
-                          icon: Icons.bloodtype_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ================= ACADEMIC DETAILS =================
-                  if (displayVol?.role != 'po' || !isOwnProfile)
-                    _SectionCard(
-                      title: "Academic Details",
-                      icon: Icons.school_outlined,
-                      child: Column(
-                        children: [
-                          _InfoRow(
-                            label: "Programme",
-                            value: displayVol?.department != null
-                                ? "${displayVol?.department?.category ?? ''} ${displayVol?.department?.name ?? ''}"
-                                : "N/A",
-                            icon: Icons.menu_book_outlined,
-                          ),
-                          const _Divider(),
-                          _InfoRow(
-                            label: "Batch",
-                            value: displayVol?.year ?? "N/A",
-                            icon: Icons.calendar_today_outlined,
-                          ),
-                          const _Divider(),
-                          _InfoRow(
-                            label: "Admission No.",
-                            value: displayVol?.admissionNo ?? "N/A",
-                            icon: Icons.badge_outlined,
+                            ),
                           ),
                         ],
                       ),
                     ),
 
-                  const SizedBox(height: 20),
-
-                  // ================= CONTACT DETAILS =================
-                  _SectionCard(
-                    title: "Contact Info",
-                    icon: Icons.contact_phone_outlined,
-                    child: Column(
-                      children: [
-                        _InfoRow(
-                          label: "Email",
-                          value: displayVol?.email ?? "N/A",
-                          icon: Icons.mail_outline_rounded,
-                        ),
-                        const _Divider(),
-                        _InfoRow(
-                          label: "Phone Number",
-                          value: displayVol?.phoneNo ?? "N/A",
-                          icon: Icons.phone_outlined,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  if (displayVol != null &&
-                      displayVol.role != 'po' &&
-                      ((role == 'po') ||
-                          (role == 'sec' && displayVol.role == 'vol'))) ...[
                     const SizedBox(height: 20),
+
+                    // ================= PERSONAL DETAILS =================
                     _SectionCard(
-                      title: "Participation & Attendance",
-                      icon: Icons.assignment_turned_in_outlined,
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Get.to(
-                              () => AttendanceScreen(volunteer: displayVol),
-                            );
-                          },
-                          icon: const Icon(Icons.analytics_outlined),
-                          label: const Text("View Attendance History"),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: cs.primaryContainer,
-                            foregroundColor: cs.onPrimaryContainer,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                      title: "Personal Details",
+                      icon: Icons.person_outline_rounded,
+                      child: Column(
+                        children: [
+                          _InfoRow(
+                            label: "Gender",
+                            value: displayVol?.gender ?? "N/A",
+                            icon: Icons.wc_rounded,
+                          ),
+                          const _Divider(),
+                          _InfoRow(
+                            label: "Date of Birth",
+                            value: displayVol?.dob != null
+                                ? DateFormat.yMMMd().format(displayVol!.dob!)
+                                : "N/A",
+                            icon: Icons.cake_outlined,
+                          ),
+                          const _Divider(),
+                          _InfoRow(
+                            label: "Caste",
+                            value: displayVol?.caste ?? "N/A",
+                            icon: Icons.groups_outlined,
+                          ),
+                          const _Divider(),
+                          _InfoRow(
+                            label: "Blood Group",
+                            value: displayVol?.bloodGroup ?? "N/A",
+                            icon: Icons.bloodtype_outlined,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ================= ACADEMIC DETAILS =================
+                    if (displayVol?.role != 'po' || !isOwnProfile)
+                      _SectionCard(
+                        title: "Academic Details",
+                        icon: Icons.school_outlined,
+                        child: Column(
+                          children: [
+                            _InfoRow(
+                              label: "Programme",
+                              value: displayVol?.department != null
+                                  ? "${displayVol?.department?.category ?? ''} ${displayVol?.department?.name ?? ''}"
+                                  : "N/A",
+                              icon: Icons.menu_book_outlined,
                             ),
-                            elevation: 0,
+                            const _Divider(),
+                            _InfoRow(
+                              label: "Batch",
+                              value: displayVol?.year ?? "N/A",
+                              icon: Icons.calendar_today_outlined,
+                            ),
+                            const _Divider(),
+                            _InfoRow(
+                              label: "Admission No.",
+                              value: displayVol?.admissionNo ?? "N/A",
+                              icon: Icons.badge_outlined,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    const SizedBox(height: 20),
+
+                    // ================= CONTACT DETAILS =================
+                    _SectionCard(
+                      title: "Contact Info",
+                      icon: Icons.contact_phone_outlined,
+                      child: Column(
+                        children: [
+                          _InfoRow(
+                            label: "Email",
+                            value: displayVol?.email ?? "N/A",
+                            icon: Icons.mail_outline_rounded,
+                          ),
+                          const _Divider(),
+                          _InfoRow(
+                            label: "Phone Number",
+                            value: displayVol?.phoneNo ?? "N/A",
+                            icon: Icons.phone_outlined,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    if (displayVol != null &&
+                        displayVol.role != 'po' &&
+                        ((role == 'po') ||
+                            (role == 'sec' && displayVol.role == 'vol'))) ...[
+                      const SizedBox(height: 20),
+                      _SectionCard(
+                        title: "Participation & Attendance",
+                        icon: Icons.assignment_turned_in_outlined,
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Get.to(
+                                () => AttendanceScreen(volunteer: displayVol),
+                              );
+                            },
+                            icon: const Icon(Icons.analytics_outlined),
+                            label: const Text("View Attendance History"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: cs.primaryContainer,
+                              foregroundColor: cs.onPrimaryContainer,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
 
-                  const SizedBox(height: 20),
-
-                  if (isOwnProfile) ...[
-                    _AboutLegalCard(cs: cs),
                     const SizedBox(height: 20),
-                    _DangerZoneCard(cs: cs),
-                  ],
 
-                  const SizedBox(height: 100),
-                ],
+                    if (isOwnProfile) ...[
+                      _AboutLegalCard(cs: cs),
+                      const SizedBox(height: 20),
+                      _DangerZoneCard(cs: cs),
+                    ],
+
+                    const SizedBox(height: 100),
+                  ],
+                ),
               ),
             ),
           );
