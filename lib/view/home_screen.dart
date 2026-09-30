@@ -1071,6 +1071,7 @@ void _showEnrollConfirmationDialog(
 ) {
   final cs = Theme.of(context).colorScheme;
   showDialog(
+    barrierDismissible: false,
     context: context,
     builder: (context) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1110,6 +1111,7 @@ void _showCancelConfirmationDialog(
   final cs = Theme.of(context).colorScheme;
   showDialog(
     context: context,
+    barrierDismissible: false,
     builder: (context) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: const Text("Cancel Enrollment"),

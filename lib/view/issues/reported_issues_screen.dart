@@ -140,16 +140,28 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'Pending Issues',
-                          style: tt.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: cs.primary,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pending Issues',
+                              style: tt.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Filter by reported to :',
+                              style: tt.bodyMedium?.copyWith(
+                                color: cs.onSurface.withOpacity(0.6),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
 
                     // Filter by Reported-To Role: All / Secretary / Program Officer
                     SingleChildScrollView(
@@ -168,6 +180,7 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
                             icon: Icons.all_inclusive_rounded,
                             count: c.openedList.length,
                           ),
+                          const SizedBox(width: 8),
                           _buildRoleFilterChip(
                             context: context,
                             label: 'Program Officer',
@@ -528,6 +541,7 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
   ) {
     final cs = Theme.of(context).colorScheme;
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

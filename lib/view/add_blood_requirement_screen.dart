@@ -629,9 +629,7 @@ class _AddBloodRequirementScreenState extends State<AddBloodRequirementScreen> {
                                             ),
                                           )
                                         : Text(
-                                            isEditMode
-                                                ? 'Update Requirement'
-                                                : 'Save Requirement',
+                                            isEditMode ? 'Update' : 'Save',
                                             textAlign: TextAlign.center,
                                           ),
                                   ),

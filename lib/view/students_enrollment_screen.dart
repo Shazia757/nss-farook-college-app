@@ -153,6 +153,7 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
     final tt = Theme.of(context).textTheme;
 
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(

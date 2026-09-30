@@ -659,6 +659,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
 
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

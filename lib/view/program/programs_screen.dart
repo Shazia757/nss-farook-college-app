@@ -411,6 +411,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("Confirm Enrollment"),
@@ -450,6 +451,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("Cancel Enrollment"),
