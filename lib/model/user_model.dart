@@ -36,33 +36,43 @@ class Users {
   });
 
   factory Users.fromJson(Map<String, dynamic>? json) {
+    if (json == null) return Users();
+    Department? dept;
+    if (json['department'] is Map<String, dynamic>) {
+      dept = Department.fromJson(json['department'] as Map<String, dynamic>);
+    } else if (json['department'] is int) {
+      dept = Department(id: json['department'] as int);
+    }
+
+    final rawDob = json['date_of_birth'] ?? json['dob'];
+    final rawCreated = json['created_date'] ?? json['created_at'];
+    final rawUpdated = json['updated_date'] ?? json['updated_at'];
+
     return Users(
-      admissionNo: json?['admission_number'] as String?,
-      name: json?['name'] as String?,
-      email: json?['email'] as String?,
-      phoneNo: json?['phone_number'] as String?,
-      dob: json?['date_of_birth'] != null
-          ? DateTime.tryParse(json!['date_of_birth'].toString())
-          : null,
-
-      createdDate: json?['created_date'] != null
-          ? DateTime.tryParse(json!['created_date'].toString())
-          : null,
-
-      updatedDate: json?['updated_date'] != null
-          ? DateTime.tryParse(json!['updated_date'].toString())
-          : null,
-      department: json?['department'] != null
-          ? Department.fromJson(json?['department'])
-          : null,
-      role: json?['role'] as String?,
-      bloodGroup: json?['blood_group'] as String?,
-
-      createdBy: json?['created_by'] as String?,
-      updatedBy: json?['updated_by'] as String?,
-      year: json?['batch'] as String?,
-      caste: json?['caste'] as String?,
-      gender: json?['gender'] as String?,
+      admissionNo: (json['admission_number'] ??
+              json['admission_no'] ??
+              json['auth'])
+          ?.toString(),
+      name: json['name']?.toString(),
+      email: json['email']?.toString(),
+      phoneNo: (json['phone_number'] ??
+              json['phone_no'] ??
+              json['phoneNumber'])
+          ?.toString(),
+      dob: rawDob != null ? DateTime.tryParse(rawDob.toString()) : null,
+      createdDate:
+          rawCreated != null ? DateTime.tryParse(rawCreated.toString()) : null,
+      updatedDate:
+          rawUpdated != null ? DateTime.tryParse(rawUpdated.toString()) : null,
+      department: dept,
+      role: json['role']?.toString(),
+      bloodGroup:
+          (json['blood_group'] ?? json['bloodGroup'])?.toString(),
+      createdBy: json['created_by']?.toString(),
+      updatedBy: json['updated_by']?.toString(),
+      year: (json['batch'] ?? json['year'])?.toString(),
+      caste: json['caste']?.toString(),
+      gender: (json['gender'] ?? json['sex'])?.toString(),
     );
   }
 
@@ -132,18 +142,20 @@ class LoginResponse {
 class GeneralResponse {
   bool? status;
   String? message;
+  dynamic data;
 
-  GeneralResponse({required this.status, this.message});
+  GeneralResponse({required this.status, this.message, this.data});
 
   factory GeneralResponse.fromJson(Map<String, dynamic> json) {
     return GeneralResponse(
       status: json['status'] as bool?,
       message: json['message'] as String?,
+      data: json['data'] ?? json['volunteer_details'] ?? json['user'],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {'status': status, 'message': message};
+    return {'status': status, 'message': message, 'data': data};
   }
 
   @override

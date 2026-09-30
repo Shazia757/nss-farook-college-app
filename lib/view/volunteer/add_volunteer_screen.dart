@@ -52,6 +52,17 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     'O-',
   ];
 
+  String? _getEffectiveDropdownValue(List<String> baseList, String? rawValue) {
+    if (rawValue == null || rawValue.trim().isEmpty) return null;
+    final trimmed = rawValue.trim();
+    if (baseList.contains(trimmed)) return trimmed;
+    final matched = baseList.firstWhereOrNull(
+      (item) => item.toLowerCase() == trimmed.toLowerCase(),
+    );
+    if (matched != null) return matched;
+    return trimmed;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +75,25 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
       c.setUpdateData(v!);
       _selectedDOB = c.dob;
       _selectedYear = c.yearController.text;
+
+      final effGender =
+          _getEffectiveDropdownValue(_genders, c.selectedGender.value);
+      if (effGender != null) {
+        c.selectedGender.value = effGender;
+        c.genderController.text = effGender;
+      }
+      final effCaste =
+          _getEffectiveDropdownValue(_castes, c.selectedCaste.value);
+      if (effCaste != null) {
+        c.selectedCaste.value = effCaste;
+        c.casteController.text = effCaste;
+      }
+      final effBlood =
+          _getEffectiveDropdownValue(_bloodGroups, c.selectedBloodGroup.value);
+      if (effBlood != null) {
+        c.selectedBloodGroup.value = effBlood;
+        c.bloodGroup.value = effBlood;
+      }
     } else {
       c.clearTextFields();
       _selectedDOB = null;
@@ -107,8 +137,9 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
     String? currentValue,
   ) {
     final Set<String> itemsSet = Set.from(baseList);
-    if (currentValue != null && currentValue.isNotEmpty) {
-      itemsSet.add(currentValue);
+    final effective = _getEffectiveDropdownValue(baseList, currentValue);
+    if (effective != null && effective.isNotEmpty) {
+      itemsSet.add(effective);
     }
     return itemsSet
         .map((val) => DropdownMenuItem<String>(value: val, child: Text(val)))
@@ -375,7 +406,10 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           CustomWidgets().buildLabel(context, "Blood Group"),
                           Obx(
                             () => DropdownButtonFormField<String>(
-                              value: c.selectedBloodGroup.value,
+                              value: _getEffectiveDropdownValue(
+                                _bloodGroups,
+                                c.selectedBloodGroup.value,
+                              ),
                               decoration: CustomWidgets().buildInputDecoration(
                                 context,
                                 'Select Blood Group',
@@ -440,9 +474,10 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           CustomWidgets().buildLabel(context, "Gender"),
                           Obx(
                             () => DropdownButtonFormField<String>(
-                              value: _genders.contains(c.selectedGender.value)
-                                  ? c.selectedGender.value
-                                  : null,
+                              value: _getEffectiveDropdownValue(
+                                _genders,
+                                c.selectedGender.value,
+                              ),
                               decoration: CustomWidgets().buildInputDecoration(
                                 context,
                                 'Select Gender',
@@ -468,9 +503,10 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                           CustomWidgets().buildLabel(context, "Caste"),
                           Obx(
                             () => DropdownButtonFormField<String>(
-                              value: _castes.contains(c.selectedCaste.value)
-                                  ? c.selectedCaste.value
-                                  : null,
+                              value: _getEffectiveDropdownValue(
+                                _castes,
+                                c.selectedCaste.value,
+                              ),
                               decoration: CustomWidgets().buildInputDecoration(
                                 context,
                                 'Select Caste',
@@ -550,10 +586,10 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                                     if (c.onSubmitVolValidation()) {
                                       if (isEditMode) {
                                         CustomWidgets().showConfirmationDialog(
-                                          title: isPo
+                                          title: (isOwnProfile || isPo)
                                               ? "Update Profile"
                                               : "Update Volunteer",
-                                          message: isPo
+                                          message: (isOwnProfile || isPo)
                                               ? "Are you sure you want to update your details?"
                                               : "Are you sure you want to update the volunteer details?",
                                           onConfirm: () =>

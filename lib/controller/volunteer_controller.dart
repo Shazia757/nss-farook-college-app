@@ -145,26 +145,82 @@ class VolunteerController extends GetxController {
   void updateVolunteer() async {
     if (isClosed) return;
     isUpdateButtonLoading.value = true;
+    final effectiveCaste =
+        (selectedCaste.value != null && selectedCaste.value!.trim().isNotEmpty)
+            ? selectedCaste.value!.trim()
+            : casteController.text.trim();
+    final effectiveGender =
+        (selectedGender.value != null && selectedGender.value!.trim().isNotEmpty)
+            ? selectedGender.value!.trim()
+            : genderController.text.trim();
+    final effectiveBlood =
+        (selectedBloodGroup.value != null &&
+                selectedBloodGroup.value!.trim().isNotEmpty)
+            ? selectedBloodGroup.value!.trim()
+            : bloodGroup.value.trim();
+
     api
         .updateVolunteer({
-          'admission_number': admissionNoController.text,
-          'name': nameController.text,
-          'email': emailController.text,
-          'phone_number': phoneController.text,
+          'admission_number': admissionNoController.text.trim(),
+          'name': nameController.text.trim(),
+          'email': emailController.text.trim(),
+          'phone_number': phoneController.text.trim(),
           'date_of_birth': dob != null
               ? DateFormat('yyyy-MM-dd').format(dob!)
-              : dobController.text,
+              : dobController.text.trim(),
           'department': departmentID,
-          'batch': yearController.text,
-          'caste': casteController.text,
-          'gender': selectedGender.value ?? genderController.text,
-          'blood_group': selectedBloodGroup.value ?? bloodGroup.value,
+          'batch': yearController.text.trim(),
+          'caste': effectiveCaste,
+          'gender': effectiveGender,
+          'blood_group': effectiveBlood,
           'role': role.value,
         })
         .then((response) {
           if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (response?.status == true) {
+            final loggedInUser = LocalStorage().readUser();
+            final isOwnProfile =
+                loggedInUser.admissionNo == admissionNoController.text.trim();
+
+            if (isOwnProfile) {
+              loggedInUser.admissionNo = admissionNoController.text.trim();
+              loggedInUser.name = nameController.text.trim();
+              loggedInUser.email = emailController.text.trim();
+              loggedInUser.phoneNo = phoneController.text.trim();
+              loggedInUser.year = yearController.text.trim();
+              loggedInUser.dob = dob;
+
+              final selectedDepartment = departmentList.firstWhereOrNull(
+                (d) => d.id == departmentID,
+              );
+              if (selectedDepartment != null) {
+                loggedInUser.department = selectedDepartment;
+              }
+              loggedInUser.caste = effectiveCaste;
+              loggedInUser.gender = effectiveGender;
+              loggedInUser.bloodGroup = effectiveBlood;
+              loggedInUser.role = role.value;
+
+              if (response?.data != null &&
+                  response!.data is Map<String, dynamic>) {
+                try {
+                  final fromApi =
+                      Users.fromJson(response.data as Map<String, dynamic>);
+                  if (fromApi.admissionNo != null &&
+                      fromApi.admissionNo!.isNotEmpty) {
+                    LocalStorage().writeUser(fromApi);
+                  } else {
+                    LocalStorage().writeUser(loggedInUser);
+                  }
+                } catch (_) {
+                  LocalStorage().writeUser(loggedInUser);
+                }
+              } else {
+                LocalStorage().writeUser(loggedInUser);
+              }
+            }
+
             Get.back(); // close confirmation dialog
             Get.back(); // navigate back to previous screen
             CustomWidgets.showSnackBar(
@@ -200,29 +256,44 @@ class VolunteerController extends GetxController {
   void updatePo() async {
     if (isClosed) return;
     isUpdateButtonLoading.value = true;
+    final effectiveCaste =
+        (selectedCaste.value != null && selectedCaste.value!.trim().isNotEmpty)
+            ? selectedCaste.value!.trim()
+            : casteController.text.trim();
+    final effectiveGender =
+        (selectedGender.value != null && selectedGender.value!.trim().isNotEmpty)
+            ? selectedGender.value!.trim()
+            : genderController.text.trim();
+    final effectiveBlood =
+        (selectedBloodGroup.value != null &&
+                selectedBloodGroup.value!.trim().isNotEmpty)
+            ? selectedBloodGroup.value!.trim()
+            : bloodGroup.value.trim();
+
     api
         .updateProgramOfficer({
-          'admission_number': admissionNoController.text,
-          'name': nameController.text,
-          'email': emailController.text,
-          'phone_number': phoneController.text,
+          'admission_number': admissionNoController.text.trim(),
+          'name': nameController.text.trim(),
+          'email': emailController.text.trim(),
+          'phone_number': phoneController.text.trim(),
           'date_of_birth': dob != null
               ? DateFormat('yyyy-MM-dd').format(dob!)
-              : dobController.text,
+              : dobController.text.trim(),
           'department': departmentID,
-          'caste': casteController.text,
-          'gender': selectedGender.value ?? genderController.text,
-          'blood_group': selectedBloodGroup.value ?? bloodGroup.value,
+          'caste': effectiveCaste,
+          'gender': effectiveGender,
+          'blood_group': effectiveBlood,
         })
         .then((response) {
           if (isClosed) return;
           isUpdateButtonLoading.value = false;
           if (response?.status == true) {
             final currentUser = LocalStorage().readUser();
-            currentUser.admissionNo = admissionNoController.text;
-            currentUser.name = nameController.text;
-            currentUser.email = emailController.text;
-            currentUser.phoneNo = phoneController.text;
+            currentUser.admissionNo = admissionNoController.text.trim();
+            currentUser.name = nameController.text.trim();
+            currentUser.email = emailController.text.trim();
+            currentUser.phoneNo = phoneController.text.trim();
+            currentUser.dob = dob;
             final selectedDepartment = departmentList.firstWhereOrNull(
               (d) => d.id == departmentID,
             );
@@ -230,10 +301,9 @@ class VolunteerController extends GetxController {
             if (selectedDepartment != null) {
               currentUser.department = selectedDepartment;
             }
-            currentUser.caste = casteController.text;
-            currentUser.gender = selectedGender.value ?? genderController.text;
-            currentUser.bloodGroup =
-                selectedBloodGroup.value ?? bloodGroup.value;
+            currentUser.caste = effectiveCaste;
+            currentUser.gender = effectiveGender;
+            currentUser.bloodGroup = effectiveBlood;
             LocalStorage().writeUser(currentUser);
             Get.back();
             Get.back();
@@ -308,25 +378,32 @@ class VolunteerController extends GetxController {
   }
 
   void setUpdateData(Users user) {
-    nameController.text = user.name ?? "";
-    emailController.text = user.email ?? "";
-    phoneController.text = user.phoneNo ?? "";
+    nameController.text = user.name?.trim() ?? "";
+    emailController.text = user.email?.trim() ?? "";
+    phoneController.text = user.phoneNo?.trim() ?? "";
     departmentID = user.department?.id;
     departmentController.text =
-        "${user.department?.category ?? ''} ${user.department?.name ?? ''}";
+        "${user.department?.category ?? ''} ${user.department?.name ?? ''}".trim();
 
-    admissionNoController.text = user.admissionNo ?? "";
+    admissionNoController.text = user.admissionNo?.trim() ?? "";
     dobController.text = (user.dob != null)
         ? DateFormat('yyyy-MM-dd').format(user.dob!)
         : "";
     dob = user.dob;
     role.value = user.role ?? 'vol';
-    yearController.text = user.year ?? "";
-    casteController.text = user.caste ?? "";
-    genderController.text = user.gender ?? "";
-    selectedCaste.value = user.caste;
-    selectedGender.value = user.gender;
-    selectedBloodGroup.value = user.bloodGroup;
+    yearController.text = user.year?.trim() ?? "";
+
+    final rawCaste = user.caste?.trim();
+    casteController.text = rawCaste ?? "";
+    selectedCaste.value = rawCaste;
+
+    final rawGender = user.gender?.trim();
+    genderController.text = rawGender ?? "";
+    selectedGender.value = rawGender;
+
+    final rawBlood = user.bloodGroup?.trim();
+    bloodGroup.value = rawBlood ?? "";
+    selectedBloodGroup.value = rawBlood;
   }
 
   void clearTextFields() {

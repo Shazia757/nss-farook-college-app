@@ -35,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     rxVolunteer.value = widget.volunteer ?? LocalStorage().readUser();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      fetchProfileDetails();
       fetchHours();
     });
   }
@@ -43,11 +44,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
 
     if (widget.volunteer == null) {
-      // Own profile → reload the latest locally stored user
+      // Own profile → reload the latest locally stored user immediately
       rxVolunteer.value = LocalStorage().readUser();
+      await fetchProfileDetails();
+    } else {
+      await fetchProfileDetails();
     }
 
     await fetchHours();
+  }
+
+  Future<void> fetchProfileDetails() async {
+    final admn = rxVolunteer.value?.admissionNo ??
+        widget.volunteer?.admissionNo ??
+        LocalStorage().readUser().admissionNo;
+
+    if (admn == null || admn.isEmpty) return;
+
+    final currentRole =
+        rxVolunteer.value?.role ?? LocalStorage().readUser().role;
+
+    // For volunteers and secretaries, fetch complete profile details from backend
+    if (currentRole != 'po') {
+      try {
+        final res = await _api.volunteerDetails(admn);
+        if (mounted && res?.volunteerDetails != null) {
+          rxVolunteer.value = res!.volunteerDetails;
+          final isOwnProfile = widget.volunteer == null ||
+              widget.volunteer?.admissionNo ==
+                  LocalStorage().readUser().admissionNo;
+          if (isOwnProfile) {
+            LocalStorage().writeUser(res.volunteerDetails!);
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   Future<void> fetchHours() async {
@@ -225,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         () => AddVolunteerScreen(
                                           volunteer: displayVol,
                                         ),
-                                      )?.then((_) => fetchHours()),
+                                      )?.then((_) => refreshProfile()),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: Colors.white,
                                         foregroundColor: cs.primary,
@@ -253,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         () => AddVolunteerScreen(
                                           volunteer: displayVol,
                                         ),
-                                      )?.then((_) => fetchHours()),
+                                      )?.then((_) => refreshProfile()),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: Colors.white,
                                         foregroundColor: cs.primary,

@@ -21,14 +21,14 @@ class CustomBottomNavBar extends StatelessWidget {
         ? const [
             (Icons.home_rounded, 'Home'),
             (Icons.event_rounded, 'Events'),
-            (Icons.campaign_rounded, 'Report'),
+            (Icons.campaign_rounded, 'Issues'),
             (Icons.person_rounded, 'Profile'),
           ]
         : const [
             (Icons.home_rounded, 'Home'),
             (Icons.event_rounded, 'Events'),
             (Icons.check_circle_rounded, 'Attendance'),
-            (Icons.campaign_rounded, 'Report'),
+            (Icons.campaign_rounded, 'Issues'),
             (Icons.person_rounded, 'Profile'),
           ];
 
