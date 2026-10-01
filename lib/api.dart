@@ -751,6 +751,30 @@ class Api {
     return null;
   }
 
+  Future<ProgramAttendanceResponse?> getAttendanceByProgram({
+    int? programId,
+  }) async {
+    try {
+      final uri = Uri.parse(Urls.getAttendanceByProgram);
+      final response = await http
+          .post(
+            uri,
+            headers: await getHeader(),
+            body: jsonEncode({'program': programId}),
+          )
+          .timeout(const Duration(seconds: 60));
+
+      if (checkValidations(response.body, statusCode: response.statusCode)) {
+        final decoded = jsonDecode(response.body);
+        return ProgramAttendanceResponse.fromJson(decoded);
+      }
+    } catch (e) {
+      checkConnectivity();
+      log('Api error get Attendance by Program: $e');
+    }
+    return null;
+  }
+
   Future<GeneralResponse?> addAttendance(Map<String, dynamic> data) async {
     try {
       final response = await http

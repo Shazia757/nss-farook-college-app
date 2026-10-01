@@ -574,7 +574,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
               ),
 
               // Enrollment count for PO / Secretary
-              if (!isPast && (role == 'po' || role == 'sec'))
+              if (role == 'po' || role == 'sec')
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -632,8 +632,7 @@ class _ProgramsScreenState extends State<ProgramsScreen> {
                 final programId = program.id;
                 if (programId == null) return const SizedBox.shrink();
 
-                final isChecking =
-                    c.isCheckingEnrollment.value;
+                final isChecking = c.isCheckingEnrollment.value;
                 final isEnrolled = c.isEnrolled(programId);
                 final isEnrolling = c.enrollingProgramIds.contains(programId);
                 final isCancelling = c.cancellingProgramIds.contains(programId);

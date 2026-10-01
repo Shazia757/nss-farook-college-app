@@ -279,6 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
+                            clipBehavior: Clip.none,
                             physics: const BouncingScrollPhysics(),
                             child: Row(
                               spacing: 8,
@@ -462,13 +463,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                         child: Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: Colors.red.shade50
-                                                .withValues(alpha: 0.9),
+                                            color: Colors.white,
                                             borderRadius: BorderRadius.circular(
                                               14,
                                             ),
+                                            boxShadow: const [
+                                              BoxShadow(
+                                                blurRadius: 10,
+                                                color: Colors.black12,
+                                              ),
+                                            ],
                                             border: Border.all(
-                                              color: Colors.red.shade300,
+                                              color: cs.outline.withValues(
+                                                alpha: 0.3,
+                                              ),
                                             ),
                                           ),
                                           child: Row(
@@ -502,10 +510,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     Text(
                                                       'URGENT BLOOD REQUIREMENT',
                                                       style: TextStyle(
-                                                        color:
-                                                            Colors.red.shade900,
                                                         fontWeight:
                                                             FontWeight.bold,
+                                                        color: cs.primary,
                                                         fontSize: 11,
                                                         letterSpacing: 0.4,
                                                       ),
@@ -518,11 +525,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           TextOverflow.ellipsis,
                                                       style: tt.bodySmall
                                                           ?.copyWith(
-                                                            color: Colors
-                                                                .red
-                                                                .shade900,
-                                                            fontWeight:
-                                                                FontWeight.w600,
+                                                            color: cs.onSurface
+                                                                .withOpacity(
+                                                                  0.70,
+                                                                ),
                                                           ),
                                                     ),
                                                   ],
@@ -531,7 +537,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               Icon(
                                                 Icons.arrow_forward_ios_rounded,
                                                 size: 13,
-                                                color: Colors.red.shade700,
+                                                color: cs.primary,
                                               ),
                                             ],
                                           ),
@@ -688,7 +694,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         }
                         return SizedBox(
-                          height: isVolunteer ? 240 : 190,
+                          height: isVolunteer ? 240 : 170,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             physics: const BouncingScrollPhysics(),
@@ -877,15 +883,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           width: 105,
           height: 96,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: const [
               BoxShadow(
                 color: Colors.black12,
-                blurRadius: 6,
-                offset: Offset(0, 2),
+                blurRadius: 8,
+                offset: Offset(0, 3),
               ),
             ],
           ),

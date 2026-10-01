@@ -551,100 +551,173 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   ) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: cs.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: cs.onSurface.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+      isScrollControlled: true,
+      showDragHandle: false,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 24,
+                  offset: const Offset(0, -6),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Drag handle
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: cs.onSurface.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
 
-              Text(
-                record.name ?? 'Attendance Record',
-                style: tt.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Current Hours: ${record.hours ?? 0} hrs • ${record.markedBy != null ? "Marked by ${record.markedBy}" : "Recorded"}',
-                style: tt.bodySmall?.copyWith(
-                  color: cs.onSurface.withOpacity(0.6),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: cs.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 22),
+
+                  // Section label
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Attendance Actions',
+                      style: tt.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: cs.onSurface.withOpacity(0.65),
+                      ),
+                    ),
                   ),
-                  child: Icon(Icons.edit_outlined, color: cs.primary),
-                ),
-                title: const Text(
-                  'Update Attendance Hours',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text(
-                  'Modify the recorded hours for this program',
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showUpdateHoursDialog(context, record, admissionNo);
-                },
-              ),
-              const Divider(height: 16),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+
+                  const SizedBox(height: 10),
+
+                  // Update action
+                  _attendanceActionTile(
+                    context: sheetContext,
+                    icon: Icons.edit_rounded,
+                    title: 'Update Attendance',
+                    subtitle: 'Change the recorded hours',
+                    iconColor: cs.primary,
+                    backgroundColor: cs.primary.withOpacity(0.08),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _showUpdateHoursDialog(context, record, admissionNo);
+                    },
                   ),
-                  child: const Icon(Icons.delete_outline, color: Colors.red),
-                ),
-                title: const Text(
-                  'Delete Attendance',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
+
+                  const SizedBox(height: 10),
+
+                  // Delete action
+                  _attendanceActionTile(
+                    context: sheetContext,
+                    icon: Icons.delete_outline_rounded,
+                    title: 'Delete Attendance',
+                    subtitle: 'Remove this attendance record',
+                    iconColor: cs.error,
+                    backgroundColor: cs.error.withOpacity(0.08),
+                    titleColor: cs.error,
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _showDeleteConfirmationDialog(
+                        context,
+                        record,
+                        admissionNo,
+                      );
+                    },
                   ),
-                ),
-                subtitle: const Text(
-                  'Remove this attendance entry permanently',
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmationDialog(context, record, admissionNo);
-                },
+
+                  const SizedBox(height: 8),
+                ],
               ),
-              const SizedBox(height: 12),
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _attendanceActionTile({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color iconColor,
+    required Color backgroundColor,
+    required VoidCallback onTap,
+    Color? titleColor,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            color: cs.onPrimary,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: cs.outline.withOpacity(0.12)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: tt.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: titleColor ?? cs.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: tt.bodySmall?.copyWith(
+                        color: cs.onSurface.withOpacity(0.55),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(
+                Icons.chevron_right_rounded,
+                color: cs.onSurface.withOpacity(0.35),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -780,7 +853,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: cs.error,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

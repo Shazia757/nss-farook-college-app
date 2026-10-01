@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/database/local_storage.dart';
+import 'package:nss_new/model/attendance_model.dart';
 import 'package:nss_new/model/enrollment_model.dart';
 import 'package:nss_new/model/programs_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
@@ -34,6 +35,11 @@ class ProgramListController extends GetxController {
   RxList<ProgramEnrollmentDetails> enrollmentList =
       <ProgramEnrollmentDetails>[].obs;
   RxList<Volunteer> selectedVolList = <Volunteer>[].obs;
+
+  RxList<ProgramAttendance> programAttendanceList = <ProgramAttendance>[].obs;
+  RxBool isAttendanceLoading = false.obs;
+  RxBool attendanceLoadFailed = false.obs;
+  int? attendanceProgramId;
 
   DateTime programDate = DateTime.now();
   RxString showProgramDate = ''.obs;
@@ -465,34 +471,135 @@ class ProgramListController extends GetxController {
         });
   }
 
-  void getEnrolledStudents(Program? program, [RxBool? loading]) async {
+  Future<List<ProgramAttendance>> fetchAttendanceForProgram(Program? program) async {
     final programId = program?.id;
-    if (programId == null || isClosed) return;
-    if (loadingEnrollmentProgramIds.contains(programId)) return;
+    if (programId == null) return [];
+
+    isAttendanceLoading.value = true;
+    attendanceLoadFailed.value = false;
+
+    try {
+      List<ProgramAttendance> list = [];
+
+      final res = await _api.getAttendanceByProgram(programId: programId);
+
+      if (res?.data != null && res!.data!.isNotEmpty) {
+        list = res.data!;
+      } else if (res?.volunteers != null && res!.volunteers!.isNotEmpty) {
+        list = res.volunteers!
+            .map(
+              (v) => ProgramAttendance(
+                volunteer: v,
+                hours: program?.duration ?? 0,
+              ),
+            )
+            .toList();
+      }
+
+      if (list.isEmpty) {
+        final attRes = await _api.getAttendance(programId: programId);
+
+        if (attRes?.attendance != null && attRes!.attendance!.isNotEmpty) {
+          list = attRes.attendance!
+              .where((a) => a.admissionNo != null && a.admissionNo!.isNotEmpty)
+              .map(
+                (a) => ProgramAttendance(
+                  volunteer: a.admissionNo,
+                  name: a.name,
+                  hours: a.hours ?? program?.duration ?? 0,
+                ),
+              )
+              .toList();
+        }
+      }
+
+      programAttendanceList.assignAll(list);
+      attendanceProgramId = programId;
+      attendanceLoadFailed.value = false;
+      return list;
+    } catch (e) {
+      log('Error fetching attendance in ProgramListController: $e');
+      attendanceLoadFailed.value = true;
+      return [];
+    } finally {
+      isAttendanceLoading.value = false;
+    }
+  }
+
+  Future<bool> getEnrolledStudents(Program? program, [RxBool? loading]) async {
+    final programId = program?.id;
+
+    if (programId == null || isClosed) return false;
+    if (loadingEnrollmentProgramIds.contains(programId)) return false;
 
     loadingEnrollmentProgramIds.add(programId);
     if (loading != null) loading.value = true;
 
-    _api
-        .getEnrolledStudents(programId)
-        .then((value) {
-          if (isClosed) return;
-          enrollmentList.assignAll(value?.enrollmentList?.toList() ?? []);
-          selectAllVolunteers();
-          durationController.text = "${program?.duration ?? 0}";
-          programDate = program?.date ?? DateTime.now();
-          showProgramDate.value = DateFormat.yMMMd().format(programDate);
+    try {
+      final isPast =
+          program?.date == null || !program!.date!.isAfter(DateTime.now());
 
-          loadingEnrollmentProgramIds.remove(programId);
-          if (loading != null) loading.value = false;
-          Get.to(() => StudentsEnrollmentScreen(data: program));
-        })
-        .catchError((_) {
-          if (!isClosed) {
-            loadingEnrollmentProgramIds.remove(programId);
-            if (loading != null) loading.value = false;
-          }
-        });
+      final results = await Future.wait([
+        _api.getEnrolledStudents(programId),
+        if (isPast)
+          fetchAttendanceForProgram(program)
+        else
+          Future.value(<ProgramAttendance>[]),
+      ]);
+
+      if (isClosed) return false;
+
+      final value = results[0] as EnrollmentResponse?;
+      final attendanceList = results[1] as List<ProgramAttendance>;
+
+      enrollmentList.assignAll(value?.enrollmentList?.toList() ?? []);
+
+      final hasEnrolledStudents = enrollmentList.isNotEmpty;
+
+      // No volunteers enrolled
+      if (!hasEnrolledStudents) {
+        CustomWidgets.showSnackBar(
+          'No Enrollments',
+          'There are no enrolled volunteers for this program.',
+        );
+        return false;
+      }
+
+      // Existing setup
+      selectAllVolunteers();
+
+      durationController.text = "${program?.duration ?? 0}";
+      programDate = program?.date ?? DateTime.now();
+      showProgramDate.value = DateFormat.yMMMd().format(programDate);
+
+      // Only navigate when at least one volunteer exists
+      Get.to(
+        () => StudentsEnrollmentScreen(
+          data: program,
+          initialAttendance: isPast ? attendanceList : null,
+          initialAttendanceLoadFailed: attendanceLoadFailed.value,
+        ),
+      );
+
+      return true;
+    } catch (e) {
+      if (!isClosed) {
+        CustomWidgets.showSnackBar(
+          'Error',
+          'Unable to fetch enrolled volunteers.',
+        );
+      }
+
+      return false;
+    } finally {
+      if (!isClosed) {
+        loadingEnrollmentProgramIds.remove(programId);
+
+        if (loading != null) {
+          loading.value = false;
+        }
+      }
+    }
   }
 
   void removeProgramLocally(int id) {

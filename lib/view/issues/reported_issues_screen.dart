@@ -51,6 +51,9 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
           final pendingIssues = c.modifiedOpenedList;
           final resolvedIssues = c.modifiedClosedList;
 
+          final totalPending = c.openedList.length;
+          final totalResolved = c.closedList.length;
+
           return RefreshIndicator(
             onRefresh: () async {
               await c.getAdminIssues();
@@ -94,7 +97,7 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
                                 child: CustomWidgets().buildSummaryCard(
                                   context,
                                   title: "Total Pending",
-                                  value: pendingIssues.length.toString(),
+                                  value: totalPending.toString(),
                                   icon: Icons.pending_actions_rounded,
                                   color: Colors.orange,
                                 ),
@@ -104,7 +107,7 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
                                 child: CustomWidgets().buildSummaryCard(
                                   context,
                                   title: "Total Resolved",
-                                  value: resolvedIssues.length.toString(),
+                                  value: totalResolved.toString(),
                                   icon: Icons.task_alt_rounded,
                                   color: Colors.green,
                                 ),
@@ -118,7 +121,7 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
                             CustomWidgets().buildSummaryCard(
                               context,
                               title: "Total Pending",
-                              value: pendingIssues.length.toString(),
+                              value: totalPending.toString(),
                               icon: Icons.pending_actions_rounded,
                               color: Colors.orange,
                             ),
@@ -126,7 +129,7 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
                             CustomWidgets().buildSummaryCard(
                               context,
                               title: "Total Resolved",
-                              value: resolvedIssues.length.toString(),
+                              value: totalResolved.toString(),
                               icon: Icons.task_alt_rounded,
                               color: Colors.green,
                             ),

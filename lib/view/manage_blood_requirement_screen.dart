@@ -102,9 +102,6 @@ class _ManageBloodRequirementScreenState
     final displayBlood = vol.bloodGroup?.isNotEmpty == true
         ? vol.bloodGroup!
         : 'N/A';
-    final displayAddress = vol.address?.isNotEmpty == true
-        ? vol.address!
-        : 'Not specified';
     final displayPhone = vol.phoneNumber?.isNotEmpty == true
         ? vol.phoneNumber!
         : 'Not available';
@@ -166,27 +163,6 @@ class _ManageBloodRequirementScreenState
                             ),
                           ],
                         ],
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: cs.onSurface.withOpacity(0.5),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        displayAddress,
-                        style: tt.bodyMedium?.copyWith(
-                          color: cs.onSurface.withOpacity(0.7),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

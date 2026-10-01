@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -6,13 +7,21 @@ import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/controller/program_controller.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
+import 'package:nss_new/model/attendance_model.dart';
 import 'package:nss_new/model/enrollment_model.dart';
 import 'package:nss_new/model/programs_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class StudentsEnrollmentScreen extends StatefulWidget {
-  const StudentsEnrollmentScreen({super.key, this.data});
+  const StudentsEnrollmentScreen({
+    super.key,
+    this.data,
+    this.initialAttendance,
+    this.initialAttendanceLoadFailed = false,
+  });
   final Program? data;
+  final List<ProgramAttendance>? initialAttendance;
+  final bool initialAttendanceLoadFailed;
 
   @override
   State<StudentsEnrollmentScreen> createState() =>
@@ -27,6 +36,14 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
   List<ProgramEnrollmentDetails> _enrollments = [];
   final Set<String> _selectedAdmissions = <String>{};
   bool _isSubmittingAttendance = false;
+  bool _attendanceLoadFailed = false;
+  List<ProgramAttendance> _attendance = [];
+  bool _isAttendanceLoading = false;
+  bool get _canSelectForAttendance {
+    return _canMarkAttendance &&
+        !_isAttendanceLoading &&
+        !_attendanceLoadFailed;
+  }
 
   bool get _isPastProgram =>
       widget.data?.date != null && !widget.data!.date!.isAfter(DateTime.now());
@@ -46,6 +63,19 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
     _enrollments = List.from(c.enrollmentList);
     if (_enrollments.isEmpty && widget.data?.id != null) {
       _fetchEnrollments();
+    }
+
+    if (widget.initialAttendance != null) {
+      _attendance = List.from(widget.initialAttendance!);
+      _isAttendanceLoading = false;
+      _attendanceLoadFailed = widget.initialAttendanceLoadFailed;
+    } else if (c.attendanceProgramId == widget.data?.id &&
+        !c.isAttendanceLoading.value) {
+      _attendance = List.from(c.programAttendanceList);
+      _isAttendanceLoading = false;
+      _attendanceLoadFailed = c.attendanceLoadFailed.value;
+    } else if (_isPastProgram) {
+      _fetchAttendance();
     }
   }
 
@@ -90,6 +120,46 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _fetchAttendance() async {
+    final programId = widget.data?.id;
+    if (programId == null) return;
+
+    if (mounted) {
+      setState(() {
+        _isAttendanceLoading = true;
+        _attendanceLoadFailed = false;
+      });
+    }
+
+    try {
+      final c = Get.isRegistered<ProgramListController>()
+          ? Get.find<ProgramListController>()
+          : Get.put(ProgramListController());
+      final list = await c.fetchAttendanceForProgram(widget.data);
+
+      if (!mounted) return;
+
+      setState(() {
+        _attendance = list;
+        _attendanceLoadFailed = c.attendanceLoadFailed.value;
+      });
+    } catch (e) {
+      log('Error fetching attendance in students enrollment screen: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _attendanceLoadFailed = true;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAttendanceLoading = false;
+        });
       }
     }
   }
@@ -225,6 +295,7 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                         return;
                       }
 
+                      final nav = Navigator.of(dialogCtx);
                       setDialogState(() => _isSubmittingAttendance = true);
                       setState(() => _isSubmittingAttendance = true);
 
@@ -237,40 +308,28 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                           widget.data!.id!,
                           list,
                         );
-                        if (mounted) {
-                          Navigator.of(dialogCtx).pop();
-                          if (res?.status ?? false) {
-                            setState(() {
-                              _selectedAdmissions.clear();
-                            });
-                            CustomWidgets.showSnackBar(
-                              'Success',
-                              res?.message ??
-                                  'Attendance marked successfully for volunteers',
-                              backgroundColor: Colors.green.shade800,
-                              icon: const Icon(
-                                Icons.check_circle_outline,
-                                color: Colors.white,
-                              ),
-                            );
-                          } else {
-                            CustomWidgets.showSnackBar(
-                              'Error',
-                              res?.message ?? 'Failed to mark attendance',
-                              backgroundColor: Colors.red.shade800,
-                              icon: const Icon(
-                                Icons.error_outline,
-                                color: Colors.white,
-                              ),
-                            );
-                          }
+                        if (nav.canPop()) {
+                          nav.pop();
                         }
-                      } catch (e) {
-                        if (mounted) {
-                          Navigator.of(dialogCtx).pop();
+                        if (res?.status ?? false) {
+                          setState(() {
+                            _selectedAdmissions.clear();
+                          });
+                          _fetchAttendance();
+                          CustomWidgets.showSnackBar(
+                            'Success',
+                            res?.message ??
+                                'Attendance marked successfully for volunteers',
+                            backgroundColor: Colors.green.shade800,
+                            icon: const Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.white,
+                            ),
+                          );
+                        } else {
                           CustomWidgets.showSnackBar(
                             'Error',
-                            'Failed to mark attendance: $e',
+                            res?.message ?? 'Failed to mark attendance',
                             backgroundColor: Colors.red.shade800,
                             icon: const Icon(
                               Icons.error_outline,
@@ -278,6 +337,19 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                             ),
                           );
                         }
+                      } catch (e) {
+                        if (nav.canPop()) {
+                          nav.pop();
+                        }
+                        CustomWidgets.showSnackBar(
+                          'Error',
+                          'Failed to mark attendance: $e',
+                          backgroundColor: Colors.red.shade800,
+                          icon: const Icon(
+                            Icons.error_outline,
+                            color: Colors.white,
+                          ),
+                        );
                       } finally {
                         if (mounted) {
                           setState(() => _isSubmittingAttendance = false);
@@ -305,6 +377,26 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
         ),
       ),
     );
+  }
+
+  ProgramAttendance? _getAttendance(ProgramEnrollmentDetails item) {
+    final vol = item.volunteer;
+    final admn1 = vol?.admissionNo?.trim().toLowerCase();
+    final admn2 = item.volunteerAdmissionNo?.trim().toLowerCase();
+
+    for (final att in _attendance) {
+      final attVol = att.volunteer?.trim().toLowerCase();
+      if (attVol == null || attVol.isEmpty || attVol == 'n/a') continue;
+      if ((admn1 != null && admn1.isNotEmpty && attVol == admn1) ||
+          (admn2 != null && admn2.isNotEmpty && attVol == admn2)) {
+        return att;
+      }
+    }
+    return null;
+  }
+
+  bool _hasAttendance(ProgramEnrollmentDetails item) {
+    return _getAttendance(item) != null;
   }
 
   List<ProgramEnrollmentDetails> get _filteredEnrollments {
@@ -374,6 +466,7 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
@@ -387,11 +480,14 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                           size: 20,
                         ),
                       ),
+
                       const SizedBox(width: 12),
+
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Program name
                             Text(
                               program?.name ?? 'Program Details',
                               style: tt.titleMedium?.copyWith(
@@ -401,7 +497,10 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 2),
+
+                            const SizedBox(height: 5),
+
+                            // Date + duration
                             Row(
                               children: [
                                 if (program?.date != null) ...[
@@ -418,12 +517,28 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                       fontSize: 12,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
                                 ],
+
+                                if (program?.date != null &&
+                                    program?.duration != null)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 9,
+                                    ),
+                                    child: Container(
+                                      width: 3,
+                                      height: 3,
+                                      decoration: BoxDecoration(
+                                        color: cs.onSurface.withOpacity(0.35),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+
                                 if (program?.duration != null) ...[
                                   Icon(
-                                    Icons.schedule,
-                                    size: 13,
+                                    Icons.schedule_outlined,
+                                    size: 14,
                                     color: cs.onSurface.withOpacity(0.6),
                                   ),
                                   const SizedBox(width: 4),
@@ -437,31 +552,113 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                 ],
                               ],
                             ),
+
+                            const SizedBox(height: 10),
+
+                            // Enrollment + attendance badges
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 5,
+                              children: [
+                                // Enrolled
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 9,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: cs.primaryContainer.withOpacity(
+                                      0.65,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: cs.primary.withOpacity(0.18),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.people_alt_outlined,
+                                        size: 14,
+                                        color: cs.primary,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        "${_enrollments.length} Enrolled",
+                                        style: tt.labelSmall?.copyWith(
+                                          color: cs.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Attendance
+                                if (_isPastProgram && _enrollments.isNotEmpty)
+                                  if (_isAttendanceLoading)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: cs.surfaceContainerHighest
+                                            .withOpacity(0.7),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: cs.outline.withOpacity(0.15),
+                                        ),
+                                      ),
+                                      child: const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 1.6,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.09),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.green.withOpacity(0.20),
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.check_circle_outline_rounded,
+                                            size: 14,
+                                            color: Colors.green.shade700,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            "${_enrollments.where(_hasAttendance).length}/${_enrollments.length} Attended",
+                                            style: tt.labelSmall?.copyWith(
+                                              color: Colors.green.shade700,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                              ],
+                            ),
                           ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: cs.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: cs.primary.withOpacity(0.2),
-                          ),
-                        ),
-                        child: Text(
-                          "${_enrollments.length} Enrolled",
-                          style: tt.labelSmall?.copyWith(
-                            color: cs.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
                         ),
                       ),
                     ],
                   ),
+
                   const SizedBox(height: 14),
 
                   // Search box
@@ -515,63 +712,82 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
             ),
 
             // Optional Select All bar for attendance on past programs
-            if (_canMarkAttendance && filtered.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Enrolled Volunteers (${filtered.length})',
-                      style: tt.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: cs.primary,
-                      ),
+            if (_canSelectForAttendance && filtered.isNotEmpty)
+              Builder(
+                builder: (context) {
+                  final eligibleAdmissions = filtered
+                      .where((item) {
+                        final admn =
+                            item.volunteer?.admissionNo ??
+                            item.volunteerAdmissionNo;
+                        return admn != null &&
+                            admn.trim().isNotEmpty &&
+                            admn != 'N/A' &&
+                            !_hasAttendance(item);
+                      })
+                      .map(
+                        (e) =>
+                            (e.volunteer?.admissionNo ??
+                                    e.volunteerAdmissionNo!)
+                                .trim(),
+                      )
+                      .toSet();
+
+                  final isAllSelected =
+                      eligibleAdmissions.isNotEmpty &&
+                      eligibleAdmissions.every(
+                        (adm) => _selectedAdmissions.contains(adm),
+                      );
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
                     ),
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          final allAdmissions = filtered
-                              .map(
-                                (e) =>
-                                    e.volunteer?.admissionNo ??
-                                    e.volunteerAdmissionNo,
-                              )
-                              .whereType<String>()
-                              .where((a) => a != 'N/A' && a.isNotEmpty)
-                              .toList();
-                          if (_selectedAdmissions.length ==
-                              allAdmissions.length) {
-                            _selectedAdmissions.clear();
-                          } else {
-                            _selectedAdmissions.addAll(allAdmissions);
-                          }
-                        });
-                      },
-                      icon: Icon(
-                        _selectedAdmissions.isNotEmpty &&
-                                _selectedAdmissions.length >= filtered.length
-                            ? Icons.deselect_rounded
-                            : Icons.select_all_rounded,
-                        size: 18,
-                        color: cs.primary,
-                      ),
-                      label: Text(
-                        _selectedAdmissions.isNotEmpty &&
-                                _selectedAdmissions.length >= filtered.length
-                            ? 'Deselect All'
-                            : 'Select All',
-                        style: tt.labelMedium?.copyWith(
-                          color: cs.primary,
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Enrolled Volunteers (${filtered.length})',
+                          style: tt.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: cs.primary,
+                          ),
                         ),
-                      ),
+                        if (eligibleAdmissions.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                if (isAllSelected) {
+                                  _selectedAdmissions.removeAll(
+                                    eligibleAdmissions,
+                                  );
+                                } else {
+                                  _selectedAdmissions.addAll(
+                                    eligibleAdmissions,
+                                  );
+                                }
+                              });
+                            },
+                            icon: Icon(
+                              isAllSelected
+                                  ? Icons.deselect_rounded
+                                  : Icons.select_all_rounded,
+                              size: 18,
+                              color: cs.primary,
+                            ),
+                            label: Text(
+                              isAllSelected ? 'Deselect All' : 'Select All',
+                              style: tt.labelMedium?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               ),
 
             // Content Area
@@ -579,7 +795,12 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : RefreshIndicator(
-                      onRefresh: _fetchEnrollments,
+                      onRefresh: () async {
+                        await Future.wait([
+                          _fetchEnrollments(),
+                          _fetchAttendance(),
+                        ]);
+                      },
                       child: _enrollments.isEmpty
                           ? ListView(
                               physics: const AlwaysScrollableScrollPhysics(),
@@ -679,6 +900,8 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                 final isSelected = _selectedAdmissions.contains(
                                   admissionNo,
                                 );
+                                final attendance = _getAttendance(item);
+                                final attendanceAdded = attendance != null;
 
                                 return Container(
                                   decoration: BoxDecoration(
@@ -706,10 +929,13 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                     child: InkWell(
                                       borderRadius: BorderRadius.circular(14),
                                       onTap: () {
-                                        if (_canMarkAttendance &&
-                                            admissionNo != 'N/A') {
+                                        if (_canSelectForAttendance &&
+                                            admissionNo != 'N/A' &&
+                                            !attendanceAdded) {
                                           setState(() {
-                                            if (isSelected) {
+                                            if (_selectedAdmissions.contains(
+                                              admissionNo,
+                                            )) {
                                               _selectedAdmissions.remove(
                                                 admissionNo,
                                               );
@@ -730,7 +956,7 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                         padding: const EdgeInsets.all(12),
                                         child: Row(
                                           children: [
-                                            if (_canMarkAttendance &&
+                                            if (_canSelectForAttendance &&
                                                 admissionNo != 'N/A') ...[
                                               Checkbox(
                                                 value: isSelected,
@@ -739,18 +965,23 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                   borderRadius:
                                                       BorderRadius.circular(4),
                                                 ),
-                                                onChanged: (val) {
-                                                  setState(() {
-                                                    if (val == true) {
-                                                      _selectedAdmissions.add(
-                                                        admissionNo,
-                                                      );
-                                                    } else {
-                                                      _selectedAdmissions
-                                                          .remove(admissionNo);
-                                                    }
-                                                  });
-                                                },
+                                                onChanged: attendanceAdded
+                                                    ? null
+                                                    : (value) {
+                                                        setState(() {
+                                                          if (value == true) {
+                                                            _selectedAdmissions
+                                                                .add(
+                                                                  admissionNo,
+                                                                );
+                                                          } else {
+                                                            _selectedAdmissions
+                                                                .remove(
+                                                                  admissionNo,
+                                                                );
+                                                          }
+                                                        });
+                                                      },
                                               ),
                                               const SizedBox(width: 4),
                                             ],
@@ -857,6 +1088,111 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                                 ),
                                                             fontSize: 10,
                                                           ),
+                                                    ),
+                                                  ],
+                                                  if (_isPastProgram) ...[
+                                                    const SizedBox(height: 6),
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 9,
+                                                            vertical: 4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            _isAttendanceLoading
+                                                            ? cs.outline
+                                                                  .withOpacity(
+                                                                    0.08,
+                                                                  )
+                                                            : attendanceAdded
+                                                            ? Colors
+                                                                  .green
+                                                                  .shade50
+                                                            : Colors
+                                                                  .orange
+                                                                  .shade50,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              20,
+                                                            ),
+                                                        border: Border.all(
+                                                          color:
+                                                              _isAttendanceLoading
+                                                              ? cs.outline
+                                                                    .withOpacity(
+                                                                      0.2,
+                                                                    )
+                                                              : attendanceAdded
+                                                              ? Colors
+                                                                    .green
+                                                                    .shade200
+                                                              : Colors
+                                                                    .orange
+                                                                    .shade200,
+                                                        ),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          if (_isAttendanceLoading)
+                                                            SizedBox(
+                                                              width: 12,
+                                                              height: 12,
+                                                              child: CircularProgressIndicator(
+                                                                strokeWidth:
+                                                                    1.5,
+                                                                color: cs
+                                                                    .onSurface
+                                                                    .withOpacity(
+                                                                      0.5,
+                                                                    ),
+                                                              ),
+                                                            )
+                                                          else
+                                                            Icon(
+                                                              attendanceAdded
+                                                                  ? Icons
+                                                                        .check_circle_rounded
+                                                                  : Icons
+                                                                        .access_time_rounded,
+                                                              size: 13,
+                                                              color:
+                                                                  attendanceAdded
+                                                                  ? Colors
+                                                                        .green
+                                                                        .shade700
+                                                                  : Colors
+                                                                        .orange
+                                                                        .shade700,
+                                                            ),
+                                                          const SizedBox(
+                                                            width: 4,
+                                                          ),
+                                                          Text(
+                                                            _isAttendanceLoading
+                                                                ? 'Checking attendance...'
+                                                                : attendanceAdded
+                                                                ? '${(attendance.hours != null && attendance.hours! > 0) ? attendance.hours : (widget.data?.duration ?? 0)} hrs'
+                                                                : "Not Added",
+                                                            style: tt.bodySmall?.copyWith(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 11,
+                                                              color:
+                                                                  attendanceAdded
+                                                                  ? Colors
+                                                                        .green
+                                                                        .shade700
+                                                                  : Colors
+                                                                        .orange
+                                                                        .shade700,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
                                                   ],
                                                 ],

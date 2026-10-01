@@ -278,7 +278,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             title: "Emergency Blood Alerts",
             count: bloodAlerts.length,
             icon: Icons.bloodtype,
-            color: Colors.red.shade700,
+            color: cs.primary,
           ),
           const SizedBox(height: 10),
           ...bloodAlerts.map((req) => _buildAlertCard(context, req)),
@@ -344,6 +344,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _buildAlertCard(BuildContext context, BloodDonationRequest req) {
     final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
 
     final bloodGroup = (req.bloodGroup?.isNotEmpty ?? false)
         ? req.bloodGroup!
@@ -359,28 +360,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final contactPerson = (req.contactPerson?.isNotEmpty ?? false)
         ? req.contactPerson!
         : 'NSS Coordinator';
-    final contactNumber = (req.contactNumber?.isNotEmpty ?? false)
-        ? req.contactNumber!
-        : '';
+
     final neededDate = (req.neededBefore?.isNotEmpty ?? false)
         ? req.neededBefore!
         : 'ASAP';
     final urgency = (req.urgency ?? 'Normal').toUpperCase();
 
-    final hasValidPhone =
-        contactNumber.replaceAll(RegExp(r'[^0-9+]'), '').length >= 5;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50.withValues(alpha: 0.8),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade300, width: 1.2),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.red.shade100.withValues(alpha: 0.4),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -471,21 +467,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                       ),
                     ),
-                    const Spacer(),
-                    if (hasValidPhone)
-                      IconButton.filledTonal(
-                        icon: const Icon(Icons.phone, size: 16),
-                        tooltip: 'Call $contactPerson',
-                        onPressed: () => BloodRequirementDetailsSheet.makeCall(
-                          context,
-                          contactNumber,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.green.shade100,
-                          foregroundColor: Colors.green.shade900,
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -495,7 +476,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   'Patient: $patientName ($units)',
                   style: tt.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.red.shade900,
+                    color: cs.primary,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -506,14 +487,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Icon(
                       Icons.local_hospital_outlined,
                       size: 15,
-                      color: Colors.red.shade700,
+                      color: cs.primary,
                     ),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         hospital,
                         style: tt.bodySmall?.copyWith(
-                          color: Colors.red.shade900,
+                          color: cs.primary,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -527,18 +508,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 // Date Needed & Contact
                 Row(
                   children: [
-                    Icon(
-                      Icons.event_outlined,
-                      size: 15,
-                      color: Colors.red.shade700,
-                    ),
+                    Icon(Icons.event_outlined, size: 15, color: cs.primary),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         'Needed before: $neededDate • Contact: $contactPerson',
-                        style: tt.bodySmall?.copyWith(
-                          color: Colors.red.shade800,
-                        ),
+                        style: tt.bodySmall?.copyWith(color: cs.primary),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -554,14 +529,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     Text(
                       'Tap to view requirement details',
                       style: tt.labelSmall?.copyWith(
-                        color: Colors.red.shade800,
+                        color: cs.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Icon(
                       Icons.arrow_forward_rounded,
                       size: 14,
-                      color: Colors.red.shade800,
+                      color: cs.primary,
                     ),
                   ],
                 ),

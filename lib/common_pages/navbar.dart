@@ -4,6 +4,7 @@ import 'package:nss_new/view/issues/reported_issues_screen.dart';
 import 'package:nss_new/view/attendance/view_attendance_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
 import 'package:nss_new/view/issues/issues_screen.dart';
+import 'package:nss_new/view/manage_blood_requirement_screen.dart';
 import 'package:nss_new/view/profile_screen.dart';
 import 'package:nss_new/view/program/programs_screen.dart';
 
@@ -21,6 +22,7 @@ class CustomBottomNavBar extends StatelessWidget {
         ? const [
             (Icons.home_rounded, 'Home'),
             (Icons.event_rounded, 'Events'),
+            (Icons.bloodtype_rounded, 'Blood Bank'),
             (Icons.campaign_rounded, 'Issues'),
             (Icons.person_rounded, 'Profile'),
           ]
@@ -73,9 +75,12 @@ class CustomBottomNavBar extends StatelessWidget {
           screen = const ProgramsScreen();
           break;
         case 2:
-          screen = const ReportedIssuesScreen();
+          screen = const ManageBloodRequirementScreen();
           break;
         case 3:
+          screen = const ReportedIssuesScreen();
+          break;
+        case 4:
           screen = ProfileScreen();
           break;
         default:

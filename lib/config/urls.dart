@@ -36,10 +36,12 @@ class Urls {
   static String enrollToProgram = '$base/enroll_program/';
   static String cancelEnrollment = '$base/cancel_enrollment/';
   static String getEnrolledStudents = '$base/get_enrollment_list/';
-  static String getVolunteerEnrollments = '$base/get_volunteer_upcoming_enrollments/';
+  static String getVolunteerEnrollments =
+      '$base/get_volunteer_upcoming_enrollments/';
 
   // Attendance
   static String getAttendance = '$base/get_attendance/';
+  static String getAttendanceByProgram = '$base/get_attendance_by_program/';
   static String addAttendance = '$base/add_attendance/';
   static String bulkAddAttendance = '$base/bulk_add_attendance/';
   static String updateAttendance = '$base/update_attendance/';
