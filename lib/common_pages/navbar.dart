@@ -77,6 +77,7 @@ class CustomBottomNavBar extends StatelessWidget {
         case 2:
           screen = const ManageBloodRequirementScreen();
           break;
+          
         case 3:
           screen = const ReportedIssuesScreen();
           break;

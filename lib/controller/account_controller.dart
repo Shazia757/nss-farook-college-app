@@ -152,13 +152,14 @@ class AccountController extends GetxController {
         'new_password': confirmPassController.text,
       });
       if (isClosed) return;
-      if (value?.status ?? false) {
+      if (value?.status == true) {
         clearPasswordFields();
-        Get.to(() => const LoginScreen());
+
         CustomWidgets.showSnackBar(
           'Success',
           value?.message ?? 'Password Changed.',
         );
+        Get.offAll(() => const LoginScreen());
       } else {
         CustomWidgets.showSnackBar(
           'Error',

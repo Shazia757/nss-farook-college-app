@@ -58,7 +58,9 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
       modifiedOpenedList.assignAll(openedList);
     } else {
       modifiedOpenedList.assignAll(
-        openedList.where((p0) => _matchesRole(p0.to, reportedTo.value)).toList(),
+        openedList
+            .where((p0) => _matchesRole(p0.to, reportedTo.value))
+            .toList(),
       );
     }
     _sortOpenedList();
@@ -69,7 +71,9 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
       modifiedClosedList.assignAll(closedList);
     } else {
       modifiedClosedList.assignAll(
-        closedList.where((p0) => _matchesRole(p0.to, reportedTo.value)).toList(),
+        closedList
+            .where((p0) => _matchesRole(p0.to, reportedTo.value))
+            .toList(),
       );
     }
     _sortClosedList();
@@ -89,35 +93,19 @@ class IssuesController extends GetxController with GetTickerProviderStateMixin {
   }
 
   void _sortOpenedList() {
-    if (sortByOldest.isTrue) {
-      modifiedOpenedList.sort(
-        (a, b) => (a.createdDate ?? DateTime.now()).compareTo(
-          b.createdDate ?? DateTime.now(),
-        ),
-      );
-    } else {
-      modifiedOpenedList.sort(
-        (a, b) => (b.createdDate ?? DateTime.now()).compareTo(
-          a.createdDate ?? DateTime.now(),
-        ),
-      );
-    }
+    modifiedOpenedList.sort(
+      (a, b) => (b.createdDate ?? DateTime(0)).compareTo(
+        a.createdDate ?? DateTime(0),
+      ),
+    );
   }
 
   void _sortClosedList() {
-    if (sortByOldest.isTrue) {
-      modifiedClosedList.sort(
-        (a, b) => (a.createdDate ?? DateTime.now()).compareTo(
-          b.createdDate ?? DateTime.now(),
-        ),
-      );
-    } else {
-      modifiedClosedList.sort(
-        (a, b) => (b.createdDate ?? DateTime.now()).compareTo(
-          a.createdDate ?? DateTime.now(),
-        ),
-      );
-    }
+    modifiedClosedList.sort(
+      (a, b) => (b.createdDate ?? DateTime(0)).compareTo(
+        a.createdDate ?? DateTime(0),
+      ),
+    );
   }
 
   @override

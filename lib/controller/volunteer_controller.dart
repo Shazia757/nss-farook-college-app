@@ -147,17 +147,18 @@ class VolunteerController extends GetxController {
     isUpdateButtonLoading.value = true;
     final effectiveCaste =
         (selectedCaste.value != null && selectedCaste.value!.trim().isNotEmpty)
-            ? selectedCaste.value!.trim()
-            : casteController.text.trim();
+        ? selectedCaste.value!.trim()
+        : casteController.text.trim();
     final effectiveGender =
-        (selectedGender.value != null && selectedGender.value!.trim().isNotEmpty)
-            ? selectedGender.value!.trim()
-            : genderController.text.trim();
+        (selectedGender.value != null &&
+            selectedGender.value!.trim().isNotEmpty)
+        ? selectedGender.value!.trim()
+        : genderController.text.trim();
     final effectiveBlood =
         (selectedBloodGroup.value != null &&
-                selectedBloodGroup.value!.trim().isNotEmpty)
-            ? selectedBloodGroup.value!.trim()
-            : bloodGroup.value.trim();
+            selectedBloodGroup.value!.trim().isNotEmpty)
+        ? selectedBloodGroup.value!.trim()
+        : bloodGroup.value.trim();
 
     api
         .updateVolunteer({
@@ -205,8 +206,9 @@ class VolunteerController extends GetxController {
               if (response?.data != null &&
                   response!.data is Map<String, dynamic>) {
                 try {
-                  final fromApi =
-                      Users.fromJson(response.data as Map<String, dynamic>);
+                  final fromApi = Users.fromJson(
+                    response.data as Map<String, dynamic>,
+                  );
                   if (fromApi.admissionNo != null &&
                       fromApi.admissionNo!.isNotEmpty) {
                     LocalStorage().writeUser(fromApi);
@@ -258,17 +260,18 @@ class VolunteerController extends GetxController {
     isUpdateButtonLoading.value = true;
     final effectiveCaste =
         (selectedCaste.value != null && selectedCaste.value!.trim().isNotEmpty)
-            ? selectedCaste.value!.trim()
-            : casteController.text.trim();
+        ? selectedCaste.value!.trim()
+        : casteController.text.trim();
     final effectiveGender =
-        (selectedGender.value != null && selectedGender.value!.trim().isNotEmpty)
-            ? selectedGender.value!.trim()
-            : genderController.text.trim();
+        (selectedGender.value != null &&
+            selectedGender.value!.trim().isNotEmpty)
+        ? selectedGender.value!.trim()
+        : genderController.text.trim();
     final effectiveBlood =
         (selectedBloodGroup.value != null &&
-                selectedBloodGroup.value!.trim().isNotEmpty)
-            ? selectedBloodGroup.value!.trim()
-            : bloodGroup.value.trim();
+            selectedBloodGroup.value!.trim().isNotEmpty)
+        ? selectedBloodGroup.value!.trim()
+        : bloodGroup.value.trim();
 
     api
         .updateProgramOfficer({
@@ -383,7 +386,8 @@ class VolunteerController extends GetxController {
     phoneController.text = user.phoneNo?.trim() ?? "";
     departmentID = user.department?.id;
     departmentController.text =
-        "${user.department?.category ?? ''} ${user.department?.name ?? ''}".trim();
+        "${user.department?.category ?? ''} ${user.department?.name ?? ''}"
+            .trim();
 
     admissionNoController.text = user.admissionNo?.trim() ?? "";
     dobController.text = (user.dob != null)
@@ -538,8 +542,7 @@ class VolunteerListController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    getData();
-    fetchBatches();
+    initializeData();
   }
 
   @override
@@ -548,8 +551,61 @@ class VolunteerListController extends GetxController {
     super.onClose();
   }
 
+  Future<void> initializeData() async {
+    if (isClosed) return;
+
+    isLoading.value = true;
+    isBatchLoading.value = true;
+
+    try {
+      final batches = await _api.getBatches();
+
+      if (isClosed) return;
+
+      if (batches != null && batches.isNotEmpty) {
+        batchSummaries.assignAll(batches);
+
+        final batchList = batches
+            .map((b) => b.batch.trim())
+            .where((b) => b.isNotEmpty)
+            .toSet()
+            .toList();
+
+        batchList.sort((a, b) {
+          final intA = int.tryParse(a);
+          final intB = int.tryParse(b);
+
+          if (intA != null && intB != null) {
+            return intB.compareTo(intA);
+          }
+
+          return b.compareTo(a);
+        });
+
+        if (batchList.isNotEmpty) {
+          selectedBatch.value = batchList.first;
+        }
+      }
+
+      isBatchLoading.value = false;
+
+      if (isShowingPassive.value) {
+        getPassiveData();
+      } else {
+        getData();
+      }
+    } catch (_) {
+      isBatchLoading.value = false;
+      isLoading.value = false;
+    }
+  }
+
   void getData() {
     if (isClosed) return;
+
+    if (isBatchLoading.value && selectedBatch.value.isEmpty) {
+      return;
+    }
     isLoading.value = true;
     _api
         .getVolunteers(
@@ -599,12 +655,43 @@ class VolunteerListController extends GetxController {
 
   void fetchBatches() {
     if (isClosed) return;
+
     _api
         .getBatches()
         .then((list) {
           if (isClosed) return;
+
           if (list != null) {
             batchSummaries.assignAll(list);
+
+            final batches = list
+                .map((b) => b.batch.trim())
+                .where((b) => b.isNotEmpty)
+                .toSet()
+                .toList();
+
+            batches.sort((a, b) {
+              final intA = int.tryParse(a);
+              final intB = int.tryParse(b);
+
+              if (intA != null && intB != null) {
+                return intB.compareTo(intA);
+              }
+
+              return b.compareTo(a);
+            });
+
+            // Set latest batch as the default filter
+            if (batches.isNotEmpty && selectedBatch.value.isEmpty) {
+              selectedBatch.value = batches.first;
+
+              // Actually fetch data for the latest batch
+              if (isShowingPassive.value) {
+                getPassiveData();
+              } else {
+                getData();
+              }
+            }
           }
         })
         .catchError((_) {});
@@ -667,11 +754,7 @@ class VolunteerListController extends GetxController {
   void filterByBatch(String batch) {
     if (isClosed) return;
 
-    if (batch == 'All') {
-      selectedBatch.value = '';
-    } else {
-      selectedBatch.value = selectedBatch.value == batch ? '' : batch;
-    }
+    selectedBatch.value = batch;
 
     if (isShowingPassive.value) {
       getPassiveData();

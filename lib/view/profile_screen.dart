@@ -12,7 +12,6 @@ import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/view/volunteer/add_volunteer_screen.dart';
 import 'package:nss_new/view/authentication/change_password_screen.dart';
-import 'package:nss_new/view/authentication/delete_account_screen.dart';
 import 'package:nss_new/view/attendance/view_attendance_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -55,7 +54,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> fetchProfileDetails() async {
-    final admn = rxVolunteer.value?.admissionNo ??
+    final admn =
+        rxVolunteer.value?.admissionNo ??
         widget.volunteer?.admissionNo ??
         LocalStorage().readUser().admissionNo;
 
@@ -70,7 +70,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final res = await _api.volunteerDetails(admn);
         if (mounted && res?.volunteerDetails != null) {
           rxVolunteer.value = res!.volunteerDetails;
-          final isOwnProfile = widget.volunteer == null ||
+          final isOwnProfile =
+              widget.volunteer == null ||
               widget.volunteer?.admissionNo ==
                   LocalStorage().readUser().admissionNo;
           if (isOwnProfile) {
@@ -106,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       extendBody: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       bottomNavigationBar: isOwnProfile
-          ? CustomBottomNavBar(currentIndex: role == 'po' ? 3 : 4)
+          ? CustomBottomNavBar(currentIndex: 4)
           : null,
       appBar: !isOwnProfile
           ? AppBar(
@@ -607,7 +608,6 @@ class _DangerZoneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final role = LocalStorage().readUser().role;
     final AccountController c = Get.isRegistered<AccountController>()
         ? Get.find<AccountController>()
         : Get.put(AccountController());
@@ -675,62 +675,6 @@ class _DangerZoneCard extends StatelessWidget {
             ],
           ),
         ),
-        if (role == 'vol') ...[
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: cs.errorContainer.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: cs.error.withOpacity(0.15), width: 1),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.delete_forever_rounded, size: 20, color: cs.error),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Delete Account",
-                        style: tt.titleSmall!.copyWith(color: cs.error),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "Submit a formal request to delete your NSS account.",
-                        style: tt.bodySmall!.copyWith(
-                          color: cs.onSurface.withOpacity(0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                TextButton(
-                  onPressed: () {
-                    Get.to(() => DeleteAccountScreen());
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: cs.error,
-                    backgroundColor: cs.error.withOpacity(0.08),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    "Request Deletion",
-                    style: tt.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }

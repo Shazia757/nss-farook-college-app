@@ -136,16 +136,45 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
     }
 
     try {
-      final c = Get.isRegistered<ProgramListController>()
-          ? Get.find<ProgramListController>()
-          : Get.put(ProgramListController());
-      final list = await c.fetchAttendanceForProgram(widget.data);
+      List<ProgramAttendance> list = [];
+
+      final res = await _api.getAttendanceByProgram(programId: programId);
+
+      if (res?.data != null && res!.data!.isNotEmpty) {
+        list = res.data!;
+      } else if (res?.volunteers != null && res!.volunteers!.isNotEmpty) {
+        list = res.volunteers!
+            .map(
+              (v) => ProgramAttendance(
+                volunteer: v,
+                hours: widget.data?.duration ?? 0,
+              ),
+            )
+            .toList();
+      }
+
+      if (list.isEmpty) {
+        final attRes = await _api.getAttendance(programId: programId);
+
+        if (attRes?.attendance != null && attRes!.attendance!.isNotEmpty) {
+          list = attRes.attendance!
+              .where((a) => a.admissionNo != null && a.admissionNo!.isNotEmpty)
+              .map(
+                (a) => ProgramAttendance(
+                  volunteer: a.admissionNo,
+                  name: a.name,
+                  hours: a.hours ?? widget.data?.duration ?? 0,
+                ),
+              )
+              .toList();
+        }
+      }
 
       if (!mounted) return;
 
       setState(() {
         _attendance = list;
-        _attendanceLoadFailed = c.attendanceLoadFailed.value;
+        _attendanceLoadFailed = false;
       });
     } catch (e) {
       log('Error fetching attendance in students enrollment screen: $e');
@@ -959,7 +988,9 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                             if (_canSelectForAttendance &&
                                                 admissionNo != 'N/A') ...[
                                               Checkbox(
-                                                value: isSelected,
+                                                value:
+                                                    attendanceAdded ||
+                                                    isSelected,
                                                 activeColor: cs.primary,
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:

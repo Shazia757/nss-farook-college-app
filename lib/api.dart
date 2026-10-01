@@ -70,14 +70,17 @@ class Api {
           )
           .timeout(const Duration(seconds: 60));
 
-      if (checkValidations(response.body, statusCode: response.statusCode)) {
-        final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
-        return GeneralResponse.fromJson(responseJson);
-      }
+      log('Change password status: ${response.statusCode}');
+      log('Change password response: ${response.body}');
+
+      final responseJson = jsonDecode(response.body) as Map<String, dynamic>;
+
+      return GeneralResponse.fromJson(responseJson);
     } catch (e) {
       checkConnectivity();
       log('Api error during changePassword: $e');
     }
+
     return null;
   }
 

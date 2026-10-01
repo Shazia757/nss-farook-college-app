@@ -5,7 +5,6 @@ import 'package:intl/intl.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/common_pages/navbar.dart';
 import 'package:nss_new/controller/issues_controller.dart';
-import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/issues_model.dart';
 
 class ReportedIssuesScreen extends StatefulWidget {
@@ -35,12 +34,10 @@ class _ReportedIssuesScreenState extends State<ReportedIssuesScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final role = LocalStorage().readUser().role;
-
     return Scaffold(
       backgroundColor: cs.surface,
       bottomNavigationBar: CustomBottomNavBar(
-        currentIndex: role == 'po' ? 2 : 3,
+        currentIndex:  3,
       ),
       body: SafeArea(
         child: Obx(() {

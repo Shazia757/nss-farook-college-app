@@ -43,6 +43,24 @@ class BloodRequirementController extends GetxController {
 
   List<BloodDonationRequest> get filteredAndSortedRequirements {
     List<BloodDonationRequest> list = List.from(requirements);
+
+    final isVolunteer = LocalStorage().readRole() == 'vol';
+
+    // Volunteers can only see pending requirements
+    if (isVolunteer) {
+      list = list
+          .where((r) => (r.status ?? '').toLowerCase() == 'pending')
+          .toList();
+    } else if (selectedStatus.value.isNotEmpty) {
+      list = list
+          .where(
+            (r) =>
+                (r.status ?? '').toLowerCase() ==
+                selectedStatus.value.toLowerCase(),
+          )
+          .toList();
+    }
+
     if (selectedBloodGroup.value.isNotEmpty) {
       list = list
           .where(
@@ -52,15 +70,7 @@ class BloodRequirementController extends GetxController {
           )
           .toList();
     }
-    if (selectedStatus.value.isNotEmpty) {
-      list = list
-          .where(
-            (r) =>
-                (r.status ?? '').toLowerCase() ==
-                selectedStatus.value.toLowerCase(),
-          )
-          .toList();
-    }
+
     if (selectedUrgency.value.isNotEmpty) {
       list = list
           .where(
@@ -94,13 +104,13 @@ class BloodRequirementController extends GetxController {
         ),
       );
     } else {
-      // 'newest' default
       list.sort(
         (a, b) => (b.createdAt ?? DateTime(2000)).compareTo(
           a.createdAt ?? DateTime(2000),
         ),
       );
     }
+
     return list;
   }
 
@@ -137,13 +147,19 @@ class BloodRequirementController extends GetxController {
 
   Future<void> fetchBloodRequests({String? bloodGroup, String? status}) async {
     if (isClosed) return;
+
     isLoading.value = true;
+
     try {
+      final isVolunteer = LocalStorage().readRole() == 'vol';
+
       final list = await _api.getBloodRequests(
         bloodGroup: bloodGroup ?? selectedBloodGroup.value,
-        status: status ?? selectedStatus.value,
+        status: isVolunteer ? 'pending' : (status ?? selectedStatus.value),
       );
+
       if (isClosed) return;
+
       if (list != null) {
         requirements.assignAll(list);
       }

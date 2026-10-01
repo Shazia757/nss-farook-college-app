@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
+import 'package:nss_new/common_pages/navbar.dart';
 import 'package:nss_new/controller/blood_requirement_controller.dart';
 import 'package:nss_new/controller/volunteer_controller.dart';
 import 'package:nss_new/database/local_storage.dart';
@@ -36,6 +37,10 @@ class _ManageBloodRequirementScreenState
     volunteerListController = Get.isRegistered<VolunteerListController>()
         ? Get.find<VolunteerListController>()
         : Get.put(VolunteerListController());
+
+    if (LocalStorage().readRole() == 'vol') {
+      _activeTab = 0;
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -481,7 +486,11 @@ class _ManageBloodRequirementScreenState
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final isVol = LocalStorage().readUser().role == 'vol';
     return Scaffold(
+      bottomNavigationBar: (!isVol)
+          ? CustomBottomNavBar(currentIndex: 2)
+          : null,
       backgroundColor: cs.surface,
       floatingActionButton:
           (_activeTab == 0 && LocalStorage().readRole() != 'vol')
@@ -594,7 +603,7 @@ class _ManageBloodRequirementScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Manage Blood Requirement',
+                    isVol ? 'Requirement Registry' : 'Manage Blood Requirement',
                     style: tt.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: cs.primary,
@@ -614,77 +623,78 @@ class _ManageBloodRequirementScreenState
             ),
 
             // Sliding tab selector
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Container(
-                height: 48,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: cs.outline.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(14),
+            if (LocalStorage().readRole() != 'vol') ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _switchTab(0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _activeTab == 0
-                                ? cs.primary
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Requirements',
-                            style: tt.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: cs.outline.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _switchTab(0),
+                          child: Container(
+                            decoration: BoxDecoration(
                               color: _activeTab == 0
-                                  ? Colors.white
-                                  : cs.onSurface.withOpacity(0.6),
+                                  ? cs.primary
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Requirements',
+                              style: tt.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: _activeTab == 0
+                                    ? Colors.white
+                                    : cs.onSurface.withOpacity(0.6),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _switchTab(1),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: _activeTab == 1
-                                ? cs.primary
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Volunteers',
-                            style: tt.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => _switchTab(1),
+                          child: Container(
+                            decoration: BoxDecoration(
                               color: _activeTab == 1
-                                  ? Colors.white
-                                  : cs.onSurface.withOpacity(0.6),
+                                  ? cs.primary
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              'Volunteers',
+                              style: tt.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: _activeTab == 1
+                                    ? Colors.white
+                                    : cs.onSurface.withOpacity(0.6),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-
+            ],
             const SizedBox(height: 8),
 
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _activeTab == 0
+                child: LocalStorage().readRole() == 'vol' || _activeTab == 0
                     ? _buildRequirementsTab(context, cs, tt)
                     : _buildVolunteersTab(context, cs, tt),
               ),
@@ -703,15 +713,6 @@ class _ManageBloodRequirementScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Requirement Registry',
-          style: tt.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: cs.primary,
-          ),
-        ),
-        const SizedBox(height: 12),
-
         Obx(() {
           final isVolunteer = LocalStorage().readRole() == 'vol';
           final currentFilter = controller.selectedStatus.value.isNotEmpty
@@ -1174,14 +1175,6 @@ class _ManageBloodRequirementScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Available Volunteers',
-          style: tt.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: cs.primary,
-          ),
-        ),
-        const SizedBox(height: 12),
         Obx(() {
           final selectedBg = volunteerListController.selectedBloodGroup.value;
           final bloodGroups = volunteerListController.bloodGroups;

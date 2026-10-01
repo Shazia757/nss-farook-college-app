@@ -282,15 +282,14 @@ class _ManageVolunteerScreenState extends State<ManageVolunteerScreen> {
 
               final selected = controller.selectedBatch.value.trim();
 
-              // "All" is the initial/default filter
               final effectiveVal =
                   selected.isNotEmpty && batches.contains(selected)
                   ? selected
-                  : 'All';
+                  : (batches.isNotEmpty ? batches.first : null);
 
               final isBatchLoading = controller.isBatchLoading.value;
 
-              final dropdownBatches = ['All', ...batches];
+              final dropdownBatches = batches;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18.0),
