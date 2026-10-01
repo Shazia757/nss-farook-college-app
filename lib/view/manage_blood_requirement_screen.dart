@@ -34,9 +34,13 @@ class _ManageBloodRequirementScreenState
     controller = Get.isRegistered<BloodRequirementController>()
         ? Get.find<BloodRequirementController>()
         : Get.put(BloodRequirementController());
-    volunteerListController = Get.isRegistered<VolunteerListController>()
-        ? Get.find<VolunteerListController>()
-        : Get.put(VolunteerListController());
+    volunteerListController =
+        Get.isRegistered<VolunteerListController>(tag: 'blood_donors')
+        ? Get.find<VolunteerListController>(tag: 'blood_donors')
+        : Get.put(
+            VolunteerListController(enableBatchFilter: false),
+            tag: 'blood_donors',
+          );
 
     if (LocalStorage().readRole() == 'vol') {
       _activeTab = 0;
@@ -44,7 +48,7 @@ class _ManageBloodRequirementScreenState
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      controller.fetchBloodRequests();
+      volunteerListController.getData(ignoreBatch: true);
     });
   }
 
@@ -915,24 +919,9 @@ class _ManageBloodRequirementScreenState
                                   ),
                                 ),
                               ],
-                        onChanged: (val) {
-                          if (val == null) return;
-                          if (isVolunteer) {
-                            controller.selectedBloodGroup.value = val;
-                          } else {
-                            if (val.isEmpty) {
-                              controller.selectedStatus.value = '';
-                              controller.selectedBloodGroup.value = '';
-                              controller.selectedUrgency.value = '';
-                            } else if (val.startsWith('status:')) {
-                              controller.selectedStatus.value = val
-                                  .replaceFirst('status:', '');
-                              controller.selectedBloodGroup.value = '';
-                            } else if (val.startsWith('bg:')) {
-                              controller.selectedBloodGroup.value = val
-                                  .replaceFirst('bg:', '');
-                              controller.selectedStatus.value = '';
-                            }
+                        onChanged: (value) {
+                          if (value != null) {
+                            controller.applyFilter(value);
                           }
                         },
                       ),
@@ -1088,17 +1077,7 @@ class _ManageBloodRequirementScreenState
             }
 
             final query = _searchQuery.toLowerCase().trim();
-            final baseList = controller.filteredAndSortedRequirements;
-            final filteredList = baseList.where((req) {
-              if (query.isEmpty) return true;
-              final pName = (req.patientName ?? '').toLowerCase();
-              final hName = (req.hospital ?? '').toLowerCase();
-              final bGroup = (req.bloodGroup ?? '').toLowerCase();
-              return pName.contains(query) ||
-                  hName.contains(query) ||
-                  bGroup.contains(query);
-            }).toList();
-
+            final filteredList = controller.searchedAndFilteredRequirements;
             if (filteredList.isEmpty) {
               final isVolunteer = LocalStorage().readRole() == 'vol';
               final hasFilters = controller.activeFilterCount > 0;

@@ -470,6 +470,10 @@ class VolunteerController extends GetxController {
 }
 
 class VolunteerListController extends GetxController {
+  final bool enableBatchFilter;
+
+  VolunteerListController({this.enableBatchFilter = true});
+
   TextEditingController searchController = TextEditingController();
   final Api _api = Api();
 
@@ -503,7 +507,7 @@ class VolunteerListController extends GetxController {
   int get activeFilterCount {
     int count = 0;
     if (selectedBloodGroup.value.isNotEmpty) count++;
-    if (selectedBatch.value.isNotEmpty) count++;
+    if (enableBatchFilter && selectedBatch.value.isNotEmpty) count++;
     if (selectedDepartmentId.value != null) count++;
     return count;
   }
@@ -555,6 +559,17 @@ class VolunteerListController extends GetxController {
     if (isClosed) return;
 
     isLoading.value = true;
+
+    if (!enableBatchFilter) {
+      isBatchLoading.value = false;
+      if (isShowingPassive.value) {
+        getPassiveData(ignoreBatch: true);
+      } else {
+        getData(ignoreBatch: true);
+      }
+      return;
+    }
+
     isBatchLoading.value = true;
 
     try {
@@ -600,16 +615,22 @@ class VolunteerListController extends GetxController {
     }
   }
 
-  void getData() {
+  void getData({bool? ignoreBatch}) {
     if (isClosed) return;
 
-    if (isBatchLoading.value && selectedBatch.value.isEmpty) {
+    final shouldIgnoreBatch = ignoreBatch ?? !enableBatchFilter;
+
+    if (!shouldIgnoreBatch &&
+        isBatchLoading.value &&
+        selectedBatch.value.isEmpty) {
       return;
     }
     isLoading.value = true;
     _api
         .getVolunteers(
-          batch: selectedBatch.value,
+          batch: shouldIgnoreBatch
+              ? null
+              : (selectedBatch.value.isEmpty ? null : selectedBatch.value),
           department: selectedDepartmentId.value,
           bloodGroup: selectedBloodGroup.value,
           search: searchQuery.value,
@@ -634,12 +655,15 @@ class VolunteerListController extends GetxController {
         });
   }
 
-  void getPassiveData() {
+  void getPassiveData({bool? ignoreBatch}) {
     if (isClosed) return;
+    final shouldIgnoreBatch = ignoreBatch ?? !enableBatchFilter;
     isPassiveLoading.value = true;
     _api
         .getPassiveVolunteers(
-          batch: selectedBatch.value,
+          batch: shouldIgnoreBatch
+              ? null
+              : (selectedBatch.value.isEmpty ? null : selectedBatch.value),
           department: selectedDepartmentId.value,
           search: searchQuery.value,
         )
@@ -777,7 +801,9 @@ class VolunteerListController extends GetxController {
 
   void clearFilters() {
     if (isClosed) return;
-    selectedBatch.value = '';
+    if (enableBatchFilter) {
+      selectedBatch.value = '';
+    }
     selectedDepartmentId.value = null;
     selectedBloodGroup.value = '';
     searchQuery.value = '';

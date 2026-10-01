@@ -21,6 +21,50 @@ class BloodRequirementController extends GetxController {
   RxString selectedUrgency = ''.obs;
   RxString sortBy = 'newest'.obs;
 
+  final searchQuery = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchBloodRequests();
+  }
+
+  List<BloodDonationRequest> get searchedAndFilteredRequirements {
+    final query = searchQuery.value.toLowerCase().trim();
+
+    final baseList = filteredAndSortedRequirements;
+
+    if (query.isEmpty) {
+      return baseList;
+    }
+
+    return baseList.where((req) {
+      final patientName = (req.patientName ?? '').toLowerCase();
+      final hospital = (req.hospital ?? '').toLowerCase();
+      final bloodGroup = (req.bloodGroup ?? '').toLowerCase();
+
+      return patientName.contains(query) ||
+          hospital.contains(query) ||
+          bloodGroup.contains(query);
+    }).toList();
+  }
+
+  void applyFilter(String value) {
+    if (value.isEmpty) {
+      resetFilters();
+    } else if (value.startsWith('status:')) {
+      selectedStatus.value = value.replaceFirst('status:', '');
+      selectedBloodGroup.value = '';
+    } else if (value.startsWith('bg:')) {
+      selectedBloodGroup.value = value.replaceFirst('bg:', '');
+      selectedStatus.value = '';
+    }
+  }
+
+  void updateSearch(String value) {
+    searchQuery.value = value;
+  }
+
   List<String> get bloodGroups => [
     'A+',
     'A-',
