@@ -471,7 +471,9 @@ class ProgramListController extends GetxController {
         });
   }
 
-  Future<List<ProgramAttendance>> fetchAttendanceForProgram(Program? program) async {
+  Future<List<ProgramAttendance>> fetchAttendanceForProgram(
+    Program? program,
+  ) async {
     final programId = program?.id;
     if (programId == null) return [];
 
@@ -532,47 +534,44 @@ class ProgramListController extends GetxController {
     if (programId == null || isClosed) return false;
     if (loadingEnrollmentProgramIds.contains(programId)) return false;
 
+    // Already know from the program card that nobody is enrolled.
+    if ((program?.enrollmentCount ?? 0) == 0) {
+      CustomWidgets.showSnackBar(
+        'No Enrollments',
+        'There are no enrolled volunteers for this program.',
+      );
+      return false;
+    }
+
     loadingEnrollmentProgramIds.add(programId);
     if (loading != null) loading.value = true;
 
     try {
-      final isPast =
-          program?.date == null || !program!.date!.isAfter(DateTime.now());
-
-      final results = await Future.wait([
-        _api.getEnrolledStudents(programId),
-        if (isPast)
-          fetchAttendanceForProgram(program)
-        else
-          Future.value(<ProgramAttendance>[]),
-      ]);
+      // Fetch enrolled students only when enrollmentCount > 0
+      final value = await _api.getEnrolledStudents(programId);
 
       if (isClosed) return false;
 
-      final value = results[0] as EnrollmentResponse?;
-      final attendanceList = results[1] as List<ProgramAttendance>;
-
       enrollmentList.assignAll(value?.enrollmentList?.toList() ?? []);
 
-      final hasEnrolledStudents = enrollmentList.isNotEmpty;
+      // Only fetch attendance after enrolled students are successfully fetched
+      final isPast =
+          program?.date == null || !program!.date!.isAfter(DateTime.now());
 
-      // No volunteers enrolled
-      if (!hasEnrolledStudents) {
-        CustomWidgets.showSnackBar(
-          'No Enrollments',
-          'There are no enrolled volunteers for this program.',
-        );
-        return false;
+      List<ProgramAttendance> attendanceList = [];
+
+      if (isPast) {
+        attendanceList = await fetchAttendanceForProgram(program);
       }
 
-      // Existing setup
+      if (isClosed) return false;
+
       selectAllVolunteers();
 
       durationController.text = "${program?.duration ?? 0}";
       programDate = program?.date ?? DateTime.now();
       showProgramDate.value = DateFormat.yMMMd().format(programDate);
 
-      // Only navigate when at least one volunteer exists
       Get.to(
         () => StudentsEnrollmentScreen(
           data: program,

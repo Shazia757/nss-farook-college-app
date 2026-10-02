@@ -277,58 +277,78 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (LocalStorage().readUser().role != 'vol') ...[
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            clipBehavior: Clip.none,
-                            physics: const BouncingScrollPhysics(),
-                            child: Row(
-                              spacing: 8,
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _actionCard(
-                                  context,
-                                  icon: Icons.star,
-                                  bg: Colors.red.shade100,
-                                  iconColor: Colors.red,
-                                  title: "Manage Attendance",
-                                  onTap: () => Get.to(
-                                    () => const ManageAttendanceScreen(),
-                                  ),
-                                ),
-                                _actionCard(
-                                  context,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final cardWidth =
+                                  (constraints.maxWidth - 24) / 3.2;
 
-                                  icon: Icons.description_outlined,
-                                  bg: Colors.amber.shade100,
-                                  iconColor: Colors.orange,
-                                  title: "Add Program",
-                                  onTap: () =>
-                                      Get.to(() => const AddProgramScreen()),
-                                ),
-                                _actionCard(
-                                  context,
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                clipBehavior: Clip.none,
+                                physics: const BouncingScrollPhysics(),
+                                child: Row(
+                                  spacing: 8,
+                                  children: [
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _actionCard(
+                                        context,
+                                        icon: Icons.star,
+                                        bg: Colors.red.shade100,
+                                        iconColor: Colors.red,
+                                        title: "Manage Attendance",
+                                        onTap: () => Get.to(
+                                          () => const ManageAttendanceScreen(),
+                                        ),
+                                      ),
+                                    ),
 
-                                  icon: Icons.menu_book_outlined,
-                                  bg: Colors.indigo.shade100,
-                                  iconColor: Colors.indigo,
-                                  title: "Manage Volunteer",
-                                  onTap: () => Get.to(
-                                    () => const ManageVolunteerScreen(),
-                                  ),
-                                ),
-                                _actionCard(
-                                  context,
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _actionCard(
+                                        context,
+                                        icon: Icons.description_outlined,
+                                        bg: Colors.amber.shade100,
+                                        iconColor: Colors.orange,
+                                        title: "Add Program",
+                                        onTap: () => Get.to(
+                                          () => const AddProgramScreen(),
+                                        ),
+                                      ),
+                                    ),
 
-                                  icon: Icons.bloodtype_outlined,
-                                  bg: Colors.red.shade100,
-                                  iconColor: Colors.red,
-                                  title: "Blood Requirement",
-                                  onTap: () => Get.to(
-                                    () => const ManageBloodRequirementScreen(),
-                                  ),
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _actionCard(
+                                        context,
+                                        icon: Icons.menu_book_outlined,
+                                        bg: Colors.indigo.shade100,
+                                        iconColor: Colors.indigo,
+                                        title: "Manage Volunteer",
+                                        onTap: () => Get.to(
+                                          () => const ManageVolunteerScreen(),
+                                        ),
+                                      ),
+                                    ),
+
+                                    SizedBox(
+                                      width: cardWidth,
+                                      child: _actionCard(
+                                        context,
+                                        icon: Icons.bloodtype_outlined,
+                                        bg: Colors.red.shade100,
+                                        iconColor: Colors.red,
+                                        title: "Blood Requirement",
+                                        onTap: () => Get.to(
+                                          () =>
+                                              const ManageBloodRequirementScreen(),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(height: 18),
