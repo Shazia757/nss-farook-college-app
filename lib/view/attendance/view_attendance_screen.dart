@@ -54,6 +54,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       backgroundColor: cs.surface,
       bottomNavigationBar: widget.volunteer != null
           ? null
+          : role == 'po' || role == 'sec'
+          ? null
           : const CustomBottomNavBar(currentIndex: 2),
       body: SafeArea(
         child: Obx(() {

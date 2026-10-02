@@ -453,7 +453,34 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
     final tt = Theme.of(context).textTheme;
     final program = widget.data;
     final filtered = _filteredEnrollments;
+    final sortedFiltered = filtered.asMap().entries.toList()
+      ..sort((a, b) {
+        final aAdmission =
+            (a.value.volunteer?.admissionNo ??
+                    a.value.volunteerAdmissionNo ??
+                    'N/A')
+                .trim();
 
+        final bAdmission =
+            (b.value.volunteer?.admissionNo ??
+                    b.value.volunteerAdmissionNo ??
+                    'N/A')
+                .trim();
+
+        final aChecked =
+            _hasAttendance(a.value) || _selectedAdmissions.contains(aAdmission);
+
+        final bChecked =
+            _hasAttendance(b.value) || _selectedAdmissions.contains(bAdmission);
+
+        if (aChecked != bChecked) {
+          return aChecked ? 1 : -1;
+        }
+
+        return a.key.compareTo(b.key);
+      });
+
+    final sortedItems = sortedFiltered.map((e) => e.value).toList();
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
@@ -909,11 +936,11 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                 horizontal: 16,
                                 vertical: 8,
                               ),
-                              itemCount: filtered.length,
+                              itemCount: sortedItems.length,
                               separatorBuilder: (context, index) =>
                                   const SizedBox(height: 10),
                               itemBuilder: (context, index) {
-                                final item = filtered[index];
+                                final item = sortedItems[index];
                                 final vol = item.volunteer;
                                 final admissionNo =
                                     vol?.admissionNo ??
@@ -924,7 +951,6 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                     "${vol?.department?.category ?? ''} ${vol?.department?.name ?? ''}"
                                         .trim();
                                 final phone = vol?.phoneNumber;
-                                final blood = vol?.bloodGroup;
                                 final enrollmentDate = item.date;
                                 final isSelected = _selectedAdmissions.contains(
                                   admissionNo,
@@ -1036,60 +1062,17 @@ class _StudentsEnrollmentScreenState extends State<StudentsEnrollmentScreen> {
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.start,
                                                 children: [
-                                                  Row(
-                                                    children: [
-                                                      Flexible(
-                                                        child: Text(
-                                                          name,
-                                                          style: tt.titleSmall
-                                                              ?.copyWith(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                color: cs
-                                                                    .onSurface,
-                                                              ),
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
+                                                  Text(
+                                                    name,
+                                                    style: tt.titleSmall
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: cs.onSurface,
                                                         ),
-                                                      ),
-                                                      if (blood != null &&
-                                                          blood.isNotEmpty) ...[
-                                                        const SizedBox(
-                                                          width: 6,
-                                                        ),
-                                                        Container(
-                                                          padding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 6,
-                                                                vertical: 1,
-                                                              ),
-                                                          decoration: BoxDecoration(
-                                                            color: Colors.red
-                                                                .withOpacity(
-                                                                  0.1,
-                                                                ),
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  6,
-                                                                ),
-                                                          ),
-                                                          child: Text(
-                                                            blood,
-                                                            style:
-                                                                const TextStyle(
-                                                                  color: Colors
-                                                                      .red,
-                                                                  fontSize: 10,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ],
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                                   const SizedBox(height: 2),
                                                   Text(

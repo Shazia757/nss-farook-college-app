@@ -465,6 +465,71 @@ class VolunteerController extends GetxController {
       );
       return false;
     }
+    if (departmentController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select department',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (role != 'po') {
+      if (yearController.text.trim().isEmpty) {
+        CustomWidgets.showSnackBar(
+          'Validation Error',
+          'Please enter batch year',
+          backgroundColor: Colors.red.shade800,
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+        );
+        return false;
+      }
+    }
+    if (dobController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select date of birth',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (dobController.text.trim().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select date of birth',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (selectedBloodGroup.value.toString().isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select blood group',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (genderController.text.isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select gender',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
+    if (casteController.text.isEmpty) {
+      CustomWidgets.showSnackBar(
+        'Validation Error',
+        'Please select caste',
+        backgroundColor: Colors.red.shade800,
+        icon: const Icon(Icons.error_outline, color: Colors.white),
+      );
+      return false;
+    }
     return true;
   }
 }

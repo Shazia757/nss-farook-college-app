@@ -29,8 +29,6 @@ class AccountController extends GetxController {
 
   @override
   void onClose() {
-    userNameController.dispose();
-    passwordController.dispose();
     oldpasswordController.dispose();
     newPassController.dispose();
     confirmPassController.dispose();
@@ -143,8 +141,8 @@ class AccountController extends GetxController {
     return true;
   }
 
-  Future<void> changePassword(String id) async {
-    if (isClosed) return;
+  Future<void> changePassword() async {
+    if (isClosed || isChangePassLoading.value) return;
     isChangePassLoading.value = true;
     try {
       final value = await api.changePassword({
@@ -154,12 +152,13 @@ class AccountController extends GetxController {
       if (isClosed) return;
       if (value?.status == true) {
         clearPasswordFields();
-
+        LocalStorage().clearAll();
+        Get.offAll(() => const LoginScreen());
         CustomWidgets.showSnackBar(
           'Success',
-          value?.message ?? 'Password Changed.',
+          value?.message ??
+              'Password changed successfully. Please login again.',
         );
-        Get.offAll(() => const LoginScreen());
       } else {
         CustomWidgets.showSnackBar(
           'Error',
@@ -270,19 +269,15 @@ class AccountController extends GetxController {
     try {
       await api.logout();
     } catch (e) {
-      log('Logout api error: $e');
+      log('Logout API error: $e');
     } finally {
       if (!isClosed) isLoading.value = false;
-
-      // Clear any sensitive text before disposing controllers.
       oldpasswordController.clear();
       newPassController.clear();
       confirmPassController.clear();
       passwordController.clear();
 
       LocalStorage().clearAll();
-
-      Get.deleteAll(force: true);
 
       Get.offAll(() => const LoginScreen());
     }

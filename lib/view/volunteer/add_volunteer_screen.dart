@@ -123,7 +123,7 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
       context: context,
       initialDate: _selectedDOB ?? DateTime(2005, 1, 1),
       firstDate: DateTime(1980),
-      lastDate: DateTime.now(),
+      lastDate: DateTime(DateTime.now().year - 15),
     );
     if (picked != null && picked != _selectedDOB) {
       setState(() {
@@ -369,43 +369,6 @@ class _AddVolunteerScreenState extends State<AddVolunteerScreen> {
                               context,
                               "Batch Year (Starting Year)",
                             ),
-                            // Obx(() {
-                            //   final batchList = years;
-                            //   final effectiveValue =
-                            //       (_selectedYear != null &&
-                            //           batchList.contains(_selectedYear))
-                            //       ? _selectedYear
-                            //       : null;
-
-                            //   return DropdownButtonFormField<String>(
-                            //     value: effectiveValue,
-                            //     decoration: CustomWidgets()
-                            //         .buildInputDecoration(
-                            //           context,
-                            //           'Select Batch Year',
-                            //         ),
-                            //     items: batchList
-                            //         .map(
-                            //           (val) => DropdownMenuItem<String>(
-                            //             value: val,
-                            //             child: Text(val),
-                            //           ),
-                            //         )
-                            //         .toList(),
-                            //     style: TextStyle(
-                            //       color: cs.onSurface,
-                            //       fontSize: 15,
-                            //     ),
-                            //     dropdownColor: cs.onPrimary,
-                            //     borderRadius: BorderRadius.circular(12),
-                            //     onChanged: (val) {
-                            //       setState(() {
-                            //         _selectedYear = val;
-                            //         c.yearController.text = val ?? '';
-                            //       });
-                            //     },
-                            //   );
-                            // }),
                             TextFormField(
                               controller: c.yearController,
                               keyboardType: TextInputType.number,

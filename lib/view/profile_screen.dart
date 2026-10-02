@@ -762,9 +762,6 @@ class _AboutLegalCard extends StatelessWidget {
                     final Uri emailUri = Uri(
                       scheme: 'mailto',
                       path: Details.contactEmail,
-                      queryParameters: {
-                        'subject': 'NSS Farook College App Enquiry',
-                      },
                     );
                     if (await canLaunchUrl(emailUri)) {
                       await launchUrl(
@@ -913,6 +910,21 @@ class _AboutLegalCard extends StatelessWidget {
             label: "Contact Us",
             subtitle: Details.contactEmail,
             onTap: () => _showContactBottomSheet(context),
+          ),
+          const _Divider(),
+          _legalItem(
+            icon: Icons.code_outlined,
+            label: "Developer Contact ",
+            subtitle: Details.devEmail,
+            onTap: () async {
+              final Uri emailUri = Uri(
+                scheme: 'mailto',
+                path: Details.devEmail,
+              );
+              if (await canLaunchUrl(emailUri)) {
+                await launchUrl(emailUri, mode: LaunchMode.externalApplication);
+              }
+            },
           ),
           const _Divider(),
           Padding(

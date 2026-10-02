@@ -18,7 +18,7 @@ class CustomBottomNavBar extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final role = LocalStorage().readUser().role;
 
-    final items = role == 'po'
+    final items = ((role == 'po') || (role == 'sec'))
         ? const [
             (Icons.home_rounded, 'Home'),
             (Icons.event_rounded, 'Events'),
@@ -66,7 +66,7 @@ class CustomBottomNavBar extends StatelessWidget {
 
     Widget screen;
 
-    if (role == 'po') {
+    if (role == 'po' || role == 'sec') {
       switch (index) {
         case 0:
           screen = const HomeScreen();
@@ -77,7 +77,7 @@ class CustomBottomNavBar extends StatelessWidget {
         case 2:
           screen = const ManageBloodRequirementScreen();
           break;
-          
+
         case 3:
           screen = const ReportedIssuesScreen();
           break;
@@ -99,9 +99,7 @@ class CustomBottomNavBar extends StatelessWidget {
           screen = const AttendanceScreen();
           break;
         case 3:
-          screen = role == 'vol'
-              ? const IssuesScreen()
-              : const ReportedIssuesScreen();
+          screen = const IssuesScreen();
           break;
         case 4:
           screen = ProfileScreen();

@@ -191,8 +191,8 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
                       final selected = controller.selectedBatch.value.trim();
                       final effectiveVal =
                           (selected.isNotEmpty && batches.contains(selected))
-                              ? selected
-                              : (batches.isNotEmpty ? batches.first : null);
+                          ? selected
+                          : (batches.isNotEmpty ? batches.first : null);
 
                       final isBatchLoading = controller.isBatchLoading.value;
 
@@ -201,7 +201,9 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
                         isExpanded: true,
                         icon: Icon(Icons.arrow_drop_down, color: cs.primary),
                         hint: Text(
-                          isBatchLoading ? 'Loading batches...' : 'Select Batch',
+                          isBatchLoading
+                              ? 'Loading batches...'
+                              : 'Select Batch',
                           style: tt.bodyMedium?.copyWith(
                             color: cs.onSurface.withOpacity(0.5),
                           ),
@@ -240,18 +242,20 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
                         ),
                         dropdownColor: cs.onPrimary,
                         borderRadius: BorderRadius.circular(12),
-                        items: batches.map(
-                          (b) => DropdownMenuItem<String>(
-                            value: b,
-                            child: Text(
-                              b,
-                              style: tt.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: cs.onSurface,
+                        items: batches
+                            .map(
+                              (b) => DropdownMenuItem<String>(
+                                value: b,
+                                child: Text(
+                                  b,
+                                  style: tt.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.onSurface,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ).toList(),
+                            )
+                            .toList(),
                         onChanged: batches.isEmpty
                             ? null
                             : (val) {
@@ -316,7 +320,10 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
             // Volunteer List Section
             Expanded(
               child: Obx(() {
-                if (controller.isLoading.value) {
+                final isLoading =
+                    controller.isLoading.value ||
+                    controller.isBatchLoading.value;
+                if (isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
@@ -346,8 +353,8 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    controller.fetchBatches();
-                    controller.getUsers();
+                    await controller.fetchBatches();
+                    await controller.getUsers();
                   },
                   child: ListView.separated(
                     physics: const AlwaysScrollableScrollPhysics(
@@ -387,9 +394,7 @@ class _ManageAttendanceScreenState extends State<ManageAttendanceScreen> {
                               department: v.department,
                               role: v.role,
                             );
-                            Get.to(
-                              () => AttendanceScreen(volunteer: userObj),
-                            );
+                            Get.to(() => AttendanceScreen(volunteer: userObj));
                           },
                           leading: CircleAvatar(
                             radius: 20,

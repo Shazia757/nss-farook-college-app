@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -6,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
-import 'package:nss_new/database/local_storage.dart';
 import 'package:nss_new/model/attendance_model.dart';
 import 'package:nss_new/model/programs_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
@@ -50,9 +48,8 @@ class AttendanceController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    fetchBatches();
-    getUsers();
-    getPrograms();
+
+    initializeData();
   }
 
   @override
@@ -64,33 +61,102 @@ class AttendanceController extends GetxController {
     super.onClose();
   }
 
-  Future<void> fetchBatches() async {
+  Future<void> initializeData() async {
     if (isClosed) return;
+
+    isLoading.value = true;
     isBatchLoading.value = true;
+
     try {
+      // 1. Get batches first
       final list = await _api.getBatches();
+
       if (isClosed) return;
+
       if (list != null && list.isNotEmpty) {
         batchSummaries.assignAll(list);
-        final validBatches = batchSummaries
+
+        final validBatches = list
             .map((b) => b.batch.trim())
             .where((b) => b.isNotEmpty)
             .toSet()
             .toList();
+
         validBatches.sort((a, b) {
           final intA = int.tryParse(a);
           final intB = int.tryParse(b);
-          if (intA != null && intB != null) return intB.compareTo(intA);
+
+          if (intA != null && intB != null) {
+            return intB.compareTo(intA);
+          }
+
           return b.compareTo(a);
         });
 
-        if (validBatches.isNotEmpty &&
-            (selectedBatch.value.isEmpty ||
-                !validBatches.contains(selectedBatch.value))) {
+        if (validBatches.isNotEmpty) {
           selectedBatch.value = validBatches.first;
-          getUsers(batch: selectedBatch.value);
         }
       }
+
+      if (isClosed) return;
+
+      isBatchLoading.value = false;
+
+      // 2. Fetch volunteers only after batch is selected
+      await getUsers();
+
+      // 3. Fetch programs
+      await getPrograms();
+    } catch (e) {
+      log('Error initializing AttendanceController: $e');
+    } finally {
+      if (!isClosed) {
+        isBatchLoading.value = false;
+        isLoading.value = false;
+      }
+    }
+  }
+
+  Future<void> fetchBatches() async {
+    if (isClosed) return;
+
+    isBatchLoading.value = true;
+
+    try {
+      final list = await _api.getBatches();
+
+      if (isClosed) return;
+
+      if (list != null && list.isNotEmpty) {
+        batchSummaries.assignAll(list);
+
+        final validBatches = list
+            .map((b) => b.batch.trim())
+            .where((b) => b.isNotEmpty)
+            .toSet()
+            .toList();
+
+        validBatches.sort((a, b) {
+          final intA = int.tryParse(a);
+          final intB = int.tryParse(b);
+
+          if (intA != null && intB != null) {
+            return intB.compareTo(intA);
+          }
+
+          return b.compareTo(a);
+        });
+
+        if (validBatches.isNotEmpty) {
+          // Always use the latest batch initially
+          selectedBatch.value = validBatches.first;
+        }
+      }
+
+      if (isClosed) return;
+
+      // Only fetch volunteers AFTER the latest batch is selected.
+      getUsers(batch: selectedBatch.value);
     } catch (e) {
       log('Error fetching batches in AttendanceController: $e');
     } finally {
@@ -106,34 +172,47 @@ class AttendanceController extends GetxController {
     getUsers(batch: selectedBatch.value);
   }
 
-  void getUsers({String? batch}) {
+  Future<void> getUsers({String? batch}) async {
     if (isClosed) return;
-    isLoading.value = true;
+
     final batchFilter = (batch ?? selectedBatch.value).trim();
-    _api
-        .getVolunteers(batch: batchFilter.isNotEmpty ? batchFilter : null)
-        .then((value) {
-          if (isClosed) return;
-          var data =
-              value?.data?.where((element) => element.role != 'po').toList() ??
-              [];
-          if (batchFilter.isNotEmpty) {
-            data = data
-                .where((v) => (v.batch ?? '').trim() == batchFilter)
-                .toList();
-          }
-          usersList.assignAll(data);
-          if (searchController.text.trim().isNotEmpty) {
-            onSearchTextChanged(searchController.text.trim());
-          } else {
-            searchList.assignAll(usersList);
-            searchList.sort((a, b) => (a.name ?? '').compareTo(b.name ?? ''));
-          }
-          isLoading.value = false;
-        })
-        .catchError((_) {
-          if (!isClosed) isLoading.value = false;
-        });
+
+    // Don't allow an accidental all-batch request
+    // when batch filtering is expected.
+    if (batchFilter.isEmpty) {
+      usersList.clear();
+      searchList.clear();
+      isLoading.value = false;
+      return;
+    }
+
+    isLoading.value = true;
+
+    try {
+      final value = await _api.getVolunteers(batch: batchFilter);
+
+      if (isClosed) return;
+
+      var data =
+          value?.data?.where((element) => element.role != 'po').toList() ?? [];
+
+      data = data.where((v) => (v.batch ?? '').trim() == batchFilter).toList();
+
+      usersList.assignAll(data);
+
+      if (searchController.text.trim().isNotEmpty) {
+        onSearchTextChanged(searchController.text.trim());
+      } else {
+        searchList.assignAll(usersList);
+        searchList.sort((a, b) => (a.name ?? '').compareTo(b.name ?? ''));
+      }
+    } catch (e) {
+      log('Error fetching users: $e');
+    } finally {
+      if (!isClosed) {
+        isLoading.value = false;
+      }
+    }
   }
 
   Future<void> exportAttendanceExcel({int? programId}) async {

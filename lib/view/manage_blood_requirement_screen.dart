@@ -111,13 +111,21 @@ class _ManageBloodRequirementScreenState
     final displayBlood = vol.bloodGroup?.isNotEmpty == true
         ? vol.bloodGroup!
         : 'N/A';
+
     final displayPhone = vol.phoneNumber?.isNotEmpty == true
         ? vol.phoneNumber!
         : 'Not available';
 
+    void _viewVolunteer(String? admissionNo) {
+      if (admissionNo == null || admissionNo.isEmpty) return;
+      final volCtrl = Get.isRegistered<VolunteerListController>()
+          ? Get.find<VolunteerListController>()
+          : Get.put(VolunteerListController());
+      volCtrl.viewVolunteerProfile(admissionNo);
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cs.onPrimary,
         borderRadius: BorderRadius.circular(16),
@@ -130,69 +138,102 @@ class _ManageBloodRequirementScreenState
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            final admissionNo = vol.admissionNo;
+
+            if (admissionNo != null && admissionNo.isNotEmpty) {
+              _viewVolunteer(admissionNo);
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 22,
-                      backgroundColor: cs.primary.withOpacity(0.1),
-                      child: Text(
-                        displayBlood,
-                        style: tt.titleMedium?.copyWith(
-                          color: cs.primary,
-                          fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: cs.primary.withOpacity(0.1),
+                        child: Text(
+                          displayBlood,
+                          style: tt.titleMedium?.copyWith(
+                            color: cs.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            vol.name ?? 'Unknown Volunteer',
-                            style: tt.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: cs.onSurface,
-                            ),
-                          ),
-                          if (vol.department != null) ...[
-                            const SizedBox(height: 2),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              '${vol.department?.category ?? ''} ${vol.department?.name ?? ''}'
-                                  .trim(),
-                              style: tt.bodySmall?.copyWith(
-                                color: cs.onSurface.withOpacity(0.6),
+                              vol.name ?? 'Unknown Volunteer',
+                              style: tt.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.onSurface,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
+                            if (vol.department != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                '${vol.department?.category ?? ''} '
+                                        '${vol.department?.name ?? ''}'
+                                    .trim(),
+                                style: tt.bodySmall?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.6),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Call button
+                Container(
+                  height: 36,
+                  width: 36,
+                  decoration: BoxDecoration(
+                    color: cs.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: IconButton(
+                    tooltip: 'Call Volunteer',
+                    iconSize: 16,
+                    icon: Icon(Icons.phone, color: cs.primary),
+                    onPressed: () {
+                      _makeCall(displayPhone);
+                    },
+                  ),
+                ),
+
+                const SizedBox(width: 6),
+
+                // View profile indicator
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: cs.onSurface.withOpacity(0.35),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: cs.primary.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: Icon(Icons.phone, color: cs.primary),
-              onPressed: () {
-                _makeCall(displayPhone);
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -219,10 +260,6 @@ class _ManageBloodRequirementScreenState
       urgencyBg = Colors.orange.shade50;
       urgencyText = Colors.orange.shade700;
     }
-
-    final hasValidPhone =
-        req.contactNumber != null &&
-        req.contactNumber!.replaceAll(RegExp(r'[^0-9+]'), '').length >= 5;
 
     return Material(
       color: Colors.transparent,
@@ -357,24 +394,6 @@ class _ManageBloodRequirementScreenState
                                 color: cs.onSurface.withOpacity(0.7),
                               ),
                             ),
-                            if (hasValidPhone) ...[
-                              const SizedBox(width: 6),
-                              InkWell(
-                                onTap: () => _makeCall(req.contactNumber),
-                                child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.phone,
-                                    size: 12,
-                                    color: Colors.green.shade800,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -510,110 +529,112 @@ class _ManageBloodRequirementScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header
             Padding(
-              padding: const EdgeInsets.only(
-                left: 8.0,
-                right: 16.0,
-                top: 12.0,
-                bottom: 8.0,
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back, color: cs.primary),
-                    onPressed: () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop();
-                      } else {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => const HomeScreen(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Container(
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: cs.outline.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                          if (_activeTab == 1) {
-                            volunteerListController.onSearchTextChanged(val);
-                          }
-                        },
-                        decoration: InputDecoration(
-                          hintText: _activeTab == 0
-                              ? 'Search by patient name or hospital...'
-                              : 'Search volunteers by name, blood, location...',
-                          hintStyle: tt.bodyMedium?.copyWith(
-                            color: cs.onSurface.withOpacity(0.5),
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search,
-                            color: cs.onSurface.withOpacity(0.6),
-                            size: 20,
-                          ),
-                          suffixIcon:
-                              (_activeTab == 0
-                                  ? _searchQuery.isNotEmpty
-                                  : _searchController.text.isNotEmpty)
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear,
-                                    color: cs.onSurface.withOpacity(0.6),
-                                    size: 18,
-                                  ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _searchQuery = '';
-                                    });
-                                    if (_activeTab == 1) {
-                                      volunteerListController
-                                          .onSearchTextChanged('');
-                                    }
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                          ),
-                        ),
-                        style: tt.bodyMedium?.copyWith(color: cs.onSurface),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Back button + search only for volunteers
+                  if (isVol) ...[
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: cs.primary),
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              Navigator.of(context).pop();
+                            } else {
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => const HomeScreen(),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: cs.outline.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (val) {
+                                setState(() {
+                                  _searchQuery = val;
+                                });
+
+                                if (_activeTab == 1) {
+                                  volunteerListController.onSearchTextChanged(
+                                    val,
+                                  );
+                                }
+                              },
+                              decoration: InputDecoration(
+                                hintText: _activeTab == 0
+                                    ? 'Search by patient name or hospital...'
+                                    : 'Search volunteers by name, blood, location...',
+                                hintStyle: tt.bodyMedium?.copyWith(
+                                  color: cs.onSurface.withOpacity(0.5),
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: cs.onSurface.withOpacity(0.6),
+                                  size: 20,
+                                ),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: Icon(
+                                          Icons.clear,
+                                          color: cs.onSurface.withOpacity(0.6),
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          _searchController.clear();
+
+                                          setState(() {
+                                            _searchQuery = '';
+                                          });
+
+                                          if (_activeTab == 1) {
+                                            volunteerListController
+                                                .onSearchTextChanged('');
+                                          }
+                                        },
+                                      )
+                                    : null,
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                              style: tt.bodyMedium?.copyWith(
+                                color: cs.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Title
                   Text(
-                    isVol ? 'Requirement Registry' : 'Manage Blood Requirement',
+                    isVol ? 'Requirement Registry' : 'Blood Bank',
                     style: tt.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: cs.primary,
                     ),
                   ),
+
                   const SizedBox(height: 4),
+
+                  // Subtitle
                   Text(
                     _activeTab == 0
                         ? 'Oversee and coordinate critical blood supply logistics'
@@ -627,11 +648,11 @@ class _ManageBloodRequirementScreenState
             ),
 
             // Sliding tab selector
-            if (LocalStorage().readRole() != 'vol') ...[
+            if (!isVol) ...[
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
+                  horizontal: 16,
+                  vertical: 8,
                 ),
                 child: Container(
                   height: 48,
@@ -693,11 +714,13 @@ class _ManageBloodRequirementScreenState
                 ),
               ),
             ],
+
             const SizedBox(height: 8),
 
+            // Content
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: LocalStorage().readRole() == 'vol' || _activeTab == 0
                     ? _buildRequirementsTab(context, cs, tt)
                     : _buildVolunteersTab(context, cs, tt),
@@ -1154,6 +1177,60 @@ class _ManageBloodRequirementScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: cs.outline.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: TextField(
+            controller: _searchController,
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val;
+              });
+              if (_activeTab == 1) {
+                volunteerListController.onSearchTextChanged(val);
+              }
+            },
+            decoration: InputDecoration(
+              hintText: 'Search volunteers by name, blood, location...',
+              hintStyle: tt.bodyMedium?.copyWith(
+                color: cs.onSurface.withOpacity(0.5),
+              ),
+              prefixIcon: Icon(
+                Icons.search,
+                color: cs.onSurface.withOpacity(0.6),
+                size: 20,
+              ),
+              suffixIcon: (_searchController.text.isNotEmpty)
+                  ? IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        color: cs.onSurface.withOpacity(0.6),
+                        size: 18,
+                      ),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                        });
+
+                        volunteerListController.onSearchTextChanged('');
+                      },
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12,
+                horizontal: 4,
+              ),
+            ),
+            style: tt.bodyMedium?.copyWith(color: cs.onSurface),
+          ),
+        ),
+        const SizedBox(height: 12),
+
         Obx(() {
           final selectedBg = volunteerListController.selectedBloodGroup.value;
           final bloodGroups = volunteerListController.bloodGroups;

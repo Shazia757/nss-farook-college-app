@@ -273,7 +273,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                             "Are you sure you want to change your password?",
                                         onConfirm: () {
                                           Get.back();
-                                          c.changePassword(widget.userId);
+                                          c.changePassword();
                                         },
                                         data: const Text(
                                           'Confirm',
