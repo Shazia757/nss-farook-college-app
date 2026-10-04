@@ -1,5 +1,5 @@
 class Urls {
-  static String base = 'https://54.39.105.221:12080';
+  static String base = 'http://54.39.105.221:12080';
 
   // Auth & Password
   static String login = '$base/login/';
