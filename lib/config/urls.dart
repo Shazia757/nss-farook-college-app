@@ -1,5 +1,6 @@
 class Urls {
   static String base = 'http://54.39.105.221:12080/api';
+  // static String base = 'https://nssapi.bvocfarookcollege.com/api';
 
   // Auth & Password
   static String login = '$base/login/';
