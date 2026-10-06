@@ -16,6 +16,11 @@ import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 
 class Api {
+  static final Api _instance = Api._internal();
+
+  factory Api() => _instance;
+  Api._internal();
+
   //------------------ 1. Auth & Password ---------------------------//
 
   Future<LoginResponse?> login(Map<String, dynamic> data) async {
@@ -136,8 +141,9 @@ class Api {
       final queryParams = <String, String>{};
       if (batch != null && batch.isNotEmpty) queryParams['batch'] = batch;
       if (department != null) queryParams['department'] = department.toString();
-      if (bloodGroup != null && bloodGroup.isNotEmpty)
+      if (bloodGroup != null && bloodGroup.isNotEmpty) {
         queryParams['blood_group'] = bloodGroup;
+      }
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
       final uri = Uri.parse(
@@ -362,12 +368,14 @@ class Api {
       final queryParams = <String, String>{};
       if (batch != null && batch.isNotEmpty) queryParams['batch'] = batch;
       if (department != null) queryParams['department'] = department.toString();
-      if (bloodGroup != null && bloodGroup.isNotEmpty)
+      if (bloodGroup != null && bloodGroup.isNotEmpty) {
         queryParams['blood_group'] = bloodGroup;
+      }
       if (isActive != null) queryParams['is_active'] = isActive.toString();
       if (search != null && search.isNotEmpty) queryParams['search'] = search;
-      if (fields != null && fields.isNotEmpty)
+      if (fields != null && fields.isNotEmpty) {
         queryParams['fields'] = fields.join(',');
+      }
 
       final uri = Uri.parse(
         Urls.exportVolunteersExcel,
@@ -731,8 +739,9 @@ class Api {
   }) async {
     try {
       final queryParams = <String, String>{};
-      if (admissionNumber != null && admissionNumber.isNotEmpty)
+      if (admissionNumber != null && admissionNumber.isNotEmpty) {
         queryParams['admission_number'] = admissionNumber;
+      }
       if (batch != null && batch.isNotEmpty) queryParams['batch'] = batch;
       if (programId != null) queryParams['program_id'] = programId.toString();
 
@@ -884,8 +893,9 @@ class Api {
       if (programId != null) queryParams['program_id'] = programId.toString();
       if (batch != null && batch.isNotEmpty) queryParams['batch'] = batch;
       if (department != null) queryParams['department'] = department.toString();
-      if (fields != null && fields.isNotEmpty)
+      if (fields != null && fields.isNotEmpty) {
         queryParams['fields'] = fields.join(',');
+      }
 
       final uri = Uri.parse(
         Urls.exportAttendanceExcel,
@@ -909,8 +919,9 @@ class Api {
   }) async {
     try {
       final queryParams = <String, String>{};
-      if (bloodGroup != null && bloodGroup.isNotEmpty)
+      if (bloodGroup != null && bloodGroup.isNotEmpty) {
         queryParams['blood_group'] = bloodGroup;
+      }
       if (status != null && status.isNotEmpty) queryParams['status'] = status;
 
       final uri = Uri.parse(
@@ -1095,10 +1106,12 @@ class Api {
   }) async {
     try {
       final queryParams = <String, String>{};
-      if (bloodGroup != null && bloodGroup.isNotEmpty)
+      if (bloodGroup != null && bloodGroup.isNotEmpty) {
         queryParams['blood_group'] = bloodGroup;
-      if (volunteer != null && volunteer.isNotEmpty)
+      }
+      if (volunteer != null && volunteer.isNotEmpty) {
         queryParams['volunteer'] = volunteer;
+      }
 
       final uri = Uri.parse(
         Urls.getDonationHistory,

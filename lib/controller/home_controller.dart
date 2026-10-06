@@ -93,8 +93,11 @@ class HomeController extends GetxController {
     return '$minutes min left to cancel';
   }
 
+  bool _isRefreshing = false;
+
   void refreshDashboard() async {
-    if (isClosed) return;
+    if (isClosed || _isRefreshing) return;
+    _isRefreshing = true;
     isLoading.value = true;
     try {
       await Future.wait([
@@ -103,6 +106,7 @@ class HomeController extends GetxController {
         fetchVolunteerHours(),
       ]);
     } finally {
+      _isRefreshing = false;
       if (!isClosed) {
         isLoading.value = false;
       }

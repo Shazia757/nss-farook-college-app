@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:nss_new/api.dart';
 import 'package:nss_new/common_pages/custom_decorations.dart';
 import 'package:nss_new/database/local_storage.dart';
+import 'package:nss_new/model/user_model.dart';
 import 'package:nss_new/view/authentication/login_screen.dart';
 import 'package:nss_new/view/home_screen.dart';
 
@@ -21,9 +22,13 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAndNavigate() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+    GeneralResponse? res;
     try {
-      final res = await Api().checkVersion();
+      final results = await Future.wait([
+        Future.delayed(const Duration(milliseconds: 1500)),
+        Api().checkVersion().catchError((_) => GeneralResponse(status: true)),
+      ]);
+      res = results[1] as GeneralResponse?;
       if (res != null &&
           res.status == false &&
           (res.message?.contains('updation required') == true ||

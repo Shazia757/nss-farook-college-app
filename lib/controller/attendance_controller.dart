@@ -9,6 +9,7 @@ import 'package:nss_new/model/attendance_model.dart';
 import 'package:nss_new/model/programs_model.dart';
 import 'package:nss_new/model/volunteer_model.dart';
 import 'package:nss_new/config/excel_generator.dart';
+import 'package:nss_new/database/local_storage.dart';
 import 'package:share_plus/share_plus.dart';
 
 class AttendanceController extends GetxController {
@@ -63,6 +64,7 @@ class AttendanceController extends GetxController {
 
   Future<void> initializeData() async {
     if (isClosed) return;
+    if (LocalStorage().readRole() == 'vol') return;
 
     isLoading.value = true;
     isBatchLoading.value = true;
@@ -316,7 +318,7 @@ class AttendanceController extends GetxController {
               vol.batch ?? batch,
               'NSS Service',
               DateFormat('yyyy-MM-dd').format(DateTime.now()),
-              (vol.isActive ?? true) ? 'Active' : 'Passive',
+              vol.isActive ? 'Active' : 'Passive',
               0,
             ]);
           }

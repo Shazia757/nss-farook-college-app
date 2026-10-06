@@ -23,11 +23,6 @@ class BloodRequirementController extends GetxController {
 
   final searchQuery = ''.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    fetchBloodRequests();
-  }
 
   List<BloodDonationRequest> get searchedAndFilteredRequirements {
     final query = searchQuery.value.toLowerCase().trim();
@@ -190,7 +185,7 @@ class BloodRequirementController extends GetxController {
   }
 
   Future<void> fetchBloodRequests({String? bloodGroup, String? status}) async {
-    if (isClosed) return;
+    if (isClosed || isLoading.value) return;
 
     isLoading.value = true;
 

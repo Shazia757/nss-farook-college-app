@@ -4,6 +4,10 @@ import 'package:nss_new/model/user_model.dart';
 
 class LocalStorage {
   static final _box = GetStorage();
+  static final LocalStorage _instance = LocalStorage._internal();
+
+  factory LocalStorage() => _instance;
+  LocalStorage._internal();
 
   static bool get isLoggedIn {
     final hasFlag = _box.read('isLoggedIn') ?? false;

@@ -25,7 +25,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
               borderRadius: BorderRadius.circular(6),
               child: Image.asset("assets/logos/logo.png", height: 50),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 10),
             Text(
               'NSS Farook College',
               style: Theme.of(context).textTheme.headlineSmall!.copyWith(
@@ -36,7 +36,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: cs.outline.withOpacity(0.3)),
+          child: Container(
+            height: 1,
+            color: cs.outline.withValues(alpha: 0.3),
+          ),
         ),
       ),
     );

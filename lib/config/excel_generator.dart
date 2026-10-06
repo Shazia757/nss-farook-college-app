@@ -89,7 +89,7 @@ class ExcelGenerator {
     buffer.writeln('    <row r="1">');
     for (int col = 0; col < headers.length; col++) {
       final colRef = _getColumnRef(col);
-      final cellRef = '$colRef\1';
+      final cellRef = '${colRef}1';
       final val = _escapeXml(headers[col]);
       buffer.writeln(
           '      <c r="$cellRef" t="inlineStr" s="1"><is><t>$val</t></is></c>');
@@ -123,7 +123,7 @@ class ExcelGenerator {
     _addFile(archive, 'xl/worksheets/sheet1.xml', buffer.toString());
 
     final encoded = ZipEncoder().encode(archive);
-    return encoded ?? <int>[];
+    return encoded;
   }
 
   static void _addFile(Archive archive, String filename, String content) {

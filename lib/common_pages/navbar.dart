@@ -82,7 +82,7 @@ class CustomBottomNavBar extends StatelessWidget {
           screen = const ReportedIssuesScreen();
           break;
         case 4:
-          screen = ProfileScreen();
+          screen = const ProfileScreen();
           break;
         default:
           return;
@@ -102,7 +102,7 @@ class CustomBottomNavBar extends StatelessWidget {
           screen = const IssuesScreen();
           break;
         case 4:
-          screen = ProfileScreen();
+          screen = const ProfileScreen();
           break;
         default:
           return;

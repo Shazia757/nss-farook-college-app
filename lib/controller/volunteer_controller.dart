@@ -474,7 +474,7 @@ class VolunteerController extends GetxController {
       );
       return false;
     }
-    if (role != 'po') {
+    if (role.value != 'po') {
       if (yearController.text.trim().isEmpty) {
         CustomWidgets.showSnackBar(
           'Validation Error',

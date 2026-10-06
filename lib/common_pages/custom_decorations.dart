@@ -109,19 +109,20 @@ class CustomWidgets {
     final tt = Theme.of(context).textTheme;
     return InputDecoration(
       hintText: hintText,
-      hintStyle: tt.bodyMedium?.copyWith(color: cs.onSurface.withOpacity(0.3)),
+      hintStyle:
+          tt.bodyMedium?.copyWith(color: cs.onSurface.withValues(alpha: 0.3)),
       prefixIcon: prefixIcon,
       suffixIcon: suffixIcon,
       filled: true,
-      fillColor: cs.outline.withOpacity(0.08),
+      fillColor: cs.outline.withValues(alpha: 0.08),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: cs.outline.withOpacity(0.3)),
+        borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.3)),
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: cs.outline.withOpacity(0.15)),
+        borderSide: BorderSide(color: cs.outline.withValues(alpha: 0.15)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -152,14 +153,14 @@ class CustomWidgets {
       decoration: BoxDecoration(
         color: cs.onPrimary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outline.withOpacity(0.6)),
+        border: Border.all(color: cs.outline.withValues(alpha: 0.6)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(.12),
+              color: color.withValues(alpha: .12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 28),
@@ -171,7 +172,7 @@ class CustomWidgets {
               Text(
                 title,
                 style: tt.bodyMedium?.copyWith(
-                  color: cs.onSurface.withOpacity(.6),
+                  color: cs.onSurface.withValues(alpha: .6),
                 ),
               ),
               const SizedBox(height: 4),
