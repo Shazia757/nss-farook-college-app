@@ -73,13 +73,14 @@ class Urls {
 }
 
 class Details {
+  static String base = 'http://54.39.105.221:12080';
+  // static String base = 'https://nssapi.bvocfarookcollege.com/api';
   static String appVersion = '1.0.0';
   static String contactNo1 = '+919745457585';
   static String contactNo2 = '+919497343998';
   static String contactEmail = 'nss@farookcollege.ac.in';
   static String devEmail = 'devocofficial@gmail.com';
   static String collegeWebsite = 'https://farookcollege.ac.in';
-  static String privacyPolicyUrl = 'https://nss.noorabiyad.com/privacy-policy';
-  static String termsAndConditionsUrl =
-      'https://nss.noorabiyad.com/terms-and-conditions/';
+  static String privacyPolicyUrl = '$base/privacy-policy';
+  static String termsAndConditionsUrl = '$base/terms-and-conditions/';
 }
